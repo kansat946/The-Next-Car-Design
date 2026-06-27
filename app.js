@@ -276,8 +276,6 @@ const AI_BUYERS = [
         patience: 3,
         persuadeArg: "Dengan spoiler serat karbon, coilovers ceper, dan tabung NOS, mobil ini akan melesat bagai anak panah di trek!"
     }
-];ah di trek!"
-    }
 ];
 
 const RANKS = [
