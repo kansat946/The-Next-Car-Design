@@ -1608,12 +1608,7 @@ body {
 
 /* Quick Terminal Buttons Panel */
 .terminal-buttons-panel {
-    background: #06080e;
-    border-top: 1px solid #1a2233;
-    padding: 10px;
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 8px;
+    display: none !important;
 }
 
 .term-btn {

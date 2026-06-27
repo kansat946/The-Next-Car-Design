@@ -1055,6 +1055,38 @@ function updateStats() {
     productReview.innerText = comment;
 }
 
+// Keyword dictionary for custom persuasion arguments
+const BUYER_KEYWORDS = {
+    tambang: {
+        likes: ["ban", "monster", "tank", "rantai", "duri", "penabrak", "taji", "pickup", "truk", "offroad", "jip", "jimny", "militer", "baja", "ground clearance"],
+        hates: ["pink", "chrome", "sayap", "malaikat", "roket", "jet", "konyol", "pizza", "kotak", "estetika"]
+    },
+    eksekutif: {
+        likes: ["sedan", "limo", "limousine", "mewah", "hitam", "putih", "solar", "surya", "laser", "premium", "prestige", "elegan"],
+        hates: ["kotak", "pizza", "sirene", "polisi", "konyol", "neon", "pink", "sport", "balap", "sayap"]
+    },
+    sultan: {
+        likes: ["neon", "pink", "roket", "jet", "pizza", "kotak", "sirene", "polisi", "sport", "supercar", "hypercar", "viral", "flex", "sosmed"],
+        hates: ["hitam", "putih", "abu", "netral", "van", "kei", "standar", "biasa", "bosan"]
+    },
+    kolektor: {
+        likes: ["klasik", "vintage", "retro", "cerobong", "setir", "putih", "sejarah", "orisinal", "tua", "restorasi"],
+        hates: ["laser", "roket", "jet", "kotak", "pizza", "neon", "modern", "futuristik"]
+    },
+    sirkus: {
+        likes: ["kotak", "pizza", "baling", "helikopter", "sayap", "setir", "sirene", "polisi", "aneh", "konyol", "lucu", "sirkus"],
+        hates: ["standar", "biasa", "keluarga", "sedan", "hatchback", "hitam", "putih"]
+    },
+    ibu: {
+        likes: ["keluarga", "hatchback", "mpv", "wagon", "van", "solar", "surya", "putih", "silver", "murah", "hemat", "ekonomis", "bagasi", "anak"],
+        hates: ["roket", "jet", "laser", "ceper", "kemudi", "setir luar", "kotak", "pink", "neon", "berisik", "knalpot"]
+    },
+    pembalap: {
+        likes: ["sport", "supercar", "hypercar", "drift", "balap", "carbon", "roket", "jet", "neon", "hitam", "kencang", "ceper", "kecepatan", "trek", "sirkuit"],
+        hates: ["tank", "rantai", "kotak", "pizza", "van", "mpv", "lambat", "lemot", "berat", "armor"]
+    }
+};
+
 // Dialog generator helper for 7 AI Buyers
 function getBuyerDialogue(buyerId, dialogType, data = {}) {
     const priceStr = data.price ? data.price.toLocaleString() : "";
@@ -1342,10 +1374,10 @@ function printBuyerIntro() {
     
     const introDialogue = getBuyerDialogue(info.id, 'intro', { price: negoSession.currentBid });
     logToTerminal(`${info.name}: "${introDialogue}"`, 'normal');
-    logToTerminal(`Ketik perintah Anda atau pilih tombol di bawah:`, 'sys');
+    logToTerminal(`Ketik perintah Anda di bawah:`, 'sys');
     logToTerminal(`/terima        - Setujui penjualan senilai $${negoSession.currentBid.toLocaleString()}`, 'sys');
     logToTerminal(`/tawar [harga] - Ajukan tawar balik (contoh: /tawar ${Math.round(negoSession.currentBid * 1.25)})`, 'sys');
-    logToTerminal(`/rayu          - Bujuk buyer dengan keunggulan komponen`, 'sys');
+    logToTerminal(`/rayu [alasan] - Bujuk buyer dengan menyebutkan fitur mobil (contoh: /rayu mobil ini punya ban monster)`, 'sys');
     logToTerminal(`/lewati        - Batalkan nego & cari buyer lain (GRATIS)`, 'sys');
 }
 
@@ -1373,11 +1405,17 @@ function processTerminalCommand(inputLine) {
         }
         executeCounterOffer(offer);
     } else if (cmd === "/rayu") {
-        executePersuade();
+        const reason = parts.slice(1).join(" ");
+        if (reason.trim() === "") {
+            logToTerminal(`ERROR: Format perintah salah. Gunakan /rayu [alasan/fitur mobil]`, 'error');
+            logToTerminal(`Contoh: /rayu mobil ini dilengkapi dengan ban monster dan bumper duri penabrak`, 'sys');
+            return;
+        }
+        executePersuade(reason);
     } else if (cmd === "/lewati") {
         executeSkipNegotiation();
     } else {
-        logToTerminal(`ERROR: Perintah '${cmd}' tidak dikenali. Ketik /terima, /tawar, /rayu, atau /lewati.`, 'error');
+        logToTerminal(`ERROR: Perintah '${cmd}' tidak dikenali. Ketik /terima, /tawar [harga], /rayu [alasan], atau /lewati.`, 'error');
     }
 }
 
@@ -1522,7 +1560,7 @@ function executeCounterOffer(offer) {
 }
 
 // 3. Persuade (Rayu)
-function executePersuade() {
+function executePersuade(reason) {
     if (negoSession.persuaded) {
         logToTerminal(`Anda sudah merayu buyer sebelumnya. Ulangi bujukan tidak akan menambah pengaruh.`, 'warn');
         return;
@@ -1536,12 +1574,40 @@ function executePersuade() {
     updateTerminalPatienceDisplay();
     
     logToTerminal(`Anda mencoba membujuk buyer...`, 'user');
-    logToTerminal(`Argumen Anda: "${negoSession.buyer.persuadeArg}"`, 'user');
+    logToTerminal(`Argumen Anda: "${reason}"`, 'user');
     
-    // Persuasion success chance: 60% standard, +20% if car matches likes, -30% if matches hates
-    let successChance = 0.65;
+    // Keyword matching logic
+    const text = reason.toLowerCase();
+    const buyerKeywords = BUYER_KEYWORDS[negoSession.buyer.id];
     
-    // Buff/debuff on components
+    let matchedLikes = [];
+    let matchedHates = [];
+    
+    if (buyerKeywords) {
+        buyerKeywords.likes.forEach(kw => {
+            if (text.includes(kw)) matchedLikes.push(kw);
+        });
+        buyerKeywords.hates.forEach(kw => {
+            if (text.includes(kw)) matchedHates.push(kw);
+        });
+    }
+    
+    // Base success chance: 50%
+    let successChance = 0.50;
+    
+    // Add bonus for matched likes in text
+    if (matchedLikes.length > 0) {
+        successChance += 0.20 * matchedLikes.length;
+        logToTerminal(`[INFO]: Klien tampak tertarik karena Anda menyebutkan: [${matchedLikes.join(", ")}]!`, 'success');
+    }
+    
+    // Subtract penalty for matched hates in text
+    if (matchedHates.length > 0) {
+        successChance -= 0.30 * matchedHates.length;
+        logToTerminal(`[WARNING]: Klien tampak kurang senang karena Anda menyebutkan: [${matchedHates.join(", ")}]!`, 'error');
+    }
+    
+    // Add buff/debuff for actual physical components installed on the car
     negoSession.buyer.likes.forEach(like => {
         if (negoSession.car.parts.some(p => p.templateId === like)) successChance += 0.15;
     });
@@ -1549,11 +1615,12 @@ function executePersuade() {
         if (negoSession.car.parts.some(p => p.templateId === hate)) successChance -= 0.25;
     });
     
+    successChance = Math.max(0.05, Math.min(0.95, successChance));
     const success = Math.random() < successChance;
     
     if (success) {
         negoSession.persuaded = true;
-        // Raise current bid by 15% as a bonus influence
+        // Raise current bid by 12% as a bonus influence
         const bonus = Math.round(negoSession.currentBid * 0.12);
         negoSession.currentBid += bonus;
         
