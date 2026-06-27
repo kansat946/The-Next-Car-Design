@@ -1697,6 +1697,11 @@ function setupGlobalEventListeners() {
     
     document.querySelectorAll('.btn-sell-slot').forEach((btn, index) => {
         btn.addEventListener('click', () => {
+            const slot = gameState.slots[index];
+            if (slot.occupied && slot.car.parts.length < 3) {
+                alert("Mobil belum selesai dirancang! Pasang minimal 3 komponen di Studio Desain sebelum menjual.");
+                return;
+            }
             activeSlotIndex = index;
             triggerLaunchNegotiation();
         });
@@ -1729,6 +1734,10 @@ function setupGlobalEventListeners() {
     
     // Studio Launch Sell Button
     document.getElementById('btn-launch-sell').addEventListener('click', () => {
+        if (placedParts.length < 3) {
+            alert("Mobil belum selesai dirancang! Pasang minimal 3 komponen di Studio Desain sebelum menjual.");
+            return;
+        }
         triggerLaunchNegotiation();
     });
     
