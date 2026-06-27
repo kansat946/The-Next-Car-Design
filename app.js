@@ -146,35 +146,61 @@ VEHICLE_CATEGORIES.forEach(cat => {
     });
 });
 
-// Parts Library
+// // Parts Library
 const PARTS_LIBRARY = {
     wheels: [
-        { id: "wheel-alloy", name: "Velg Alloy Sport", price: 1200, effect: { speed: 10, accel: -0.3, eco: 2, flex: 10, defense: 0 }, desc: "Velg aluminium ringan berkualitas tinggi.", svg: `<svg viewBox="0 0 100 100" width="80" height="80"><circle cx="50" cy="50" r="45" fill="#1a1a1a" stroke="#444" stroke-width="4"/><circle cx="50" cy="50" r="33" fill="#666" stroke="#fff" stroke-width="2"/><circle cx="50" cy="50" r="8" fill="#111"/><line x1="50" y1="17" x2="50" y2="83" stroke="#fff" stroke-width="3"/><line x1="17" y1="50" x2="83" y2="50" stroke="#fff" stroke-width="3"/><line x1="27" y1="27" x2="73" y2="73" stroke="#fff" stroke-width="3"/><line x1="27" y1="73" x2="73" y2="27" stroke="#fff" stroke-width="3"/></svg>` },
+        { id: "wheel-alloy-sport", name: "Velg Alloy Sport", price: 1200, effect: { speed: 10, accel: -0.3, eco: 2, flex: 10, defense: 0 }, desc: "Velg aluminium ringan modern berkualitas tinggi.", svg: `<svg viewBox="0 0 100 100" width="80" height="80"><circle cx="50" cy="50" r="45" fill="#1a1a1a" stroke="#444" stroke-width="4"/><circle cx="50" cy="50" r="33" fill="#666" stroke="#fff" stroke-width="2"/><circle cx="50" cy="50" r="8" fill="#111"/><line x1="50" y1="17" x2="50" y2="83" stroke="#fff" stroke-width="3"/><line x1="17" y1="50" x2="83" y2="50" stroke="#fff" stroke-width="3"/><line x1="27" y1="27" x2="73" y2="73" stroke="#fff" stroke-width="3"/><line x1="27" y1="73" x2="73" y2="27" stroke="#fff" stroke-width="3"/></svg>` },
+        { id: "wheel-jdm-classic", name: "Velg JDM Classic Gold", price: 1500, effect: { speed: 5, accel: -0.1, eco: 0, flex: 18, defense: 2 }, desc: "Velg retro JDM palang jari-jari berwarna emas klasik.", svg: `<svg viewBox="0 0 100 100" width="80" height="80"><circle cx="50" cy="50" r="45" fill="#111" stroke="#333" stroke-width="4"/><circle cx="50" cy="50" r="32" fill="#d4af37" stroke="#fff" stroke-width="2"/><circle cx="50" cy="50" r="10" fill="#111"/><circle cx="50" cy="50" r="5" fill="#fff" opacity="0.8"/></svg>` },
+        { id: "wheel-chrome-luxury", name: "Velg Chrome Luxury", price: 4500, effect: { speed: 5, accel: -0.4, eco: -2, flex: 35, defense: 5 }, desc: "Velg krom mewah berukuran besar nan elegan.", svg: `<svg viewBox="0 0 100 100" width="80" height="80"><circle cx="50" cy="50" r="45" fill="#111" stroke="#333" stroke-width="4"/><circle cx="50" cy="50" r="33" fill="#e6e6e6" stroke="#fff" stroke-width="3"/><circle cx="50" cy="50" r="8" fill="#111"/><path d="M50,17 L50,83 M17,50 L83,50 M27,27 L73,73 M27,73 L73,27" stroke="#fff" stroke-width="4" opacity="0.9"/></svg>` },
+        { id: "wheel-steelie", name: "Velg Kaleng Steelie", price: 400, effect: { speed: -5, accel: 0.1, eco: 4, flex: -10, defense: 8 }, desc: "Velg kaleng besi hitam polos yang murah dan tangguh.", svg: `<svg viewBox="0 0 100 100" width="80" height="80"><circle cx="50" cy="50" r="45" fill="#111" stroke="#333" stroke-width="4"/><circle cx="50" cy="50" r="30" fill="#333" stroke="#444" stroke-width="2"/><circle cx="50" cy="50" r="8" fill="#111"/><circle cx="50" cy="38" r="3" fill="#fff" opacity="0.3"/><circle cx="50" cy="62" r="3" fill="#fff" opacity="0.3"/><circle cx="38" cy="50" r="3" fill="#fff" opacity="0.3"/><circle cx="62" cy="50" r="3" fill="#fff" opacity="0.3"/></svg>` },
+        { id: "wheel-slick-racing", name: "Ban Semi-Slick Balap", price: 6000, effect: { speed: 45, accel: -1.2, eco: -5, flex: 25, defense: 5 }, desc: "Ban gundul khusus sirkuit untuk cengkeraman maksimal.", svg: `<svg viewBox="0 0 100 100" width="85" height="85"><circle cx="50" cy="50" r="46" fill="#000" stroke="#00ff66" stroke-width="2"/><circle cx="50" cy="50" r="30" fill="#222" stroke="#fff" stroke-width="2"/><circle cx="50" cy="50" r="6" fill="#000"/></svg>` },
+        { id: "wheel-at-offroad", name: "Ban All-Terrain A/T", price: 3500, effect: { speed: -10, accel: 0.5, eco: -5, flex: 15, defense: 25 }, desc: "Ban segala medan untuk jalan berkerikil dan harian.", svg: `<svg viewBox="0 0 100 100" width="90" height="90"><circle cx="50" cy="50" r="46" fill="#111" stroke="#444" stroke-width="4"/><circle cx="50" cy="50" r="30" fill="#888" stroke="#111" stroke-width="2"/><rect x="47" y="10" width="6" height="8" fill="#111"/><rect x="47" y="82" width="6" height="8" fill="#111"/><rect x="10" y="47" width="8" height="6" fill="#111"/><rect x="82" y="47" width="8" height="6" fill="#111"/></svg>` },
+        { id: "wheel-mt-mud", name: "Ban Mud-Terrain M/T", price: 5500, effect: { speed: -25, accel: 1.2, eco: -15, flex: 20, defense: 50 }, desc: "Ban bertapak kasar dan dalam untuk melibas lumpur berat.", svg: `<svg viewBox="0 0 100 100" width="90" height="90"><circle cx="50" cy="50" r="46" fill="#080808" stroke="#111" stroke-width="4"/><circle cx="50" cy="50" r="30" fill="#666" stroke="#222" stroke-width="2"/><rect x="40" y="8" width="20" height="8" fill="#111" rx="2"/><rect x="40" y="84" width="20" height="8" fill="#111" rx="2"/><rect x="8" y="40" width="8" height="20" fill="#111" rx="2"/><rect x="84" y="40" width="8" height="20" fill="#111" rx="2"/></svg>` },
+        { id: "wheel-drift-hard", name: "Ban Drift Hard Compound", price: 4000, effect: { speed: 15, accel: 0.3, eco: -3, flex: 35, defense: 2 }, desc: "Ban dengan kompon keras agar mobil mudah oversteer/drift.", svg: `<svg viewBox="0 0 100 100" width="82" height="82"><circle cx="50" cy="50" r="45" fill="#151515" stroke="#333" stroke-width="3"/><circle cx="50" cy="50" r="28" fill="#444" stroke="#d4af37" stroke-width="2"/><circle cx="50" cy="50" r="8" fill="#111"/></svg>` },
         { id: "wheel-monster", name: "Ban Monster Truck", price: 6500, effect: { speed: -30, accel: 1.8, eco: -20, flex: 40, defense: 35 }, desc: "Ban bergerigi raksasa untuk melindas apa saja.", svg: `<svg viewBox="0 0 100 100" width="120" height="120"><circle cx="50" cy="50" r="46" fill="#111"/><circle cx="50" cy="50" r="28" fill="#ffcc00" stroke="#b38f00" stroke-width="3"/><circle cx="50" cy="50" r="15" fill="#333"/><circle cx="50" cy="50" r="6" fill="#111"/></svg>` },
-        { id: "wheel-tank", name: "Roda Rantai Tank", price: 12500, effect: { speed: -60, accel: 3.5, eco: -40, flex: 50, defense: 80 }, desc: "Kecepatan berkurang drastis, tapi tidak bisa dihancurkan.", svg: `<svg viewBox="0 0 160 80" width="160" height="80"><rect x="5" y="10" width="150" height="60" rx="30" fill="#2d382c" stroke="#1c241b" stroke-width="4"/><circle cx="35" cy="40" r="20" fill="#445443" stroke="#222" stroke-width="3"/><circle cx="80" cy="40" r="20" fill="#445443" stroke="#222" stroke-width="3"/><circle cx="125" cy="40" r="20" fill="#445443" stroke="#222" stroke-width="3"/><rect x="5" y="10" width="150" height="60" rx="30" fill="none" stroke="#111" stroke-width="4" stroke-dasharray="10,8"/></svg>` },
-        { id: "wheel-pizza", name: "Roda Pizza Lezat", price: 450, effect: { speed: -10, accel: -0.5, eco: 15, flex: 35, defense: -15 }, desc: "Licin, wangi oregano, dan bisa dimakan darurat.", svg: `<svg viewBox="0 0 100 100" width="80" height="80"><circle cx="50" cy="50" r="45" fill="#e68a00" stroke="#b36200" stroke-width="3"/><circle cx="50" cy="50" r="40" fill="#ffd699"/><circle cx="35" cy="35" r="7" fill="#cc0000"/><circle cx="68" cy="42" r="6" fill="#cc0000"/><circle cx="45" cy="68" r="8" fill="#cc0000"/><line x1="50" y1="10" x2="50" y2="90" stroke="#b36200" stroke-width="1.5"/><line x1="10" y1="50" x2="90" y2="50" stroke="#b36200" stroke-width="1.5"/></svg>` },
-        { id: "wheel-square", name: "Roda Kotak Sempurna", price: 150, effect: { speed: -80, accel: 5.0, eco: -50, flex: 60, defense: 20 }, desc: "Puncak ketidakpraktisan otomotif abad ini.", svg: `<svg viewBox="0 0 100 100" width="80" height="80"><rect x="10" y="10" width="80" height="80" rx="5" fill="#333" stroke="#111" stroke-width="4"/><rect x="25" y="25" width="50" height="50" fill="#888" stroke="#fff" stroke-width="2"/><circle cx="50" cy="50" r="8" fill="#111"/></svg>` }
+        { id: "wheel-tank", name: "Roda Rantai Tank", price: 12500, effect: { speed: -60, accel: 3.5, eco: -40, flex: 50, defense: 80 }, desc: "Kecepatan berkurang drastis, tapi tidak bisa dihancurkan.", svg: `<svg viewBox="0 0 160 80" width="160" height="80"><rect x="5" y="10" width="150" height="60" rx="30" fill="#2d382c" stroke="#1c241b" stroke-width="4"/><circle cx="35" cy="40" r="20" fill="#445443" stroke="#222" stroke-width="3"/><circle cx="80" cy="40" r="20" fill="#445443" stroke="#222" stroke-width="3"/><circle cx="125" cy="40" r="20" fill="#445443" stroke="#222" stroke-width="3"/><rect x="5" y="10" width="150" height="60" rx="30" fill="none" stroke="#111" stroke-width="4" stroke-dasharray="10,8"/></svg>` }
     ],
     spoilers: [
         { id: "spoiler-carbon", name: "Spoiler Carbon GT", price: 3200, effect: { speed: 20, accel: -0.4, eco: -3, flex: 25, defense: 0 }, desc: "Menambah downforce dan ketampanan mobil.", svg: `<svg viewBox="0 0 120 60" width="120" height="60"><path d="M10,45 L30,10 L50,10 L40,45 Z" fill="#222"/><path d="M110,45 L90,10 L70,10 L80,45 Z" fill="#222"/><rect x="0" y="5" width="120" height="8" rx="3" fill="#111" stroke="#444" stroke-width="1"/><polygon points="0,2 10,0 10,16 0,14" fill="#00ffcc"/><polygon points="120,2 110,0 110,16 120,14" fill="#00ffcc"/></svg>` },
         { id: "spoiler-biplane", name: "Sayap Ganda Biplane", price: 7500, effect: { speed: -10, accel: 0.8, eco: -15, flex: 55, defense: 10 }, desc: "Winglet pesawat untuk gaya aerodinamika maksimal.", svg: `<svg viewBox="0 0 130 80" width="130" height="80"><line x1="30" y1="75" x2="30" y2="10" stroke="#333" stroke-width="4"/><line x1="100" y1="75" x2="100" y2="10" stroke="#333" stroke-width="4"/><rect x="15" y="38" width="100" height="6" rx="2" fill="#222"/><rect x="5" y="8" width="120" height="6" rx="2" fill="#111"/></svg>` },
-        { id: "spoiler-rocket", name: "Roket Pendorong Jet", price: 28000, effect: { speed: 180, accel: -3.0, eco: -80, flex: 95, defense: 15 }, desc: "Pendorong jet super bertenaga, polusi tinggi.", svg: `<svg viewBox="0 0 140 70" width="140" height="70"><rect x="20" y="15" width="80" height="35" rx="10" fill="#555" stroke="#333" stroke-width="2"/><rect x="10" y="20" width="10" height="25" fill="#ffaa00"/><path d="M10,20 L-20,15 L-5,32 L-30,32 L-5,40 L-20,48 L10,45 Z" fill="#ff3300"/><path d="M10,25 L-10,22 L-2,32 L-15,32 L-2,38 L-10,42 L10,40 Z" fill="#ffcc00"/><line x1="40" y1="50" x2="30" y2="68" stroke="#333" stroke-width="5"/><line x1="80" y1="50" x2="90" y2="68" stroke="#333" stroke-width="5"/></svg>` }
+        { id: "spoiler-ducktail", name: "Spoiler Ducktail Retro", price: 1800, effect: { speed: 10, accel: -0.2, eco: -1, flex: 15, defense: 0 }, desc: "Spoiler ducktail ramping bergaya elegan klasik.", svg: `<svg viewBox="0 0 100 40" width="100" height="40"><path d="M10,35 Q50,25 90,35 L95,15 Q50,5 5,15 Z" fill="#222" stroke="#111" stroke-width="1.5"/></svg>` },
+        { id: "spoiler-drag", name: "Spoiler Panjang Drag", price: 4500, effect: { speed: 35, accel: -0.6, eco: -5, flex: 20, defense: 2 }, desc: "Spoiler memanjang lurus untuk kestabilan drag race trek lurus.", svg: `<svg viewBox="0 0 120 50" width="120" height="50"><rect x="10" y="30" width="100" height="8" rx="2" fill="#333"/><path d="M5,10 L115,10 L105,30 L15,30 Z" fill="#111" stroke="#444" stroke-width="2"/></svg>` }
+    ],
+    engines: [
+        { id: "engine-i4", name: "Mesin Inline 4 Standard", price: 3500, effect: { speed: 30, accel: -0.5, eco: 10, flex: 10, defense: 0 }, desc: "Mesin 4 silinder segaris hemat bahan bakar untuk komuter.", svg: `<svg viewBox="0 0 100 80" width="100" height="80"><rect x="20" y="20" width="60" height="40" rx="5" fill="#444" stroke="#222" stroke-width="3"/><rect x="30" y="10" width="40" height="10" fill="#ffaa00"/><circle cx="35" cy="40" r="6" fill="#888"/><circle cx="50" cy="40" r="6" fill="#888"/><circle cx="65" cy="40" r="6" fill="#888"/></svg>` },
+        { id: "engine-v6", name: "Mesin V6 Twin Turbo", price: 8500, effect: { speed: 65, accel: -1.4, eco: -5, flex: 20, defense: 2 }, desc: "Mesin V6 bertenaga ganda untuk mobil sport modern.", svg: `<svg viewBox="0 0 100 80" width="100" height="80"><rect x="15" y="15" width="70" height="50" rx="8" fill="#555" stroke="#333" stroke-width="3"/><path d="M30,15 L15,40 L30,65" stroke="#ff3300" stroke-width="4" fill="none"/><path d="M70,15 L85,40 L70,65" stroke="#ff3300" stroke-width="4" fill="none"/></svg>` },
+        { id: "engine-v8", name: "Mesin V8 Hemi Muscle", price: 15000, effect: { speed: 110, accel: -2.2, eco: -15, flex: 35, defense: 5 }, desc: "Mesin V8 bersuara gahar dengan torsi instan melimpah.", svg: `<svg viewBox="0 0 100 80" width="100" height="80"><rect x="15" y="15" width="70" height="50" rx="8" fill="#333" stroke="#111" stroke-width="3"/><rect x="25" y="25" width="50" height="30" fill="#990000"/><line x1="30" y1="10" x2="30" y2="15" stroke="#fff" stroke-width="3"/><line x1="40" y1="10" x2="40" y2="15" stroke="#fff" stroke-width="3"/><line x1="50" y1="10" x2="50" y2="15" stroke="#fff" stroke-width="3"/><line x1="60" y1="10" x2="60" y2="15" stroke="#fff" stroke-width="3"/></svg>` },
+        { id: "engine-v12", name: "Mesin V12 Naturally Aspirated", price: 35000, effect: { speed: 220, accel: -4.5, eco: -30, flex: 60, defense: 10 }, desc: "Karya seni performa tinggi dengan output tenaga luar biasa.", svg: `<svg viewBox="0 0 120 90" width="120" height="90"><rect x="10" y="10" width="100" height="70" rx="10" fill="#111" stroke="#d4af37" stroke-width="4"/><path d="M30,25 L45,15 L60,25 L75,15 L90,25" stroke="#ff9900" stroke-width="3" fill="none"/></svg>` },
+        { id: "engine-rotary", name: "Mesin Rotary Wankel", price: 7500, effect: { speed: 55, accel: -1.0, eco: -8, flex: 25, defense: 0 }, desc: "Mesin rotor Mazda legendaris berputar di RPM tinggi.", svg: `<svg viewBox="0 0 100 80" width="100" height="80"><circle cx="50" cy="40" r="30" fill="#222" stroke="#444" stroke-width="3"/><polygon points="50,18 76,58 24,58" fill="#ff6600" opacity="0.8"/></svg>` },
+        { id: "engine-boxer", name: "Mesin Boxer Flat-6", price: 9500, effect: { speed: 70, accel: -1.5, eco: -2, flex: 22, defense: 2 }, desc: "Mesin horizontal Porsche untuk center of gravity yang rendah.", svg: `<svg viewBox="0 0 120 70" width="120" height="70"><rect x="30" y="15" width="60" height="40" rx="5" fill="#444" stroke="#222" stroke-width="3"/><rect x="5" y="25" width="25" height="20" fill="#222"/><rect x="90" y="25" width="25" height="20" fill="#222"/></svg>` },
+        { id: "engine-electric", name: "Motor Listrik Dual EV", price: 18000, effect: { speed: 120, accel: -3.5, eco: 45, flex: 30, defense: 5 }, desc: "Torsi instan tanpa emisi gas buang.", svg: `<svg viewBox="0 0 100 80" width="100" height="80"><rect x="20" y="20" width="60" height="40" rx="10" fill="#0066ff" stroke="#003399" stroke-width="3"/><path d="M40,40 L60,40 M50,30 L50,50" stroke="#00ffcc" stroke-width="4"/></svg>` }
+    ],
+    exhausts: [
+        { id: "exhaust-standard", name: "Knalpot Standard Muffler", price: 300, effect: { speed: 2, accel: -0.1, eco: 0, flex: 0, defense: 0 }, desc: "Knalpot pabrikan standar berdesain minimalis dan tenang.", svg: `<svg viewBox="0 0 60 30" width="60" height="30"><rect x="5" y="10" width="40" height="10" rx="2" fill="#888" stroke="#555"/><circle cx="48" cy="15" r="5" fill="#111" stroke="#888"/></svg>` },
+        { id: "exhaust-dual-sport", name: "Knalpot Dual Exit Sport", price: 1800, effect: { speed: 12, accel: -0.3, eco: -1, flex: 12, defense: 0 }, desc: "Knalpot ganda untuk meningkatkan pembuangan gas mesin sport.", svg: `<svg viewBox="0 0 80 40" width="80" height="40"><rect x="5" y="5" width="50" height="12" rx="2" fill="#555"/><rect x="5" y="23" width="50" height="12" rx="2" fill="#555"/><circle cx="58" cy="11" r="6" fill="#111" stroke="#fff"/><circle cx="58" cy="29" r="6" fill="#111" stroke="#fff"/></svg>` },
+        { id: "exhaust-straight", name: "Knalpot Straight Pipe", price: 1200, effect: { speed: 18, accel: -0.4, eco: -10, flex: 20, defense: 0 }, desc: "Knalpot bebas hambatan yang menyemburkan suara sangat bising.", svg: `<svg viewBox="0 0 70 30" width="70" height="30"><line x1="5" y1="15" x2="65" y2="15" stroke="#b87333" stroke-width="8" stroke-linecap="round"/><circle cx="65" cy="15" r="4" fill="#111"/></svg>` },
+        { id: "exhaust-titanium", name: "Knalpot Titanium Racing", price: 4500, effect: { speed: 25, accel: -0.6, eco: -2, flex: 30, defense: 0 }, desc: "Knalpot titanium ultra ringan dengan ujung berwarna biru bakar.", svg: `<svg viewBox="0 0 70 30" width="70" height="30"><rect x="5" y="8" width="50" height="14" rx="2" fill="#444"/><circle cx="58" cy="15" r="7" fill="#00ffff" stroke="#0033cc" stroke-width="2"/></svg>` }
+    ],
+    neon: [
+        { id: "neon-blue", name: "Lampu Neon Ice Blue", price: 1500, effect: { speed: 0, accel: 0, eco: -1, flex: 25, defense: 0 }, desc: "Lampu neon kolong mobil berwarna biru es futuristik.", svg: `<svg viewBox="0 0 120 20" width="120" height="20"><rect x="5" y="5" width="110" height="10" rx="5" fill="#00ffff" opacity="0.8" filter="drop-shadow(0 0 5px #00ffff)"/><line x1="10" y1="10" x2="110" y2="10" stroke="#fff" stroke-width="2"/></svg>` },
+        { id: "neon-pink", name: "Lampu Neon Hot Pink", price: 1500, effect: { speed: 0, accel: 0, eco: -1, flex: 25, defense: 0 }, desc: "Lampu neon kolong mobil berwarna merah muda terang mencolok.", svg: `<svg viewBox="0 0 120 20" width="120" height="20"><rect x="5" y="5" width="110" height="10" rx="5" fill="#ff00ff" opacity="0.8" filter="drop-shadow(0 0 5px #ff00ff)"/><line x1="10" y1="10" x2="110" y2="10" stroke="#fff" stroke-width="2"/></svg>` },
+        { id: "neon-green", name: "Lampu Neon Acid Green", price: 1500, effect: { speed: 0, accel: 0, eco: -1, flex: 25, defense: 0 }, desc: "Lampu neon kolong mobil berwarna hijau asam menyala.", svg: `<svg viewBox="0 0 120 20" width="120" height="20"><rect x="5" y="5" width="110" height="10" rx="5" fill="#00ff00" opacity="0.8" filter="drop-shadow(0 0 5px #00ff00)"/><line x1="10" y1="10" x2="110" y2="10" stroke="#fff" stroke-width="2"/></svg>` }
+    ],
+    suspension: [
+        { id: "suspension-normal", name: "Suspensi Standard", price: 0, effect: { speed: 0, accel: 0, eco: 0, flex: 0, defense: 0 }, desc: "Sistem suspensi bawaan pabrikan.", svg: `<svg viewBox="0 0 60 60" width="60" height="60"><path d="M30,5 L30,55 M10,15 L50,15 M15,25 L45,25 M20,35 L40,35" stroke="#777" stroke-width="4"/></svg>` },
+        { id: "suspension-ceper", name: "Suspensi Ceper (Coilovers)", price: 2500, effect: { speed: 25, accel: -0.5, eco: -2, flex: 35, defense: -10 }, desc: "Memotong ground clearance sasis agar ceper, lincah, dan aerodinamis.", svg: `<svg viewBox="0 0 60 60" width="60" height="60"><path d="M30,15 L30,45 M10,20 L50,20 M15,28 L45,28 M20,36 L40,36" stroke="#ff3300" stroke-width="5"/></svg>` }
     ],
     roof: [
         { id: "roof-siren", name: "Sirine Polisi", price: 1800, effect: { speed: 5, accel: -0.1, eco: 0, flex: 20, defense: 10 }, desc: "Sirine darurat pembuat panik jalan raya.", svg: `<svg viewBox="0 0 60 40" width="60" height="40"><ellipse cx="30" cy="30" rx="25" ry="10" fill="#333"/><path d="M15,25 Q30,5 45,25 Z" fill="#0066ff" opacity="0.9"/><path d="M30,25 Q38,10 45,25 Z" fill="#ff3333" opacity="0.9"/><circle cx="30" cy="20" r="5" fill="#fff"/></svg>` },
-        { id: "roof-propeller", name: "Baling Helikopter", price: 16500, effect: { speed: 50, accel: -2.0, eco: 15, flex: 70, defense: -10 }, desc: "Baling-baling udara pengurang bobot gesekan sasis.", svg: `<svg viewBox="0 0 200 60" width="200" height="60"><rect x="95" y="30" width="10" height="30" fill="#444"/><ellipse cx="100" cy="30" rx="15" ry="6" fill="#222"/><path d="M100,28 L5,20 L5,32 Z" fill="#111" stroke="#333"/><path d="M100,28 L195,20 L195,32 Z" fill="#111" stroke="#333"/></svg>` },
-        { id: "roof-solar", name: "Solar Panel", price: 5200, effect: { speed: -5, accel: 0.2, eco: 50, flex: 15, defense: 5 }, desc: "Mengisi baterai menggunakan sinar matahari gratis.", svg: `<svg viewBox="0 0 120 30" width="120" height="30"><rect x="5" y="5" width="110" height="20" rx="3" fill="#0e2338" stroke="#1d4268" stroke-width="2"/><line x1="22" y1="5" x2="22" y2="25" stroke="#376793"/><line x1="44" y1="5" x2="44" y2="25" stroke="#376793"/><line x1="66" y1="5" x2="66" y2="25" stroke="#376793"/><line x1="5" y1="15" x2="115" y2="15" stroke="#376793"/></svg>` },
-        { id: "roof-chimney", name: "Cerobong Asap Klasik", price: 850, effect: { speed: -10, accel: 0.5, eco: -60, flex: 35, defense: 10 }, desc: "Gaya kereta uap abad pertengahan dengan polusi pekat.", svg: `<svg viewBox="0 0 50 80" width="50" height="80"><rect x="15" y="25" width="20" height="55" fill="#4a3b32" stroke="#1a120b" stroke-width="2"/><ellipse cx="25" cy="25" rx="13" ry="5" fill="#8c6a5c" stroke="#1a120b" stroke-width="2"/><circle cx="15" cy="12" r="10" fill="gray" opacity="0.6"/><circle cx="28" cy="5" r="7" fill="lightgray" opacity="0.5"/></svg>` }
+        { id: "roof-solar", name: "Solar Panel", price: 5200, effect: { speed: -5, accel: 0.2, eco: 50, flex: 15, defense: 5 }, desc: "Mengisi baterai menggunakan sinar matahari gratis.", svg: `<svg viewBox="0 0 120 30" width="120" height="30"><rect x="5" y="5" width="110" height="20" rx="3" fill="#0e2338" stroke="#1d4268" stroke-width="2"/><line x1="22" y1="5" x2="22" y2="25" stroke="#376793"/><line x1="44" y1="5" x2="44" y2="25" stroke="#376793"/><line x1="66" y1="5" x2="66" y2="25" stroke="#376793"/><line x1="5" y1="15" x2="115" y2="15" stroke="#376793"/></svg>` }
     ],
     front: [
-        { id: "front-laser", name: "Meriam Laser Plasma", price: 19000, effect: { speed: 0, accel: -0.5, eco: -10, flex: 80, defense: 50 }, desc: "Laser futuristik penghancur rintangan jalan tol.", svg: `<svg viewBox="0 0 100 50" width="100" height="50"><rect x="30" y="15" width="60" height="20" rx="5" fill="#333" stroke="#222" stroke-width="2"/><rect x="90" y="18" width="10" height="14" fill="#00ffcc"/><circle cx="25" cy="25" r="12" fill="#555"/><line x1="100" y1="25" x2="130" y2="25" stroke="#00ffcc" stroke-width="4" stroke-linecap="round" opacity="0.8"/></svg>` },
-        { id: "front-ram", name: "Bumper Duri Penabrak", price: 4500, effect: { speed: -5, accel: 0.8, eco: -5, flex: 20, defense: 90 }, desc: "Taji baja kokoh untuk menabrak rintangan.", svg: `<svg viewBox="0 0 60 90" width="60" height="90"><rect x="40" y="10" width="15" height="70" rx="3" fill="#444" stroke="#111"/><polygon points="40,20 10,25 40,30" fill="#888" stroke="#222"/><polygon points="40,45 10,50 40,55" fill="#888" stroke="#222"/><polygon points="40,70 10,75 40,80" fill="#888" stroke="#222"/></svg>` },
-        { id: "front-horn", name: "Tanduk Unicorn", price: 8500, effect: { speed: 10, accel: -0.1, eco: 15, flex: 65, defense: 20 }, desc: "Tanduk emas mistis penambah karisma mobil.", svg: `<svg viewBox="0 0 80 50" width="80" height="50"><path d="M75,25 L10,18 L15,25 L10,32 Z" fill="#ffd699" stroke="#cc9900" stroke-width="1.5"/></svg>` }
+        { id: "front-ram", name: "Bumper Bullbar Baja", price: 4500, effect: { speed: -10, accel: 0.8, eco: -5, flex: 15, defense: 90 }, desc: "Taji baja kokoh untuk menabrak rintangan.", svg: `<svg viewBox="0 0 60 90" width="60" height="90"><rect x="40" y="10" width="15" height="70" rx="5" fill="#555" stroke="#111" stroke-width="2"/><line x1="20" y1="20" x2="40" y2="20" stroke="#333" stroke-width="5"/><line x1="20" y1="45" x2="40" y2="45" stroke="#333" stroke-width="5"/><line x1="20" y1="70" x2="40" y2="70" stroke="#333" stroke-width="5"/></svg>` },
+        { id: "front-winch", name: "Winch Derek Offroad", price: 2800, effect: { speed: -5, accel: 0.3, eco: -1, flex: 10, defense: 30 }, desc: "Katrol tali baja untuk menarik beban berat di lumpur.", svg: `<svg viewBox="0 0 60 50" width="60" height="50"><rect x="20" y="10" width="30" height="30" rx="3" fill="#333" stroke="#111"/><circle cx="35" cy="25" r="10" fill="#888" stroke="#222"/><line x1="35" y1="25" x2="10" y2="25" stroke="#fff" stroke-width="3" stroke-dasharray="3,2"/></svg>` }
     ],
     extras: [
-        { id: "extra-wings", name: "Sayap Malaikat Samping", price: 15000, effect: { speed: 30, accel: -1.2, eco: 20, flex: 75, defense: -5 }, desc: "Sayap pajangan anggun penambah kecantikan.", svg: `<svg viewBox="0 0 120 80" width="120" height="80"><path d="M5,40 C15,20 45,5 95,5 C105,5 115,15 110,25 C105,35 85,55 55,60 C75,55 95,45 100,35 C95,45 70,55 45,55 C60,52 75,45 80,38 C60,45 35,45 20,40 Z" fill="#fff" stroke="#ddd" stroke-width="1.5"/></svg>` },
-        { id: "extra-android", name: "Maskot Robot Ijo", price: 150, effect: { speed: -2, accel: 0, eco: 10, flex: 20, defense: 5 }, desc: "Meningkatkan status pintar sasis mobil.", svg: `<svg viewBox="0 0 60 70" width="60" height="70"><rect x="10" y="25" width="40" height="30" rx="5" fill="#a4c639"/><path d="M10,22 Q30,8 50,22 Z" fill="#a4c639"/><circle cx="22" cy="16" r="3" fill="#fff"/><circle cx="38" cy="16" r="3" fill="#fff"/><line x1="20" y1="10" x2="15" y2="4" stroke="#a4c639" stroke-width="3"/><line x1="40" y1="10" x2="45" y2="4" stroke="#a4c639" stroke-width="3"/></svg>` },
-        { id: "extra-steering", name: "Setir Eksternal Konyol", price: 500, effect: { speed: -15, accel: 0.8, eco: 0, flex: 45, defense: -10 }, desc: "Kemudikan mobil dari kap luar mesin.", svg: `<svg viewBox="0 0 80 80" width="80" height="80"><circle cx="40" cy="40" r="30" fill="none" stroke="#6d4c41" stroke-width="8"/><circle cx="40" cy="40" r="5" fill="#3e2723"/><line x1="40" y1="15" x2="40" y2="65" stroke="#3e2723" stroke-width="4"/><line x1="15" y1="40" x2="65" y2="40" stroke="#3e2723" stroke-width="4"/></svg>` }
+        { id: "extra-android", name: "Maskot Dashboard Toy", price: 150, effect: { speed: -2, accel: 0, eco: 10, flex: 20, defense: 5 }, desc: "Meningkatkan status pintar sasis mobil.", svg: `<svg viewBox="0 0 60 70" width="60" height="70"><rect x="10" y="25" width="40" height="30" rx="5" fill="#a4c639"/><path d="M10,22 Q30,8 50,22 Z" fill="#a4c639"/><circle cx="22" cy="16" r="3" fill="#fff"/><circle cx="38" cy="16" r="3" fill="#fff"/><line x1="20" y1="10" x2="15" y2="4" stroke="#a4c639" stroke-width="3"/><line x1="40" y1="10" x2="45" y2="4" stroke="#a4c639" stroke-width="3"/></svg>` },
+        { id: "tabung-nos", name: "Tabung Nitro NOS Boost", price: 8500, effect: { speed: 120, accel: -2.5, eco: -25, flex: 40, defense: 0 }, desc: "Menyemburkan oksigen murni untuk akselerasi luar biasa.", svg: `<svg viewBox="0 0 80 40" width="80" height="40"><rect x="15" y="10" width="50" height="20" rx="5" fill="#0066ff" stroke="#003399" stroke-width="2"/><rect x="65" y="14" width="8" height="12" fill="#888"/><circle cx="73" cy="20" r="4" fill="#333"/></svg>` }
     ]
 };
 
@@ -185,38 +211,38 @@ const AI_BUYERS = [
         name: "🤠 Bos Tambang",
         desc: "Keras, pragmatis, hanya peduli ketahanan sasis dan fungsi nyata.",
         difficulty: "Hard",
-        likes: ["wheel-monster", "wheel-tank", "front-ram", "pickup", "offroad", "military"],
-        hates: ["color-pink", "color-neon", "extra-wings", "spoiler-rocket", "wheel-pizza", "wheel-square"],
+        likes: ["wheel-monster", "wheel-tank", "front-ram", "pickup", "offroad", "military", "wheel-at-offroad", "wheel-mt-mud", "engine-v8"],
+        hates: ["color-pink", "color-neon", "engine-electric", "neon-blue", "neon-pink", "neon-green"],
         patience: 2,
-        persuadeArg: "Ban monster dan duri penabrak ini sangat tangguh untuk melibas batu tambang Anda!"
+        persuadeArg: "Ban monster dan bumper pelindung baja ini sangat tangguh untuk melibas batu tambang Anda!"
     },
     {
         id: "eksekutif",
         name: "👔 Eksekutif Korporat",
         desc: "Kaku, elitis, mengedepankan prestise, kenyamanan profesional, dan status ramah lingkungan.",
         difficulty: "Medium",
-        likes: ["sedan", "limo", "roof-solar", "front-laser", "color-black", "color-white"],
-        hates: ["wheel-square", "wheel-pizza", "roof-siren", "extra-steering", "color-neon", "color-pink"],
+        likes: ["sedan", "limo", "roof-solar", "color-black", "color-white", "engine-electric"],
+        hates: ["exhaust-straight", "roof-siren", "color-neon", "color-pink", "suspension-ceper"],
         patience: 3,
-        persuadeArg: "Ini adalah kemewahan masa depan yang tenang dengan panel surya untuk kenyamanan kerja."
+        persuadeArg: "Ini adalah kemewahan masa depan yang tenang dengan motor listrik dan panel surya untuk kenyamanan kerja."
     },
     {
         id: "sultan",
         name: "🎮 Sultan Millennial",
         desc: "Impulsif, suka viralitas, aktif sosmed, menyukai keunikan ekstrim bernilai flex.",
         difficulty: "Easy",
-        likes: ["color-neon", "color-pink", "spoiler-rocket", "wheel-pizza", "wheel-square", "roof-siren", "sports", "supercar", "hypercar"],
+        likes: ["color-neon", "color-pink", "tabung-nos", "wheel-chrome-luxury", "roof-siren", "sports", "supercar", "hypercar", "neon-blue", "neon-pink", "neon-green", "suspension-ceper"],
         hates: ["color-black", "color-white", "van", "kei"],
         patience: 5,
-        persuadeArg: "Rancangan gila ini dijamin langsung viral dan trending topik 1 di seluruh media sosial!"
+        persuadeArg: "Rancangan ceper dengan neon kolong menyala dan Nitro NOS ini dijamin langsung viral dan trending topik 1 di seluruh media sosial!"
     },
     {
         id: "kolektor",
         name: "👴 Kolektor Tua",
         desc: "Sangat teliti, menghargai sejarah, keaslian klasik, dan rapi.",
         difficulty: "Hard",
-        likes: ["classic", "roof-chimney", "extra-steering", "sedan", "convertible", "color-white"],
-        hates: ["front-laser", "spoiler-rocket", "wheel-square", "wheel-pizza", "color-neon"],
+        likes: ["classic", "sedan", "convertible", "color-white", "wheel-jdm-classic", "engine-rotary"],
+        hates: ["tabung-nos", "engine-electric", "color-neon", "neon-blue", "neon-pink", "neon-green"],
         patience: 2,
         persuadeArg: "Ini adalah sasis restorasi orisinal bernuansa retro klasik dengan pengerjaan vintage."
     },
@@ -225,30 +251,32 @@ const AI_BUYERS = [
         name: "🤡 Sirkus Manager",
         desc: "Penuh kejutan, tidak logis, menyukai mobil paling absurd dan aneh.",
         difficulty: "Easy",
-        likes: ["wheel-square", "wheel-pizza", "roof-propeller", "extra-wings", "extra-steering", "roof-siren"],
+        likes: ["extra-android", "roof-siren", "neon-pink", "color-pink"],
         hates: ["sedan", "hatchback", "color-black", "color-white"],
         patience: 4,
-        persuadeArg: "Perpaduan roda pizza, baling-baling, dan sayap ini adalah pertunjukan sirkus berjalan terlucu!"
+        persuadeArg: "Perpaduan warna pink menyala dengan sirine dan aksesoris maskot ini adalah pertunjukan berjalan terlucu!"
     },
     {
         id: "ibu",
         name: "👩 Ibu Komplek",
         desc: "Peduli keselamatan keluarga, kepraktisan, bagasi luas, ramah lingkungan, dan hemat.",
         difficulty: "Medium",
-        likes: ["hatchback", "mpv", "wagon", "van", "roof-solar", "color-white", "Cheapest"],
-        hates: ["spoiler-rocket", "front-laser", "extra-steering", "wheel-square", "color-pink", "color-neon"],
+        likes: ["hatchback", "mpv", "wagon", "van", "roof-solar", "color-white", "Cheapest", "engine-electric"],
+        hates: ["exhaust-straight", "tabung-nos", "suspension-ceper", "color-pink", "color-neon"],
         patience: 3,
-        persuadeArg: "Sangat aman, hemat bahan bakar berkat panel surya, dan bagasinya luas untuk belanjaan."
+        persuadeArg: "Sangat aman, hemat bahan bakar berkat motor listrik dan panel surya, serta bagasinya luas untuk belanjaan."
     },
     {
         id: "pembalap",
         name: "🏁 Pembalap Liar",
         desc: "Terobsesi kecepatan murni, spoiler karbon, nitro pendorong, sasis ceper, dan drift.",
         difficulty: "Medium",
-        likes: ["sports", "supercar", "hypercar", "drift", "spoiler-carbon", "spoiler-rocket", "color-neon", "color-black"],
-        hates: ["wheel-tank", "wheel-square", "wheel-pizza", "van", "mpv", "military"],
+        likes: ["sports", "supercar", "hypercar", "drift", "spoiler-carbon", "tabung-nos", "color-neon", "color-black", "wheel-slick-racing", "wheel-drift-hard", "suspension-ceper"],
+        hates: ["wheel-tank", "van", "mpv", "military"],
         patience: 3,
-        persuadeArg: "Dengan spoiler serat karbon dan jet booster, mobil ini akan melesat bagai anak panah di trek!"
+        persuadeArg: "Dengan spoiler serat karbon, coilovers ceper, dan tabung NOS, mobil ini akan melesat bagai anak panah di trek!"
+    }
+];ah di trek!"
     }
 ];
 
@@ -858,11 +886,24 @@ function addPartToCanvas(partTemplate, x = 300, y = 150, scale = 1, rotation = 0
 function renderPlacedParts() {
     partsContainer.innerHTML = '';
     
+    // Check if lowering suspension is installed
+    const isLowered = placedParts.some(p => p.templateId === "suspension-ceper");
+    if (isLowered) {
+        carChassisWrapper.style.transform = "translateY(25px)";
+    } else {
+        carChassisWrapper.style.transform = "none";
+    }
+    
     placedParts.forEach((part, index) => {
         const div = document.createElement('div');
         div.className = `placed-part ${index === selectedPartIndex ? 'selected' : ''}`;
         div.style.left = `${part.x}px`;
-        div.style.top = `${part.y}px`;
+        
+        if (isLowered && !part.templateId.startsWith('wheel-')) {
+            div.style.top = `${part.y + 25}px`;
+        } else {
+            div.style.top = `${part.y}px`;
+        }
         div.style.width = '100px'; 
         div.style.height = '100px';
         
@@ -1295,6 +1336,12 @@ function triggerLaunchNegotiation() {
     const showroomPaint = showroomCarTarget.querySelectorAll('.car-paintable');
     showroomPaint.forEach(p => p.setAttribute('fill', slot.car.color));
     
+    // Check if lowering suspension is installed
+    const isLoweredShowroom = slot.car.parts.some(p => p.templateId === "suspension-ceper");
+    if (isLoweredShowroom) {
+        showroomCarTarget.querySelector('svg').style.transform = "translateY(25px)";
+    }
+    
     // Render placed parts in showroom
     const targetPartsWrap = document.createElement('div');
     targetPartsWrap.style.position = 'absolute';
@@ -1307,7 +1354,13 @@ function triggerLaunchNegotiation() {
         const div = document.createElement('div');
         div.className = `placed-part`;
         div.style.left = `${part.x}px`;
-        div.style.top = `${part.y}px`;
+        
+        if (isLoweredShowroom && !part.templateId.startsWith('wheel-')) {
+            div.style.top = `${part.y + 25}px`;
+        } else {
+            div.style.top = `${part.y}px`;
+        }
+        
         div.style.width = '100px'; 
         div.style.height = '100px';
         let transformStr = `translate(-50%, -50%) rotate(${part.rotation}deg) scale(${part.scale})`;
