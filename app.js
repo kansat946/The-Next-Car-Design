@@ -412,36 +412,44 @@ function applyLangToHUD() {
 }
 
 function createAccount() {
-    const username = document.getElementById('input-username').value.trim();
-    const studioName = document.getElementById('input-studioname').value.trim();
-    if (!username || !studioName) {
-        alert(currentLang === 'id' ? 'Nama pengguna dan nama studio tidak boleh kosong!' : 'Username and studio name cannot be empty!');
-        return;
+    try {
+        const username = document.getElementById('input-username').value.trim();
+        const studioName = document.getElementById('input-studioname').value.trim();
+        if (!username || !studioName) {
+            alert(currentLang === 'id' ? 'Nama pengguna dan nama studio tidak boleh kosong!' : 'Username and studio name cannot be empty!');
+            return;
+        }
+        accountData = { username, studioName, lang: currentLang };
+        localStorage.setItem('car_lab_account', JSON.stringify(accountData));
+        startGame();
+    } catch (err) {
+        alert("Error in createAccount: " + err.stack);
     }
-    accountData = { username, studioName, lang: currentLang };
-    localStorage.setItem('car_lab_account', JSON.stringify(accountData));
-    startGame();
 }
 
 function startGame() {
-    applyLangToHUD();
-    // Update HUD avatar & studio name
-    const avatar = document.getElementById('hud-avatar');
-    const studioEl = document.getElementById('hud-studio-name');
-    if (avatar && accountData) {
-        avatar.innerText = accountData.username.charAt(0).toUpperCase();
-        studioEl.innerText = accountData.studioName;
+    try {
+        applyLangToHUD();
+        // Update HUD avatar & studio name
+        const avatar = document.getElementById('hud-avatar');
+        const studioEl = document.getElementById('hud-studio-name');
+        if (avatar && accountData) {
+            avatar.innerText = accountData.username.charAt(0).toUpperCase();
+            studioEl.innerText = accountData.studioName;
+        }
+        // Switch screen
+        document.getElementById('intro-screen').classList.remove('active');
+        screens.dashboard.classList.add('active');
+        loadGameData();
+        updateHUD();
+        renderDashboardSlots();
+        startMarketEventsTicker();
+        startSpecialOrderTriggers();
+        // Initial parts drawer
+        renderPartsDrawer('wheels');
+    } catch (err) {
+        alert("Error in startGame: " + err.stack);
     }
-    // Switch screen
-    document.getElementById('intro-screen').classList.remove('active');
-    screens.dashboard.classList.add('active');
-    loadGameData();
-    updateHUD();
-    renderDashboardSlots();
-    startMarketEventsTicker();
-    startSpecialOrderTriggers();
-    // Initial parts drawer
-    renderPartsDrawer('wheels');
 }
 
 // --- ROTATION STATE ---
@@ -610,20 +618,24 @@ const terminalCliInput = document.getElementById('terminal-cli-input');
 
 // --- INITIALIZATION ---
 window.addEventListener('DOMContentLoaded', () => {
-    setupGlobalEventListeners();
-    // Check for existing account
-    const saved = localStorage.getItem('car_lab_account');
-    if (saved) {
-        try {
-            accountData = JSON.parse(saved);
-            currentLang = accountData.lang || 'id';
-            startGame();
-        } catch(e) {
-            // Corrupt data, show intro
+    try {
+        setupGlobalEventListeners();
+        // Check for existing account
+        const saved = localStorage.getItem('car_lab_account');
+        if (saved) {
+            try {
+                accountData = JSON.parse(saved);
+                currentLang = accountData.lang || 'id';
+                startGame();
+            } catch(e) {
+                // Corrupt data, show intro
+                showIntroScreen();
+            }
+        } else {
             showIntroScreen();
         }
-    } else {
-        showIntroScreen();
+    } catch (err) {
+        alert("Error in DOMContentLoaded: " + err.stack);
     }
 });
 
