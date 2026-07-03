@@ -436,7 +436,6 @@ function startGame() {
     document.getElementById('intro-screen').classList.remove('active');
     screens.dashboard.classList.add('active');
     loadGameData();
-    setupGlobalEventListeners();
     updateHUD();
     renderDashboardSlots();
     startMarketEventsTicker();
@@ -611,6 +610,7 @@ const terminalCliInput = document.getElementById('terminal-cli-input');
 
 // --- INITIALIZATION ---
 window.addEventListener('DOMContentLoaded', () => {
+    setupGlobalEventListeners();
     // Check for existing account
     const saved = localStorage.getItem('car_lab_account');
     if (saved) {
