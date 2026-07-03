@@ -439,7 +439,7 @@ function startGame() {
         }
         // Switch screen
         document.getElementById('intro-screen').classList.remove('active');
-        screens.dashboard.classList.add('active');
+        document.getElementById('dashboard-screen').classList.add('active');
         loadGameData();
         updateHUD();
         renderDashboardSlots();
@@ -548,12 +548,6 @@ document.addEventListener('click', (e) => {
 });
 
 // --- DOM ELEMENTS ---
-const screens = {
-    intro: document.getElementById('intro-screen'),
-    dashboard: document.getElementById('dashboard-screen'),
-    studio: document.getElementById('studio-screen'),
-    negotiation: document.getElementById('terminal-negotiation-screen')
-};
 
 // Dashboard Elements
 const hudCash = document.getElementById('hud-cash');
@@ -641,7 +635,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
 function showIntroScreen() {
     document.getElementById('intro-screen').classList.add('active');
-    screens.dashboard.classList.remove('active');
+    document.getElementById('dashboard-screen').classList.remove('active');
 }
 
 // Save and Load logic (LocalStorage Persistence)
@@ -1025,8 +1019,8 @@ function openStudioEditor(slotIdx) {
     updateStats();
     
     // Swap screen
-    screens.dashboard.classList.remove('active');
-    screens.studio.classList.add('active');
+    document.getElementById('dashboard-screen').classList.remove('active');
+    document.getElementById('studio-screen').classList.add('active');
     // Reset car rotation when entering studio
     resetCanvasRotation();
 }
@@ -1559,8 +1553,8 @@ function triggerLaunchNegotiation() {
     };
     
     // Swap to Showroom screen
-    screens.studio.classList.remove('active');
-    screens.negotiation.classList.add('active');
+    document.getElementById('studio-screen').classList.remove('active');
+    document.getElementById('terminal-negotiation-screen').classList.add('active');
     
     // Render left split Showroom
     showroomCarTarget.innerHTML = CHASSIS_SVG[carModel.baseChassis];
@@ -1991,8 +1985,8 @@ function rankUp() {
 }
 
 function exitNegotiationScreen() {
-    screens.negotiation.classList.remove('active');
-    screens.dashboard.classList.add('active');
+    document.getElementById('terminal-negotiation-screen').classList.remove('active');
+    document.getElementById('dashboard-screen').classList.add('active');
 }
 
 // --- BUTTONS & EVENT LISTENERS SETUP ---
@@ -2078,8 +2072,8 @@ function setupGlobalEventListeners() {
     // Back to Dashboard from Studio
     document.getElementById('btn-back-to-dashboard').addEventListener('click', () => {
         resetCanvasRotation();
-        screens.studio.classList.remove('active');
-        screens.dashboard.classList.add('active');
+        document.getElementById('studio-screen').classList.remove('active');
+        document.getElementById('dashboard-screen').classList.add('active');
         renderDashboardSlots();
         updateHUD();
     });
