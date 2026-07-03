@@ -76,7 +76,11 @@ const VEHICLE_CATEGORIES = [
     { id: "kei", name: "Micro / Kei Car", base: "hatchback" },
     { id: "limo", name: "Limousine", base: "sedan" },
     { id: "campervan", name: "Campervan", base: "pickup" },
-    { id: "military", name: "Armored / Military", base: "suv" }
+    { id: "military", name: "Armored / Military", base: "suv" },
+    { id: "ev_niaga", name: "EV Niaga / EV Pickup", base: "pickup" },
+    { id: "pickup_bensin", name: "Pickup Bensin Premium", base: "pickup" },
+    { id: "kolektor_langka", name: "Mobil Kolektor Langka", base: "sports" },
+    { id: "supercar_ev", name: "Supercar Listrik (EV)", base: "sports" }
 ];
 
 const VARIANT_METADATA = {
@@ -110,7 +114,11 @@ VEHICLE_CATEGORIES.forEach(cat => {
         kei: ["Suzuki Alto", "Honda N-Box", "Honda N-One RS", "Subaru 360 (1958)"],
         limo: ["Lincoln Town Car", "Mercedes S-Class LWB", "Rolls-Royce Phantom Extended", "Cadillac Fleetwood (1934)"],
         campervan: ["VW Caddy California", "VW California T6", "Mercedes Marco Polo Horizon", "VW Kombi T1 (1950)"],
-        military: ["Armored Toyota LC", "HMMWV (Humvee)", "Rezvani Tank X", "Jeep Willys MB (1941)"]
+        military: ["Armored Toyota LC", "HMMWV (Humvee)", "Rezvani Tank X", "Jeep Willys MB (1941)"],
+        ev_niaga: ["BYD T3", "Rivian R1T", "Tesla Cybertruck", "El Camino Electric (Konsep)"],
+        pickup_bensin: ["Ford Maverick", "Toyota Tacoma TRD", "Ram 1500 Rebel", "Chevrolet El Camino (1970)"],
+        kolektor_langka: ["Ferrari 250 GTO", "Aston Martin DB5", "Bugatti Type 57", "Mercedes 300SL (1954)"],
+        supercar_ev: ["Lucid Air Sapphire", "Tesla Model S Plaid", "Pininfarina Battista", "Rimac Nevera R"]
     };
 
     const baseChassisPrice = {
@@ -146,7 +154,7 @@ VEHICLE_CATEGORIES.forEach(cat => {
     });
 });
 
-// // Parts Library
+// Parts Library
 const PARTS_LIBRARY = {
     wheels: [
         { id: "wheel-alloy-sport", name: "Velg Alloy Sport", price: 1200, effect: { speed: 10, accel: -0.3, eco: 2, flex: 10, defense: 0 }, desc: "Velg aluminium ringan modern berkualitas tinggi.", svg: `<svg viewBox="0 0 100 100" width="80" height="80"><circle cx="50" cy="50" r="45" fill="#1a1a1a" stroke="#444" stroke-width="4"/><circle cx="50" cy="50" r="33" fill="#666" stroke="#fff" stroke-width="2"/><circle cx="50" cy="50" r="8" fill="#111"/><line x1="50" y1="17" x2="50" y2="83" stroke="#fff" stroke-width="3"/><line x1="17" y1="50" x2="83" y2="50" stroke="#fff" stroke-width="3"/><line x1="27" y1="27" x2="73" y2="73" stroke="#fff" stroke-width="3"/><line x1="27" y1="73" x2="73" y2="27" stroke="#fff" stroke-width="3"/></svg>` },
@@ -173,7 +181,16 @@ const PARTS_LIBRARY = {
         { id: "engine-v12", name: "Mesin V12 Naturally Aspirated", price: 35000, effect: { speed: 220, accel: -4.5, eco: -30, flex: 60, defense: 10 }, desc: "Karya seni performa tinggi dengan output tenaga luar biasa.", svg: `<svg viewBox="0 0 120 90" width="120" height="90"><rect x="10" y="10" width="100" height="70" rx="10" fill="#111" stroke="#d4af37" stroke-width="4"/><path d="M30,25 L45,15 L60,25 L75,15 L90,25" stroke="#ff9900" stroke-width="3" fill="none"/></svg>` },
         { id: "engine-rotary", name: "Mesin Rotary Wankel", price: 7500, effect: { speed: 55, accel: -1.0, eco: -8, flex: 25, defense: 0 }, desc: "Mesin rotor Mazda legendaris berputar di RPM tinggi.", svg: `<svg viewBox="0 0 100 80" width="100" height="80"><circle cx="50" cy="40" r="30" fill="#222" stroke="#444" stroke-width="3"/><polygon points="50,18 76,58 24,58" fill="#ff6600" opacity="0.8"/></svg>` },
         { id: "engine-boxer", name: "Mesin Boxer Flat-6", price: 9500, effect: { speed: 70, accel: -1.5, eco: -2, flex: 22, defense: 2 }, desc: "Mesin horizontal Porsche untuk center of gravity yang rendah.", svg: `<svg viewBox="0 0 120 70" width="120" height="70"><rect x="30" y="15" width="60" height="40" rx="5" fill="#444" stroke="#222" stroke-width="3"/><rect x="5" y="25" width="25" height="20" fill="#222"/><rect x="90" y="25" width="25" height="20" fill="#222"/></svg>` },
-        { id: "engine-electric", name: "Motor Listrik Dual EV", price: 18000, effect: { speed: 120, accel: -3.5, eco: 45, flex: 30, defense: 5 }, desc: "Torsi instan tanpa emisi gas buang.", svg: `<svg viewBox="0 0 100 80" width="100" height="80"><rect x="20" y="20" width="60" height="40" rx="10" fill="#0066ff" stroke="#003399" stroke-width="3"/><path d="M40,40 L60,40 M50,30 L50,50" stroke="#00ffcc" stroke-width="4"/></svg>` }
+        { id: "engine-electric", name: "Motor Listrik Dual EV", price: 18000, effect: { speed: 120, accel: -3.5, eco: 45, flex: 30, defense: 5 }, desc: "Torsi instan tanpa emisi gas buang.", svg: `<svg viewBox="0 0 100 80" width="100" height="80"><rect x="20" y="20" width="60" height="40" rx="10" fill="#0066ff" stroke="#003399" stroke-width="3"/><path d="M40,40 L60,40 M50,30 L50,50" stroke="#00ffcc" stroke-width="4"/></svg>` },
+        { id: "engine-diesel-inline6", name: "Mesin Diesel Inline-6 Turbo", price: 9000, effect: { speed: 50, accel: -0.8, eco: -8, flex: 15, defense: 5 }, desc: "Mesin diesel torsi besar khas truk premium dan SUV tangguh.", svg: `<svg viewBox="0 0 120 80" width="120" height="80"><rect x="10" y="15" width="100" height="50" rx="6" fill="#2a2a2a" stroke="#555" stroke-width="3"/><rect x="20" y="5" width="80" height="10" fill="#444" rx="3"/><circle cx="30" cy="40" r="8" fill="#666"/><circle cx="50" cy="40" r="8" fill="#666"/><circle cx="70" cy="40" r="8" fill="#666"/><circle cx="90" cy="40" r="8" fill="#666"/><rect x="100" y="25" width="10" height="30" rx="3" fill="#888"/></svg>` },
+        { id: "engine-straight8", name: "Mesin Straight-8 Pre-War", price: 22000, effect: { speed: 90, accel: -1.5, eco: -20, flex: 55, defense: 8 }, desc: "Mesin 8 silinder segaris era klasik 1930-an. Sangat langka dan bergengsi.", svg: `<svg viewBox="0 0 150 80" width="150" height="80"><rect x="5" y="20" width="140" height="40" rx="5" fill="#3a2a10" stroke="#d4af37" stroke-width="3"/><circle cx="25" cy="40" r="7" fill="#d4af37"/><circle cx="45" cy="40" r="7" fill="#d4af37"/><circle cx="65" cy="40" r="7" fill="#d4af37"/><circle cx="85" cy="40" r="7" fill="#d4af37"/><circle cx="105" cy="40" r="7" fill="#d4af37"/><circle cx="125" cy="40" r="7" fill="#d4af37"/></svg>` },
+        { id: "engine-v10", name: "Mesin V10 Naturally Aspirated", price: 28000, effect: { speed: 180, accel: -3.5, eco: -25, flex: 50, defense: 8 }, desc: "Mesin V10 ikon Lamborghini Gallardo dan BMW M5 E60. Suara meraung.", svg: `<svg viewBox="0 0 110 90" width="110" height="90"><rect x="10" y="15" width="90" height="60" rx="8" fill="#333" stroke="#888" stroke-width="3"/><path d="M20,15 L5,45 L20,75" stroke="#ff4400" stroke-width="4" fill="none"/><path d="M90,15 L105,45 L90,75" stroke="#ff4400" stroke-width="4" fill="none"/><text x="55" y="50" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">V10</text></svg>` },
+        { id: "engine-w16", name: "Mesin W16 Quad Turbo", price: 75000, effect: { speed: 320, accel: -6.5, eco: -50, flex: 90, defense: 15 }, desc: "Mesin paling gila di dunia. Milik Bugatti Chiron/Veyron. 1500 HP.", svg: `<svg viewBox="0 0 120 90" width="120" height="90"><rect x="5" y="5" width="110" height="80" rx="10" fill="#1a0a00" stroke="#ff6600" stroke-width="4"/><text x="60" y="42" text-anchor="middle" fill="#ff6600" font-size="16" font-weight="bold" font-family="monospace">W16</text><text x="60" y="62" text-anchor="middle" fill="#ffaa00" font-size="10" font-family="monospace">QUAD TURBO</text><rect x="10" y="70" width="25" height="8" rx="3" fill="#ff6600"/><rect x="42" y="70" width="25" height="8" rx="3" fill="#ff6600"/><rect x="74" y="70" width="25" height="8" rx="3" fill="#ff6600"/><rect x="96" y="70" width="14" height="8" rx="3" fill="#ff6600"/></svg>` },
+        { id: "engine-electric-formula", name: "Formula E Motor Listrik", price: 45000, effect: { speed: 250, accel: -7.0, eco: 60, flex: 45, defense: 3 }, desc: "Motor listrik Formula E. 0-100 km/h di bawah 2 detik. Zero emisi.", svg: `<svg viewBox="0 0 110 80" width="110" height="80"><rect x="10" y="15" width="90" height="50" rx="12" fill="#001133" stroke="#00ffcc" stroke-width="3"/><path d="M30,50 L50,20 L60,35 L80,20 L90,50" stroke="#00ffcc" stroke-width="3" fill="none"/><circle cx="55" cy="40" r="8" fill="#00ffcc" opacity="0.8"/></svg>` },
+        { id: "engine-hydrogen", name: "Mesin Hidrogen Fuel Cell", price: 38000, effect: { speed: 100, accel: -2.0, eco: 80, flex: 35, defense: 5 }, desc: "Teknologi masa depan. Menghasilkan uap air bukan emisi. Zero karbon.", svg: `<svg viewBox="0 0 110 80" width="110" height="80"><rect x="10" y="15" width="90" height="50" rx="8" fill="#0a2a0a" stroke="#00ff88" stroke-width="3"/><text x="55" y="42" text-anchor="middle" fill="#00ff88" font-size="22" font-weight="bold" font-family="monospace">H₂</text><path d="M15,55 Q30,45 45,55 Q60,65 75,55 Q90,45 105,55" stroke="#00ff88" stroke-width="2" fill="none" opacity="0.5"/></svg>` },
+        { id: "engine-diesel-v8", name: "Mesin Diesel V8 Turbo", price: 18000, effect: { speed: 80, accel: -1.0, eco: -12, flex: 20, defense: 10 }, desc: "V8 Diesel khas truk berat dan SUV offroad mewah. Torsi brutal.", svg: `<svg viewBox="0 0 100 80" width="100" height="80"><rect x="15" y="15" width="70" height="50" rx="8" fill="#1a1a00" stroke="#888833" stroke-width="3"/><path d="M25,15 L10,40 L25,65" stroke="#ffcc00" stroke-width="3" fill="none"/><path d="M75,15 L90,40 L75,65" stroke="#ffcc00" stroke-width="3" fill="none"/><rect x="35" y="25" width="30" height="30" fill="#333322" rx="4"/></svg>` },
+        { id: "engine-two-stroke", name: "Mesin 2-Tak Kecil", price: 800, effect: { speed: -20, accel: -0.5, eco: -30, flex: -5, defense: -5 }, desc: "Mesin 2-tak berisik dan haus BBM. Nostalgia tahun 80an.", svg: `<svg viewBox="0 0 80 80" width="80" height="80"><rect x="20" y="20" width="40" height="40" rx="4" fill="#333" stroke="#666" stroke-width="2"/><circle cx="40" cy="40" r="10" fill="#888"/><rect x="35" y="5" width="10" height="15" fill="#666" rx="2"/></svg>` },
+        { id: "engine-steam", name: "Mesin Uap Antik", price: 5000, effect: { speed: -60, accel: -4.0, eco: -40, flex: 70, defense: 20 }, desc: "Mesin uap era 1800-an. Lambat, berisik, tapi memiliki wow-factor tinggi!", svg: `<svg viewBox="0 0 120 90" width="120" height="90"><rect x="10" y="35" width="80" height="45" rx="5" fill="#444" stroke="#888" stroke-width="3"/><circle cx="90" cy="57" r="20" fill="#555" stroke="#888" stroke-width="3"/><rect x="30" y="10" width="20" height="30" rx="3" fill="#333" stroke="#666" stroke-width="2"/><circle cx="40" cy="8" r="6" fill="#ff6600" opacity="0.8"/><path d="M38,2 Q42,0 40,5" stroke="#aaa" stroke-width="2" fill="none"/></svg>` }
     ],
     exhausts: [
         { id: "exhaust-standard", name: "Knalpot Standard Muffler", price: 300, effect: { speed: 2, accel: -0.1, eco: 0, flex: 0, defense: 0 }, desc: "Knalpot pabrikan standar berdesain minimalis dan tenang.", svg: `<svg viewBox="0 0 60 30" width="60" height="30"><rect x="5" y="10" width="40" height="10" rx="2" fill="#888" stroke="#555"/><circle cx="48" cy="15" r="5" fill="#111" stroke="#888"/></svg>` },
@@ -336,8 +353,196 @@ let marketEventTimer = null;
 let specialOrderTriggerTimer = null;
 let activeMarketEvent = null; // { type: 'trend'|'crash', catId: '...', label: '...' }
 
+// --- LANGUAGE SYSTEM ---
+const LANG = {
+    id: {
+        modalKas: 'MODAL KAS',
+        winStreak: 'WIN STREAK',
+        intro_sub: 'Buat Akun Studio Anda',
+        intro_account_title: 'Daftarkan Bengkel Anda',
+        label_username: 'Nama Pengguna (Username)',
+        label_studioname: 'Nama Studio / Bengkel',
+        btn_start: 'Mulai Bermain!',
+        bankruptcy_msg: 'Kebangkrutan! Modal Anda habis. Anda menerima bantuan talangan darurat sebesar $50,000 namun reputasi Anda dipotong (-2 Bintang).',
+        min_parts_msg: 'Mobil belum selesai dirancang! Pasang minimal 3 komponen di Studio Desain sebelum menjual.',
+        workspace_full_msg: 'Workspace Penuh! Selesaikan atau ganti mobil di slot lain terlebih dahulu.',
+    },
+    en: {
+        modalKas: 'CASH FUNDS',
+        winStreak: 'WIN STREAK',
+        intro_sub: 'Create Your Studio Account',
+        intro_account_title: 'Register Your Workshop',
+        label_username: 'Username',
+        label_studioname: 'Studio / Workshop Name',
+        btn_start: 'Start Playing!',
+        bankruptcy_msg: 'Bankruptcy! Your funds ran out. You received an emergency bailout of $50,000 but lost 2 Reputation Stars.',
+        min_parts_msg: 'Car is not finished! Install at least 3 components in the Design Studio before selling.',
+        workspace_full_msg: 'Workspace Full! Finish or replace a car in another slot first.',
+    }
+};
+
+let currentLang = 'id';
+let accountData = null;
+
+function selectLanguage(lang) {
+    currentLang = lang;
+    // Update step 2 text
+    document.getElementById('intro-sub-account').innerText = LANG[lang].intro_sub;
+    document.getElementById('intro-account-title').innerHTML = `<i class="fa-solid fa-user-gear"></i> ${LANG[lang].intro_account_title}`;
+    document.getElementById('label-username').innerText = LANG[lang].label_username;
+    document.getElementById('label-studioname').innerText = LANG[lang].label_studioname;
+    document.getElementById('btn-start-label').innerText = LANG[lang].btn_start;
+    // Transition to step 2
+    const step1 = document.getElementById('intro-step-lang');
+    const step2 = document.getElementById('intro-step-account');
+    step1.style.opacity = '0';
+    step1.style.transform = 'translateY(-20px)';
+    setTimeout(() => {
+        step1.classList.add('hidden');
+        step2.classList.remove('hidden');
+        step2.style.animation = 'fadeInUp 0.5s ease both';
+    }, 300);
+}
+
+function applyLangToHUD() {
+    const lblModalKas = document.getElementById('lbl-modal-kas');
+    const lblWinStreak = document.getElementById('lbl-win-streak');
+    if (lblModalKas) lblModalKas.innerText = LANG[currentLang].modalKas;
+    if (lblWinStreak) lblWinStreak.innerText = LANG[currentLang].winStreak;
+}
+
+function createAccount() {
+    const username = document.getElementById('input-username').value.trim();
+    const studioName = document.getElementById('input-studioname').value.trim();
+    if (!username || !studioName) {
+        alert(currentLang === 'id' ? 'Nama pengguna dan nama studio tidak boleh kosong!' : 'Username and studio name cannot be empty!');
+        return;
+    }
+    accountData = { username, studioName, lang: currentLang };
+    localStorage.setItem('car_lab_account', JSON.stringify(accountData));
+    startGame();
+}
+
+function startGame() {
+    applyLangToHUD();
+    // Update HUD avatar & studio name
+    const avatar = document.getElementById('hud-avatar');
+    const studioEl = document.getElementById('hud-studio-name');
+    if (avatar && accountData) {
+        avatar.innerText = accountData.username.charAt(0).toUpperCase();
+        studioEl.innerText = accountData.studioName;
+    }
+    // Switch screen
+    document.getElementById('intro-screen').classList.remove('active');
+    screens.dashboard.classList.add('active');
+    loadGameData();
+    setupGlobalEventListeners();
+    updateHUD();
+    renderDashboardSlots();
+    startMarketEventsTicker();
+    startSpecialOrderTriggers();
+    // Initial parts drawer
+    renderPartsDrawer('wheels');
+}
+
+// --- ROTATION STATE ---
+let carRotX = 0;
+let carRotY = 0;
+const ROT_STEP = 45; // degrees per button click
+
+function applyCanvasRotation() {
+    const stage = document.getElementById('car-canvas-stage');
+    if (stage) {
+        stage.style.transform = `rotateX(${carRotX}deg) rotateY(${carRotY}deg)`;
+    }
+}
+
+function resetCanvasRotation() {
+    carRotX = 0;
+    carRotY = 0;
+    applyCanvasRotation();
+}
+
+// --- TOOLTIP SYSTEM ---
+let tooltipTimer = null;
+function getTooltip() { return document.getElementById('component-tooltip'); }
+
+function showTooltip(part, x, y) {
+    const tooltip = getTooltip();
+    if (!tooltip) return;
+    tooltip.querySelector('.tooltip-name').innerText = part.name;
+    tooltip.querySelector('.tooltip-desc').innerText = part.desc;
+    tooltip.querySelector('.tooltip-price').innerText = `💰 $${part.price.toLocaleString()}`;
+
+    const statsEl = tooltip.querySelector('.tooltip-stats');
+    statsEl.innerHTML = '';
+    const statNames = { speed: '⚡ Speed', accel: '🏎 Accel', eco: '🌿 Eco', flex: '😎 Flex', defense: '🛡 Defense' };
+    Object.entries(part.effect).forEach(([key, val]) => {
+        if (val === 0) return;
+        const row = document.createElement('div');
+        row.className = 'tooltip-stat-row';
+        const prefix = val > 0 ? '+' : '';
+        const cls = val > 0 ? 'positive' : val < 0 ? 'negative' : 'neutral';
+        const unit = key === 'speed' ? ' km/h' : key === 'accel' ? 's' : '';
+        row.innerHTML = `<span class="tooltip-stat-label">${statNames[key]}</span><span class="tooltip-stat-val ${cls}">${prefix}${val}${unit}</span>`;
+        statsEl.appendChild(row);
+    });
+
+    tooltip.classList.remove('hidden');
+    positionTooltip(x, y);
+}
+
+function positionTooltip(x, y) {
+    const tooltip = getTooltip();
+    if (!tooltip) return;
+    const tw = tooltip.offsetWidth || 250;
+    const th = tooltip.offsetHeight || 180;
+    let left = x + 14;
+    let top = y + 14;
+    if (left + tw > window.innerWidth - 10) left = x - tw - 14;
+    if (top + th > window.innerHeight - 10) top = y - th - 14;
+    tooltip.style.left = left + 'px';
+    tooltip.style.top = top + 'px';
+}
+
+function hideTooltip() {
+    const tooltip = getTooltip();
+    if (tooltip) tooltip.classList.add('hidden');
+    if (tooltipTimer) { clearTimeout(tooltipTimer); tooltipTimer = null; }
+}
+
+function attachPartTooltip(cardEl, part) {
+    cardEl.addEventListener('mousemove', (e) => {
+        const tt = getTooltip();
+        if (tt && !tt.classList.contains('hidden')) {
+            positionTooltip(e.clientX, e.clientY);
+        }
+    });
+    cardEl.addEventListener('mouseenter', (e) => {
+        if (tooltipTimer) clearTimeout(tooltipTimer);
+        tooltipTimer = setTimeout(() => {
+            showTooltip(part, e.clientX, e.clientY);
+        }, 1500);
+    });
+    cardEl.addEventListener('mouseleave', () => {
+        hideTooltip();
+    });
+    cardEl.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        showTooltip(part, e.clientX, e.clientY);
+    });
+}
+
+document.addEventListener('click', (e) => {
+    const tt = getTooltip();
+    if (tt && !tt.classList.contains('hidden')) {
+        hideTooltip();
+    }
+});
+
 // --- DOM ELEMENTS ---
 const screens = {
+    intro: document.getElementById('intro-screen'),
     dashboard: document.getElementById('dashboard-screen'),
     studio: document.getElementById('studio-screen'),
     negotiation: document.getElementById('terminal-negotiation-screen')
@@ -406,15 +611,26 @@ const terminalCliInput = document.getElementById('terminal-cli-input');
 
 // --- INITIALIZATION ---
 window.addEventListener('DOMContentLoaded', () => {
-    loadGameData();
-    setupGlobalEventListeners();
-    updateHUD();
-    renderDashboardSlots();
-    
-    // Core game loops
-    startMarketEventsTicker();
-    startSpecialOrderTriggers();
+    // Check for existing account
+    const saved = localStorage.getItem('car_lab_account');
+    if (saved) {
+        try {
+            accountData = JSON.parse(saved);
+            currentLang = accountData.lang || 'id';
+            startGame();
+        } catch(e) {
+            // Corrupt data, show intro
+            showIntroScreen();
+        }
+    } else {
+        showIntroScreen();
+    }
 });
+
+function showIntroScreen() {
+    document.getElementById('intro-screen').classList.add('active');
+    screens.dashboard.classList.remove('active');
+}
 
 // Save and Load logic (LocalStorage Persistence)
 function saveGameData() {
@@ -799,6 +1015,8 @@ function openStudioEditor(slotIdx) {
     // Swap screen
     screens.dashboard.classList.remove('active');
     screens.studio.classList.add('active');
+    // Reset car rotation when entering studio
+    resetCanvasRotation();
 }
 
 function loadChassis(type) {
@@ -853,6 +1071,9 @@ function renderPartsDrawer(category) {
             
             addPartToCanvas(part);
         });
+
+        // Attach tooltip on hover/right-click
+        attachPartTooltip(card, part);
         
         partsDrawer.appendChild(card);
     });
@@ -1844,6 +2065,7 @@ function setupGlobalEventListeners() {
     
     // Back to Dashboard from Studio
     document.getElementById('btn-back-to-dashboard').addEventListener('click', () => {
+        resetCanvasRotation();
         screens.studio.classList.remove('active');
         screens.dashboard.classList.add('active');
         renderDashboardSlots();
@@ -1966,4 +2188,67 @@ function setupGlobalEventListeners() {
     
     // Active initial load drawer
     renderPartsDrawer('wheels');
+
+    // Create account button
+    const btnCreateAcc = document.getElementById('btn-create-account');
+    if (btnCreateAcc) {
+        btnCreateAcc.addEventListener('click', createAccount);
+    }
+
+    // Enter key on account inputs
+    ['input-username', 'input-studioname'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.addEventListener('keydown', (e) => { if (e.key === 'Enter') createAccount(); });
+    });
+
+    // Rotation buttons
+    const rotYLeft = document.getElementById('rot-y-left');
+    const rotYRight = document.getElementById('rot-y-right');
+    const rotXUp = document.getElementById('rot-x-up');
+    const rotXDown = document.getElementById('rot-x-down');
+    const rotReset = document.getElementById('rot-reset');
+
+    if (rotYLeft) rotYLeft.addEventListener('click', () => { carRotY = (carRotY - ROT_STEP) % 720; applyCanvasRotation(); });
+    if (rotYRight) rotYRight.addEventListener('click', () => { carRotY = (carRotY + ROT_STEP) % 720; applyCanvasRotation(); });
+    if (rotXUp) rotXUp.addEventListener('click', () => { carRotX = (carRotX - ROT_STEP) % 720; applyCanvasRotation(); });
+    if (rotXDown) rotXDown.addEventListener('click', () => { carRotX = (carRotX + ROT_STEP) % 720; applyCanvasRotation(); });
+    if (rotReset) rotReset.addEventListener('click', resetCanvasRotation);
+
+    // Drag to rotate canvas
+    const rotWrapper = document.getElementById('canvas-rotation-wrapper');
+    if (rotWrapper) {
+        let isDragging = false;
+        let dragStartX = 0, dragStartY = 0;
+        let dragStartRotX = 0, dragStartRotY = 0;
+
+        rotWrapper.addEventListener('mousedown', (e) => {
+            // Only start drag if not clicking on a placed part
+            if (e.target.closest('.placed-part')) return;
+            isDragging = true;
+            dragStartX = e.clientX;
+            dragStartY = e.clientY;
+            dragStartRotX = carRotX;
+            dragStartRotY = carRotY;
+            rotWrapper.style.cursor = 'grabbing';
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+            const dx = e.clientX - dragStartX;
+            const dy = e.clientY - dragStartY;
+            carRotY = dragStartRotY + dx * 0.5;
+            carRotX = dragStartRotX - dy * 0.5;
+            // Clamp within 720 degrees
+            carRotY = Math.max(-720, Math.min(720, carRotY));
+            carRotX = Math.max(-720, Math.min(720, carRotX));
+            applyCanvasRotation();
+        });
+
+        document.addEventListener('mouseup', () => {
+            isDragging = false;
+            rotWrapper.style.cursor = 'grab';
+        });
+
+        rotWrapper.style.cursor = 'grab';
+    }
 }

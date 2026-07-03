@@ -15,13 +15,77 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <!-- Styling -->
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style.css?v=2">
 </head>
 <body>
+    <!-- ================= GLOBAL TOOLTIP ================= -->
+    <div id="component-tooltip" class="component-tooltip hidden">
+        <div class="tooltip-name"></div>
+        <div class="tooltip-desc"></div>
+        <div class="tooltip-price"></div>
+        <div class="tooltip-stats"></div>
+    </div>
+
     <div id="app">
-        
+
+        <!-- ================= INTRO / ACCOUNT SCREEN ================= -->
+        <section id="intro-screen" class="screen active">
+            <div class="intro-bg">
+                <div class="intro-grid"></div>
+                <div class="intro-glow-1"></div>
+                <div class="intro-glow-2"></div>
+            </div>
+            <div class="intro-container">
+                <!-- Step 1: Language -->
+                <div class="intro-step" id="intro-step-lang">
+                    <div class="intro-logo">
+                        <div class="intro-title" id="intro-glitch-title" data-text="THE NEXT CAR DESIGN">THE NEXT CAR DESIGN</div>
+                        <div class="intro-subtitle">Business Simulation Game · 2026</div>
+                    </div>
+                    <div class="intro-card">
+                        <h3 class="intro-card-title"><i class="fa-solid fa-globe"></i> Pilih Bahasa / Select Language</h3>
+                        <div class="lang-options">
+                            <button class="lang-btn" id="btn-lang-id" onclick="selectLanguage('id')">
+                                <span class="lang-flag">🇮🇩</span>
+                                <span class="lang-label">Bahasa Indonesia</span>
+                            </button>
+                            <button class="lang-btn" id="btn-lang-en" onclick="selectLanguage('en')">
+                                <span class="lang-flag">🇬🇧</span>
+                                <span class="lang-label">English</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 2: Create Account -->
+                <div class="intro-step hidden" id="intro-step-account">
+                    <div class="intro-logo">
+                        <div class="intro-title" data-text="THE NEXT CAR DESIGN">THE NEXT CAR DESIGN</div>
+                        <div class="intro-subtitle" id="intro-sub-account">Buat Akun Studio Anda</div>
+                    </div>
+                    <div class="intro-card">
+                        <h3 class="intro-card-title" id="intro-account-title"><i class="fa-solid fa-user-gear"></i> Daftarkan Bengkel Anda</h3>
+                        <div class="intro-form">
+                            <div class="intro-input-group">
+                                <label id="label-username">Nama Pengguna (Username)</label>
+                                <input type="text" id="input-username" placeholder="e.g. Mikail" maxlength="20">
+                            </div>
+                            <div class="intro-input-group">
+                                <label id="label-studioname">Nama Studio / Bengkel</label>
+                                <input type="text" id="input-studioname" placeholder="e.g. Bengkel Langit" maxlength="30">
+                            </div>
+                            <button class="btn btn-primary btn-block" id="btn-create-account">
+                                <i class="fa-solid fa-rocket"></i>
+                                <span id="btn-start-label">Mulai Bermain!</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
         <!-- ================= HUB/DASHBOARD SCREEN ================= -->
-        <section id="dashboard-screen" class="screen active">
+        <section id="dashboard-screen" class="screen">
             <!-- Glow FX -->
             <div class="glow-orb top-left"></div>
             <div class="glow-orb bottom-right"></div>
@@ -29,13 +93,16 @@
             <!-- Global Info Header -->
             <header class="hud-header">
                 <div class="hud-logo">
-                    <span class="logo-icon"><i class="fa-solid fa-gauge-high"></i></span>
-                    <span class="logo-text">CAR LAB <span class="accent-text">2026</span></span>
+                    <div class="hud-avatar" id="hud-avatar">M</div>
+                    <div class="hud-identity">
+                        <span class="logo-text">CAR LAB <span class="accent-text">2026</span></span>
+                        <span class="hud-studio-name" id="hud-studio-name">Studio</span>
+                    </div>
                 </div>
                 
                 <div class="hud-stats">
                     <div class="hud-stat-box wallet-box" id="hud-wallet-box">
-                        <span class="hud-label">MODAL KAS</span>
+                        <span class="hud-label" id="lbl-modal-kas">MODAL KAS</span>
                         <span class="hud-value text-green" id="hud-cash">$50,000</span>
                     </div>
                     
@@ -47,7 +114,7 @@
                     </div>
                     
                     <div class="hud-stat-box streak-box" id="hud-streak-box">
-                        <span class="hud-label">WIN STREAK</span>
+                        <span class="hud-label" id="lbl-win-streak">WIN STREAK</span>
                         <span class="hud-value text-orange" id="hud-streak">0 🔥</span>
                     </div>
                 </div>
@@ -294,18 +361,35 @@
                 <!-- Center: Canvas / Stage -->
                 <main class="canvas-container">
                     <div class="canvas-alert">
-                        <i class="fa-solid fa-info-circle"></i> Klik komponen untuk memilihnya. Seret untuk memindahkan. Gunakan panel kanan untuk transform.
+                        <i class="fa-solid fa-info-circle"></i> Klik komponen untuk memilihnya. Seret untuk memindahkan. Tahan kursor / klik kanan komponen untuk info.
+                    </div>
+
+                    <!-- Rotation Controls -->
+                    <div class="rotation-controls">
+                        <div class="rotation-group">
+                            <span class="rotation-label"><i class="fa-solid fa-arrows-left-right"></i> Horizontal</span>
+                            <button class="rot-btn" id="rot-y-left" title="Putar Kiri"><i class="fa-solid fa-rotate-left"></i></button>
+                            <button class="rot-btn" id="rot-y-right" title="Putar Kanan"><i class="fa-solid fa-rotate-right"></i></button>
+                        </div>
+                        <div class="rotation-group">
+                            <span class="rotation-label"><i class="fa-solid fa-arrows-up-down"></i> Vertikal</span>
+                            <button class="rot-btn" id="rot-x-up" title="Putar Atas"><i class="fa-solid fa-arrow-up"></i></button>
+                            <button class="rot-btn" id="rot-x-down" title="Putar Bawah"><i class="fa-solid fa-arrow-down"></i></button>
+                        </div>
+                        <button class="rot-btn rot-reset" id="rot-reset" title="Reset Rotasi"><i class="fa-solid fa-undo"></i> Reset</button>
                     </div>
                     
                     <div class="canvas-stage-wrapper">
-                        <div id="car-canvas-stage">
-                            <!-- Base Car and Added Parts Go Here -->
-                            <div id="car-chassis-wrapper">
-                                <!-- SVG Chassis loaded here dynamically -->
+                        <div id="canvas-rotation-wrapper">
+                            <div id="car-canvas-stage">
+                                <!-- Base Car and Added Parts Go Here -->
+                                <div id="car-chassis-wrapper">
+                                    <!-- SVG Chassis loaded here dynamically -->
+                                </div>
+                                
+                                <!-- Interactive overlay for parts -->
+                                <div id="parts-container"></div>
                             </div>
-                            
-                            <!-- Interactive overlay for parts -->
-                            <div id="parts-container"></div>
                         </div>
                         
                         <!-- Shadow/Reflection below the car -->
@@ -488,6 +572,6 @@
     </div>
     
     <!-- Application Logic -->
-    <script src="app.js?v=2"></script>
+    <script src="app.js?v=3"></script>
 </body>
 </html>
