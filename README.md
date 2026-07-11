@@ -1,12 +1,54 @@
-# THE NEXT CAR DESIGN — Updated Game Design Specification
+# 🚗 CAR LAB STUDIO: The Next Car Design
 
-Dokumen ini mencantumkan detail konsep game yang telah diperbarui dan disepakati, menggantikan sistem level linear dengan sistem Rank & Reputasi dinamis, katalog dealer mobil, krisis/tren pasar, pesanan khusus, dan daftar lengkap 7 AI Buyer.
+**CAR LAB STUDIO: The Next Car Design** adalah game simulasi bisnis otomotif retro-futuristik berbasis web di mana Anda berperan sebagai perancang mobil profesional sekaligus pemilik studio modifikasi. Rancang berbagai jenis kendaraan, pasang komponen realistik, dan lakukan negosiasi harga menggunakan perintah Command Prompt (CMD) retro untuk menjual mahakarya Anda kepada berbagai karakter AI Buyer yang unik.
+
+*   **URL Permainan**: [https://kansat946.github.io/The-Next-Car-Design/](https://kansat946.github.io/The-Next-Car-Design/)
+*   **Repository GitHub**: [https://github.com/kansat946/The-Next-Car-Design](https://github.com/kansat946/The-Next-Car-Design)
 
 ---
 
-## 🏆 1. Sistem Rank & Bintang (Mobile Legends Style)
+## 🌟 Fitur Utama & Pembaruan Terbaru
 
-Sistem progresi pemain diukur melalui tingkatan **Rank**. Setiap tier membutuhkan **10 Bintang** untuk naik ke tier berikutnya.
+### 1. 🌐 Sistem Bahasa & Akun Lokal (Autosave)
+*   **Bahasa Ganda**: Pilihan bahasa penuh antara **Bahasa Indonesia (🇮🇩)** dan **Bahasa Inggris (🇬🇧)** saat memulai game.
+*   **Profil Studio**: Daftarkan nama pengguna (*Username* default: `kansat946`) dan nama studio Anda untuk memulai petualangan otomotif.
+*   **Autosave**: Progres kas, reputasi, slot rancangan, dan data studio secara otomatis tersimpan di `localStorage` agar tidak hilang ketika tab ditutup atau direfresh.
+
+### 2. 🔄 Rotasi Studio Perspektif 720°
+*   Rancang mobil secara interaktif di studio visual dengan dukungan **rotasi horizontal & vertikal hingga 720 derajat** menggunakan tombol kontrol arah atau drag mouse langsung pada canvas.
+*   Tombol reset sekali-klik untuk mengembalikan rotasi mobil ke tampilan samping standar.
+
+### 3. ℹ️ Tooltip Deskripsi Komponen Dinamis
+*   Tahan kursor (*hover*) selama 1.5 detik atau lakukan **klik kanan** pada kartu komponen di menu bawah untuk memunculkan tooltip detail spesifikasi.
+*   Menampilkan nama, harga, deskripsi komponen, serta indikator perubahan stat dinamis (warna hijau untuk efek positif, warna merah untuk efek negatif).
+
+### 4. 🛢️ 9 Tipe Mesin Baru (Total 16 Komponen Mesin)
+Kini studio mendukung pilihan mesin bervariasi dari dunia nyata:
+*   *Mesin Diesel Turbo Inline-6* (untuk torsi truk/SUV tangguh)
+*   *Mesin W16 Quad-Turbo* (kekuatan hypercar murni)
+*   *Mesin Formula E Electric* (efisiensi dan akselerasi instan)
+*   *Mesin Hidrogen Fuel-Cell* (bebas emisi ramah lingkungan)
+*   *Mesin V10 Performance*, *V8 Diesel*, *Mesin 2-Tak Ringan*, hingga *Mesin Uap Antik*.
+
+### 5. 🚘 4 Kategori Mobil Baru (+16 Varian Unik)
+Katalog dealer kini mencakup total 20 tipe mobil dengan varian (*Cheapest, Best Seller, Most Expensive, Classic*):
+*   **EV Niaga / EV Pickup** (mobil listrik niaga logistik)
+*   **Pickup Bensin Premium** (tangguh, fleksibel, bermesin bensin konvensional)
+*   **Kolektor Langka / Rare Classic** (nilai investasi dan flex yang sangat tinggi)
+*   **Supercar EV** (hypercar listrik bertenaga buas)
+
+### 6. ⏸️ Opsi Pause Game (AFK Friendly)
+*   Menambahkan tombol **`PAUSE / RESUME`** di status `GAME SPEED` pada HUD header.
+*   Saat di-pause, hitungan mundur pesanan khusus (*Special Orders*) dan acakan kondisi pasar (*Market Events*) akan dihentikan secara penuh. Reputasi Anda aman dari pengurangan bintang saat tidak online atau sedang tidak memegang kendali game.
+
+### 7. 📊 Persentase Reputasi di Dashboard
+*   Tampilan rank kini dilengkapi indikator **persentase reputasi** yang presisi di samping deretan bintang HUD (misal: `80%`), dihitung secara dinamis berdasarkan tier Anda saat ini atau tantangan *Placement Challenge*.
+
+---
+
+## 🏆 Sistem Rank & Progresi (Mobile Legends Style)
+
+Sistem reputasi studio diukur melalui tingkatan **Rank**. Setiap tier reguler membutuhkan **10 Bintang** untuk naik kelas.
 
 ### Tingkatan Tier Rank:
 1.  **Chassis Scrub** (Warrior)
@@ -17,128 +59,40 @@ Sistem progresi pemain diukur melalui tingkatan **Rank**. Setiap tier membutuhka
 6.  **Automotive Legend** (Legend/Mythic)
 7.  **Mythic Immortal** (Rank Abadi / Tertinggi)
 
-### Mekanisme Bintang:
-*   **Transaksi Normal (Sukses/Gagal)**:
-    *   **Sukses Deal (Menjual dengan profit > 0)**: +1 Bintang.
-    *   **Gagal Deal (Buyer Walkout atau Jual Rugi)**: -1 Bintang.
-*   **Streak System**:
-    *   **Win Streak**: Berhasil melakukan penjualan sukses beruntun (3 kali berturut-turut) memberikan bonus **+3 Bintang**.
-    *   **Lose Streak**: Mengalami kegagalan penjualan beruntun (2 kali berturut-turut) memotong **-2 Bintang**.
-*   **Reroll / Lewati Buyer (`/lewati`)**: Bersifat **GRATIS** dan tidak mempengaruhi jumlah bintang atau merusak win streak (karena transaksi ditolak sebelum resmi dimulai).
-
-### 🌌 Tantangan Mythic Placement (Penempatan) menuju Mythic Immortal:
-Setelah mencapai **Automotive Legend** dengan 10 Bintang, untuk masuk ke rank abadi **Mythic Immortal**, pemain harus melewati tantangan khusus:
-*   Pemain masuk ke fase *Placement*.
-*   **Misi**: Harus berhasil menjual mobil kepada **semua 7 jenis AI Buyer secara berturut-turut** tanpa kegagalan sekalipun.
-*   Jika salah satu buyer menolak/walkout di tengah jalan, tantangan gagal dan harus diulang dari awal fase penempatan.
-*   Jika berhasil, pemain mencapai **Mythic Immortal** yang bersifat abadi (tidak bisa turun rank lagi).
+### 🌌 Tantangan Mythic Placement:
+Setelah mencapai **Automotive Legend** dengan 10 Bintang, Anda harus melewati tantangan penempatan menuju **Mythic Immortal**:
+*   Harus berhasil menjual rancangan mobil kepada **semua 7 jenis AI Buyer secara berturut-turut** tanpa kegagalan (tanpa buyer walkout atau jual rugi).
+*   Jika gagal di tengah jalan, tantangan direset kembali dari 0/7.
 
 ---
 
-## 🚗 2. Katalog Dealer Mobil & Workspace
+## 👤 Profil AI Buyer & Preferensi
 
-*   **Katalog Mobil**: Berisi **80 mobil** (20 tipe × 4 varian: *Paling Murah, Paling Laris, Paling Mahal, Klasik*).
-*   **Harga Mobil**: Semua sasis dasar di katalog berstatus **100% GRATIS**.
-*   **Workspace**:
-    *   Tersedia **3 Slot Workspace**. Pemain bisa merakit hingga 3 mobil berbeda secara paralel.
-    *   Komponen modifikasi dibeli menggunakan uang pemain ($300 s/d $10,000).
-    *   Jika pemain mengganti sasis dasar di tengah jalan pada slot aktif, seluruh komponen yang sudah dibeli pada slot tersebut akan **hangus** (uang hilang).
+Setiap kali Anda menekan tombol "Luncurkan" untuk menjual mobil, sistem akan mengundi satu dari 7 AI Buyer dengan tingkat kesabaran (*Patience*) dan ketertarikan (*Likes & Hates*) yang bervariasi:
 
----
-
-## 👤 3. Karakter 7 AI Buyer (Sistem Roll Dinamis)
-
-Setiap meluncurkan mobil, salah satu dari **7 AI Buyer** ini akan terpilih secara acak dengan tingkat kesulitan (*Patience/Kesabaran*) dan profil ketertarikan (*Likes & Hates*) yang dinamis:
-
-1.  **🤠 Bos Tambang (Hard)**
-    *   *Deskripsi*: Keras, pragmatis, hanya peduli dengan ketahanan dan fungsi kerja nyata.
-    *   *Likes*: Ban monster/rantai tank, sasis 4x4/pickup, bumper penabrak, ground clearance tinggi.
-    *   *Hates*: Cat pink/chrome, sayap malaikat, roket pendorong, aksesoris estetika percuma.
-2.  **👔 Eksekutif Korporat (Medium)**
-    *   *Deskripsi*: Kaku, elitis, mengedepankan prestise, kenyamanan, dan penampilan profesional.
-    *   *Likes*: Sedan mewah, interior premium, warna hitam/putih, teknologi laser/solar panel.
-    *   *Hates*: Roda kotak, modifikasi konyol/norak, sirine polisi, cat mencolok.
-3.  **🎮 Sultan Millennial (Easy)**
-    *   *Deskripsi*: Impulsif, suka viralitas, aktif di media sosial, dan menyukai keunikan ekstrim.
-    *   *Likes*: Desain eksentrik, cat neon/chrome, roket pendorong, roda pizza/kotak, sirine polisi.
-    *   *Hates*: Warna netral (hitam/abu-abu), desain orisinal membosankan.
-4.  **👴 Kolektor Tua (Hard)**
-    *   *Deskripsi*: Sangat teliti, menghargai orisinalitas, sejarah otomotif, dan pengerjaan vintage.
-    *   *Likes*: Mobil klasik, komponen retro (cerobong asap klasik, setir eksternal), orisinalitas tinggi.
-    *   *Hates*: Komponen futuristik (laser), modifikasi berlebihan yang merusak sasis asli.
-5.  **🤡 Sirkus Manager (Easy)**
-    *   *Deskripsi*: Penuh kejutan, tidak logis, semakin aneh rancangan mobilnya, semakin dia menyukainya.
-    *   *Likes*: Roda kotak, roda pizza, baling-baling helikopter, sayap malaikat, kombinasi warna tabrakan.
-    *   *Hates*: Mobil keluarga standar yang membosankan.
-6.  **👩 Ibu Komplek / Sosialita (Medium)**
-    *   *Deskripsi*: Peduli keselamatan keluarga, kepraktisan harian, keramahan lingkungan, dan ruang bagasi.
-    *   *Likes*: Hatchback/MPV, solar panel (ramah lingkungan), rem/bumper aman, warna putih/silver.
-    *   *Hates*: Knalpot roket berisik, meriam laser, sasis ceper, modifikasi tidak aman untuk anak.
-7.  **🏁 Pembalap Liar / Anak Senja (Medium)**
-    *   *Deskripsi*: Terobsesi dengan kecepatan murni, performa drift, gaya jalanan, dan estetika balap liar.
-    *   *Likes*: Coupe/Sports car, spoiler serat karbon, roket pendorong, knalpot bertenaga, sasis ceper.
-    *   *Hates*: Armor berat, roda sirkus (kotak/pizza), mobil lambat (MPV/Kei car).
+1.  **🤠 Bos Tambang (Hard)**: Suka ban besar, 4x4, winch, bumper kokoh. Benci warna pink/chrome, sayap, aksesoris estetika norak.
+2.  **👔 Eksekutif Korporat (Medium)**: Suka sedan mewah, interior premium, warna netral (hitam/putih). Benci roda kotak, sirine, modifikasi jalanan konyol.
+3.  **🎮 Sultan Millennial (Easy)**: Suka neon underglow, cat chrome, pendorong roket, roda aneh, sirine. Benci desain standar membosankan.
+4.  **👴 Kolektor Tua (Hard)**: Suka sasis klasik, part orisinal/retro. Benci komponen futuristik (laser) dan modifikasi perusak bodi klasik.
+5.  **🤡 Sirkus Manager (Easy)**: Suka roda kotak/pizza, sayap malaikat, baling-baling, kombinasi warna tabrakan. Benci mobil komuter polos.
+6.  **👩 Ibu Komplek (Medium)**: Suka hatchback, MPV, solar panel (eco-friendly), rem/bumper aman. Benci knalpot bising, laser, ceper ekstrem.
+7.  **🏁 Pembalap Liar (Medium)**: Suka sports coupe, spoiler serat karbon, nitrous/roket, knalpot bertenaga, sasis ceper. Benci sasis lambat, roda sircus, berat berlebih.
 
 ---
 
-## ✉️ 4. Pesanan Khusus (Special Order)
+## 💻 Panduan Perintah Terminal CMD Negosiasi
 
-Sesekali, order khusus akan masuk ke terminal pemain sebagai misi sampingan:
-*   **Kriteria Order**: Pembeli meminta spesifikasi khusus (contoh: *"Butuh SUV dengan Kekuatan Tabrakan > 80 dan warna hijau"*).
-*   **Batasan Waktu**: Ada timer hitung mundur (misal 5 menit) untuk menyelesaikan dan mengirim desain.
-*   **Konsekuensi**:
-    *   **Sukses**: Hadiah uang tunai melimpah dan bonus reputasi.
-    *   **Gagal / Waktu Habis**: **TIDAK akan menurunkan rank** (aman dari pengurangan bintang).
+Saat berhadapan dengan pembeli di layar negosiasi, Anda dapat mengetikkan perintah di kolom input prompt CMD:
 
----
-
-## 📈 5. Sistem Event Pasar (Dinamis)
-
-Event pasar akan muncul secara acak melalui pengumuman berita di layar/terminal:
-1.  **Tren Pasar (Market Trend)**:
-    *   Jenis mobil tertentu (misal: *EV* atau *Drift*) mengalami lonjakan minat.
-    *   Harga jual akhir otomatis naik **+20%**.
-2.  **Krisis Pasar (Market Crash)**:
-    *   Jenis mobil tertentu mengalami penurunan minat.
-    *   Harga jual akhir turun secara acak.
+*   `/terima` — Menyetujui harga penawaran saat ini dari Buyer dan menyelesaikan transaksi.
+*   `/tawar [jumlah]` — Mengajukan penawaran harga tandingan (contoh: `/tawar 68000`).
+*   `/rayu` — Mencoba membujuk pembeli berdasarkan kesesuaian komponen terpasang untuk menaikkan minat mereka.
+*   `/lewati` — Membatalkan negosiasi secara damai dan mencari pembeli lain (GRATIS, tidak merusak win streak).
 
 ---
 
-## 💸 6. Aturan Kebangkrutan & Autosave
+## 🛠️ Arsitektur Teknologi
 
-*   **Kebangkrutan (Bankruptcy)**:
-    *   Jika uang pemain berkurang hingga di bawah **$5,000** dan tidak ada mobil yang bernilai jual di workspace, pemain dinyatakan bangkrut.
-    *   Pemain mendapat bantuan dana talangan darurat sebesar **$50,000** tetapi dikenakan sanksi **kehilangan 2 bintang**.
-*   **Penyimpanan Otomatis (Autosave)**:
-    *   Setiap kali transaksi sukses, kegagalan, upgrade rank, atau pembelian komponen, game akan otomatis menyimpan status pemain (Uang, Rank, Bintang, Win Streak, isi Workspace) ke `localStorage` agar tidak hilang ketika browser direfresh.
-
----
-
-## 💻 7. Tampilan Negosiasi CMD Terminal (Bahasa Indonesia)
-
-Layar negosiasi berupa antarmuka teks ala command prompt retro hitam-hijau dengan log berbahasa Indonesia.
-
-### Contoh Alur Terminal:
-```bash
-> MENGHUBUNGKAN KE DATABASE BUYER... BERHASIL!
-> MENCARI BUYER COCOK... BERHASIL MEMILIH BUYER!
-
-============================================================
-[INFO BUYER]
-Nama        : Bos Tambang (Atribut: Keras Kepala)
-Kesabaran   : [■■■□□] (Sedang)
-Suka        : [Ban Besar, 4x4, Bumper Duri]
-Benci       : [Cat Pink, Sayap Malaikat]
-============================================================
-PENAWARAN AWAL BUYER: $55,000
-============================================================
-
-Ketik perintah Anda atau pilih tombol di bawah:
-> /terima            (Menyetujui harga $55,000)
-> /tawar [harga]     (Melakukan counter-offer, misal: /tawar 70000)
-> /rayu              (Membujuk buyer menggunakan argumen komponen)
-> /lewati            (Menolak buyer saat ini dan cari buyer lain - GRATIS)
-
-Input Command: > 
-```
-
+Game ini dibangun secara mandiri tanpa library eksternal berat untuk menjaga keringanan akses:
+*   **HTML5 & CSS3**: Menggunakan styling neon glassmorphism modern, animasi glitch, grid layout responsif.
+*   **Vanilla JavaScript (ES6)**: Seluruh state logic game (autosave, modal, event listeners, algoritma negosiasi, dan visual positioning sasis) diproses menggunakan pure JavaScript tanpa framework tambahan.
