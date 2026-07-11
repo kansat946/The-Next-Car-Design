@@ -16,6 +16,10 @@
     
     <!-- Styling -->
     <link rel="stylesheet" href="style.css?v=3">
+    
+    <!-- Three.js & OrbitControls -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 </head>
 <body>
     <!-- ================= GLOBAL TOOLTIP ================= -->
@@ -361,6 +365,10 @@
                             <i class="fa-solid fa-cubes"></i>
                             <span>Aksesoris</span>
                         </button>
+                        <button class="tab-btn" data-tab="stickers">
+                            <i class="fa-solid fa-note-sticky"></i>
+                            <span>Stiker</span>
+                        </button>
                     </div>
                     
                     <div class="parts-drawer">
@@ -505,15 +513,13 @@
                     </div>
                     
                     <!-- Selected Component Transform Controller -->
-                    <div id="transform-panel" class="transform-panel hidden">
-                        <h4>Edit Item Terpilih:</h4>
-                        <div class="transform-controls">
-                            <button id="transform-flip" class="btn btn-secondary btn-xs"><i class="fa-solid fa-arrows-left-right"></i> Balik</button>
-                            <button id="transform-scale-up" class="btn btn-secondary btn-xs"><i class="fa-solid fa-maximize"></i> +</button>
-                            <button id="transform-scale-down" class="btn btn-secondary btn-xs"><i class="fa-solid fa-minimize"></i> -</button>
-                            <button id="transform-rotate-left" class="btn btn-secondary btn-xs"><i class="fa-solid fa-rotate-left"></i> ↺</button>
-                            <button id="transform-rotate-right" class="btn btn-secondary btn-xs"><i class="fa-solid fa-rotate-right"></i> ↻</button>
-                            <button id="transform-delete" class="btn btn-danger btn-xs"><i class="fa-solid fa-trash"></i> Hapus</button>
+                    <div id="transform-panel" class="transform-panel" style="margin-top: 15px;">
+                        <h4>KOMPONEN TERPASANG:</h4>
+                        <div id="installed-parts-list" style="max-height: 120px; overflow-y: auto; background: rgba(0,0,0,0.3); border-radius: 4px; padding: 5px; margin-bottom: 8px; font-size: 0.7rem; color: var(--text-secondary);">
+                            <!-- List item terpasang digenerate di JS -->
+                        </div>
+                        <div class="transform-controls" id="transform-controls-wrap" style="display: none;">
+                            <button id="transform-delete" class="btn btn-danger btn-xs" style="width: 100%;"><i class="fa-solid fa-trash"></i> Jual / Hapus Komponen</button>
                         </div>
                     </div>
                 </aside>

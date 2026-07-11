@@ -80,7 +80,17 @@ const VEHICLE_CATEGORIES = [
     { id: "ev_niaga", name: "EV Niaga / EV Pickup", base: "pickup" },
     { id: "pickup_bensin", name: "Pickup Bensin Premium", base: "pickup" },
     { id: "kolektor_langka", name: "Mobil Kolektor Langka", base: "sports" },
-    { id: "supercar_ev", name: "Supercar Listrik (EV)", base: "sports" }
+    { id: "supercar_ev", name: "Supercar Listrik (EV)", base: "sports" },
+    
+    // New Legendary Brands
+    { id: "mercedes", name: "Mercedes-Benz Spec", base: "sports" },
+    { id: "bmw", name: "BMW Motorsport", base: "sports" },
+    { id: "subaru", name: "Subaru Performance", base: "sports" },
+    { id: "toyota", name: "Toyota Legend", base: "sports" },
+    { id: "honda", name: "Honda Type R", base: "sports" },
+    { id: "lamborghini", name: "Lamborghini Bull", base: "sports" },
+    { id: "ferrari", name: "Ferrari Maranello", base: "sports" },
+    { id: "porsche", name: "Porsche Stuttgart", base: "sports" }
 ];
 
 const VARIANT_METADATA = {
@@ -90,7 +100,7 @@ const VARIANT_METADATA = {
     Classic: { label: "Paling Lama (Klasik)", suffix: "Classic", priceMult: 1.4, statMult: 0.9, colorClass: "tag-purple" }
 };
 
-// Generates 80 Cars Catalog
+// Generates 112 Cars Catalog
 const CARS_CATALOG = [];
 VEHICLE_CATEGORIES.forEach(cat => {
     // Basic names for generator
@@ -118,7 +128,17 @@ VEHICLE_CATEGORIES.forEach(cat => {
         ev_niaga: ["BYD T3", "Rivian R1T", "Tesla Cybertruck", "El Camino Electric (Konsep)"],
         pickup_bensin: ["Ford Maverick", "Toyota Tacoma TRD", "Ram 1500 Rebel", "Chevrolet El Camino (1970)"],
         kolektor_langka: ["Ferrari 250 GTO", "Aston Martin DB5", "Bugatti Type 57", "Mercedes 300SL (1954)"],
-        supercar_ev: ["Lucid Air Sapphire", "Tesla Model S Plaid", "Pininfarina Battista", "Rimac Nevera R"]
+        supercar_ev: ["Lucid Air Sapphire", "Tesla Model S Plaid", "Pininfarina Battista", "Rimac Nevera R"],
+        
+        // Brand lists
+        mercedes: ["Mercedes 190E Evo II", "Mercedes C63 AMG Black", "Mercedes AMG GT Black", "Mercedes 300SL Gullwing (1954)"],
+        bmw: ["BMW 2002 Turbo (1973)", "BMW M3 E30 (1986)", "BMW M5 CS (F90)", "BMW i8 Roadster (Hybrid)"],
+        subaru: ["Subaru SVX (1992)", "Subaru Forester STI", "Subaru BRZ tS", "Subaru Impreza WRX STI 22B"],
+        toyota: ["Toyota 2000GT (1967)", "Toyota GR Yaris", "Toyota Supra MK4 (JZA80)", "Toyota AE86 Trueno Apex"],
+        honda: ["Honda Civic Type R EK9", "Honda Integra Type R DC2", "Honda S2000 Ultimate", "Honda NSX Type R (NA2)"],
+        lamborghini: ["Lambo Miura SV (1971)", "Lambo Countach LP5000", "Lambo Revuelto (Hybrid)", "Lambo Aventador SVJ"],
+        ferrari: ["Ferrari Dino 246 GT", "Ferrari 458 Italia", "Ferrari LaFerrari", "Ferrari F40 (1987)"],
+        porsche: ["Porsche 911 Carrera RS", "Porsche 911 Turbo 930", "Porsche 918 Spyder", "Porsche Carrera GT (2004)"]
     };
 
     const baseChassisPrice = {
@@ -218,6 +238,13 @@ const PARTS_LIBRARY = {
     extras: [
         { id: "extra-android", name: "Maskot Dashboard Toy", price: 150, effect: { speed: -2, accel: 0, eco: 10, flex: 20, defense: 5 }, desc: "Meningkatkan status pintar sasis mobil.", svg: `<svg viewBox="0 0 60 70" width="60" height="70"><rect x="10" y="25" width="40" height="30" rx="5" fill="#a4c639"/><path d="M10,22 Q30,8 50,22 Z" fill="#a4c639"/><circle cx="22" cy="16" r="3" fill="#fff"/><circle cx="38" cy="16" r="3" fill="#fff"/><line x1="20" y1="10" x2="15" y2="4" stroke="#a4c639" stroke-width="3"/><line x1="40" y1="10" x2="45" y2="4" stroke="#a4c639" stroke-width="3"/></svg>` },
         { id: "tabung-nos", name: "Tabung Nitro NOS Boost", price: 8500, effect: { speed: 120, accel: -2.5, eco: -25, flex: 40, defense: 0 }, desc: "Menyemburkan oksigen murni untuk akselerasi luar biasa.", svg: `<svg viewBox="0 0 80 40" width="80" height="40"><rect x="15" y="10" width="50" height="20" rx="5" fill="#0066ff" stroke="#003399" stroke-width="2"/><rect x="65" y="14" width="8" height="12" fill="#888"/><circle cx="73" cy="20" r="4" fill="#333"/></svg>` }
+    ],
+    stickers: [
+        { id: "sticker-racing-stripes", name: "Racing Stripes", price: 1200, effect: { speed: 5, accel: -0.1, eco: -1, flex: 15, defense: 0 }, desc: "Garis balap ganda sporty yang menambah aura kecepatan.", svg: `<svg viewBox="0 0 100 60" width="100" height="60"><rect x="15" y="10" width="70" height="40" fill="#222" rx="4"/><rect x="35" y="10" width="10" height="40" fill="#fff"/><rect x="55" y="10" width="10" height="40" fill="#fff"/></svg>` },
+        { id: "sticker-flame", name: "Flame Decal", price: 1500, effect: { speed: 8, accel: -0.2, eco: -2, flex: 25, defense: 0 }, desc: "Stiker kobaran api samping yang garang dan panas.", svg: `<svg viewBox="0 0 100 60" width="100" height="60"><rect x="15" y="10" width="70" height="40" fill="#111" rx="4"/><path d="M20,30 Q35,15 45,30 T75,30" fill="none" stroke="#ff3300" stroke-width="4"/><path d="M25,35 Q40,25 50,35 T80,35" fill="none" stroke="#ffaa00" stroke-width="3"/></svg>` },
+        { id: "sticker-carbon-hood", name: "Carbon Hood Wrap", price: 2500, effect: { speed: 12, accel: -0.3, eco: -1, flex: 30, defense: 2 }, desc: "Melapisi kap mesin depan dengan serat karbon hitam bertekstur.", svg: `<svg viewBox="0 0 100 60" width="100" height="60"><rect x="15" y="10" width="70" height="40" fill="#333" rx="4" stroke="#fff" stroke-width="1"/><rect x="25" y="18" width="50" height="24" fill="#111" stroke-dasharray="2,2" stroke="#444"/></svg>` },
+        { id: "sticker-sakura", name: "Sakura Blossom Decal", price: 1000, effect: { speed: 0, accel: 0, eco: 5, flex: 20, defense: 0 }, desc: "Stiker kelopak bunga sakura merah muda bergaya JDM klasik.", svg: `<svg viewBox="0 0 100 60" width="100" height="60"><rect x="15" y="10" width="70" height="40" fill="#2d152a" rx="4"/><circle cx="35" cy="25" r="4" fill="#ffb7c5"/><circle cx="45" cy="35" r="5" fill="#ffb7c5"/><circle cx="65" cy="25" r="4" fill="#ffb7c5"/></svg>` },
+        { id: "sticker-sponsor", name: "Sponsor Decals JDM", price: 800, effect: { speed: 3, accel: -0.1, eco: -1, flex: 18, defense: 0 }, desc: "Stiker sponsor otomotif profesional di pintu samping bawah.", svg: `<svg viewBox="0 0 100 60" width="100" height="60"><rect x="15" y="10" width="70" height="40" fill="#222" rx="4"/><text x="50" y="30" fill="#fff" font-size="7" font-weight="bold" font-family="sans-serif" text-anchor="middle">SPONSOR</text><text x="50" y="42" fill="#00ffcc" font-size="5" font-family="sans-serif" text-anchor="middle">TUNING RACING</text></svg>` }
     ]
 };
 
@@ -453,15 +480,744 @@ function startGame() {
     }
 }
 
+// --- THREE.JS 3D REALISTIC SYSTEM ---
+let studio3D = {
+    renderer: null,
+    scene: null,
+    camera: null,
+    controls: null,
+    carGroup: null,
+    wheels: [],
+    smokeSystem: null,
+    smokeParticles: [],
+    animationId: null,
+    clock: new THREE.Clock()
+};
+
+let showroom3D = {
+    renderer: null,
+    scene: null,
+    camera: null,
+    controls: null,
+    carGroup: null,
+    wheels: [],
+    smokeSystem: null,
+    smokeParticles: [],
+    animationId: null,
+    clock: new THREE.Clock()
+};
+
+// Procedural Highly-Realistic 3D Car Model Builder
+function create3DCarGroup(chassisType, colorHex, parts, wheelsArrayRef, smokeParticlesArrayRef, smokeGroup) {
+    const group = new THREE.Group();
+    
+    // Clear array references
+    if (wheelsArrayRef) wheelsArrayRef.length = 0;
+    if (smokeParticlesArrayRef) smokeParticlesArrayRef.length = 0;
+
+    // Premium Realistic Car Paint Material (MeshPhysicalMaterial)
+    const bodyMaterial = new THREE.MeshPhysicalMaterial({
+        color: new THREE.Color(colorHex),
+        metalness: 0.9,
+        roughness: 0.08,
+        clearcoat: 1.0,
+        clearcoatRoughness: 0.05,
+        reflectivity: 1.0
+    });
+
+    // Dark Tinted Realistic Glass Material
+    const glassMaterial = new THREE.MeshPhysicalMaterial({
+        color: 0x0a0a0d,
+        metalness: 0.9,
+        roughness: 0.05,
+        transmission: 0.4,
+        transparent: true,
+        opacity: 0.85
+    });
+
+    // Realistic Rubber Tire Material
+    const tireMaterial = new THREE.MeshStandardMaterial({
+        color: 0x161616,
+        roughness: 0.9
+    });
+    
+    // Shiny Alloy/Chrome Rim Material
+    const rimMaterial = new THREE.MeshStandardMaterial({
+        color: 0xefefef,
+        metalness: 1.0,
+        roughness: 0.12
+    });
+
+    // Brake Caliper Red Material
+    const caliperMaterial = new THREE.MeshStandardMaterial({
+        color: 0xd91a1a,
+        metalness: 0.8,
+        roughness: 0.2
+    });
+
+    // Carbon Fiber / Trim Material
+    const carbonMaterial = new THREE.MeshStandardMaterial({
+        color: 0x1a1a1a,
+        roughness: 0.7,
+        metalness: 0.2
+    });
+
+    // Chrome Trim
+    const chromeMaterial = new THREE.MeshStandardMaterial({
+        color: 0xffffff,
+        metalness: 1.0,
+        roughness: 0.05
+    });
+
+    let isLowered = parts.some(p => p.templateId === "suspension-ceper");
+    let yOffset = isLowered ? -0.16 : 0.0;
+
+    // 1. CAR BODY SHAPES (Procedural Detailed)
+    let bodyLower, cabin;
+    
+    // Decal sticker checks
+    const hasCarbonHood = parts.some(p => p.templateId === "sticker-carbon-hood");
+    const hasRacingStripes = parts.some(p => p.templateId === "sticker-racing-stripes");
+    const hasFlameDecal = parts.some(p => p.templateId === "sticker-flame");
+    const hasSakuraDecal = parts.some(p => p.templateId === "sticker-sakura");
+    const hasSponsorDecals = parts.some(p => p.templateId === "sticker-sponsor");
+
+    const activeBodyMat = bodyMaterial;
+
+    if (chassisType === 'sedan') {
+        // Lower bodi
+        bodyLower = new THREE.Mesh(new THREE.BoxGeometry(4.3, 0.5, 1.8), activeBodyMat);
+        bodyLower.position.set(0, 0.4 + yOffset, 0);
+        group.add(bodyLower);
+
+        // Kabin
+        cabin = new THREE.Mesh(new THREE.BoxGeometry(2.1, 0.55, 1.55), glassMaterial);
+        cabin.position.set(-0.25, 0.9 + yOffset, 0);
+        group.add(cabin);
+
+        // Pillar bodi tipis di kabin untuk realisme
+        const pillarFront = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.55, 1.57), carbonMaterial);
+        pillarFront.position.set(0.75, 0.9 + yOffset, 0);
+        const pillarRear = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.55, 1.57), carbonMaterial);
+        pillarRear.position.set(-1.25, 0.9 + yOffset, 0);
+        group.add(pillarFront, pillarRear);
+    } else if (chassisType === 'suv') {
+        bodyLower = new THREE.Mesh(new THREE.BoxGeometry(4.0, 0.75, 1.85), activeBodyMat);
+        bodyLower.position.set(0, 0.55 + yOffset, 0);
+        group.add(bodyLower);
+
+        cabin = new THREE.Mesh(new THREE.BoxGeometry(2.7, 0.7, 1.65), glassMaterial);
+        cabin.position.set(-0.1, 1.25 + yOffset, 0);
+        group.add(cabin);
+
+        // SUV Pillars
+        const pillarB = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.7, 1.67), carbonMaterial);
+        pillarB.position.set(-0.1, 1.25 + yOffset, 0);
+        group.add(pillarB);
+    } else if (chassisType === 'hatchback') {
+        bodyLower = new THREE.Mesh(new THREE.BoxGeometry(3.7, 0.6, 1.75), activeBodyMat);
+        bodyLower.position.set(0, 0.45 + yOffset, 0);
+        group.add(bodyLower);
+
+        cabin = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.6, 1.55), glassMaterial);
+        cabin.position.set(-0.2, 1.05 + yOffset, 0);
+        group.add(cabin);
+    } else if (chassisType === 'sports') {
+        bodyLower = new THREE.Mesh(new THREE.BoxGeometry(4.5, 0.38, 1.95), activeBodyMat);
+        bodyLower.position.set(0, 0.3 + yOffset, 0);
+        group.add(bodyLower);
+
+        cabin = new THREE.Mesh(new THREE.BoxGeometry(1.85, 0.48, 1.6), glassMaterial);
+        cabin.position.set(-0.2, 0.7 + yOffset, 0);
+        group.add(cabin);
+    } else if (chassisType === 'pickup') {
+        bodyLower = new THREE.Mesh(new THREE.BoxGeometry(4.5, 0.6, 1.8), activeBodyMat);
+        bodyLower.position.set(0, 0.45 + yOffset, 0);
+        group.add(bodyLower);
+
+        cabin = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.7, 1.6), glassMaterial);
+        cabin.position.set(0.4, 1.1 + yOffset, 0);
+        group.add(cabin);
+
+        // Bak belakang pickup
+        const bedL = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.5, 0.08), activeBodyMat);
+        bedL.position.set(-1.1, 0.7 + yOffset, 0.86);
+        const bedR = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.5, 0.08), activeBodyMat);
+        bedR.position.set(-1.1, 0.7 + yOffset, -0.86);
+        const bedBack = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.5, 1.8), activeBodyMat);
+        bedBack.position.set(-2.2, 0.7 + yOffset, 0);
+        group.add(bedL, bedR, bedBack);
+    } else {
+        bodyLower = new THREE.Mesh(new THREE.BoxGeometry(4.1, 0.5, 1.8), activeBodyMat);
+        bodyLower.position.set(0, 0.4 + yOffset, 0);
+        group.add(bodyLower);
+    }
+
+    // 2. STICKER DECALS (3D Mesh Layering)
+    if (hasCarbonHood && bodyLower) {
+        // Kap depan hitam bermaterial karbon
+        const hoodCarbon = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.02, 1.5), carbonMaterial);
+        hoodCarbon.position.set(1.4, 0.66 + yOffset, 0);
+        group.add(hoodCarbon);
+    }
+    if (hasRacingStripes) {
+        // Dua garis balap putih di kap mesin & atap
+        const stripe1 = new THREE.Mesh(new THREE.BoxGeometry(4.2, 0.015, 0.12), new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.1 }));
+        stripe1.position.set(0, 0.66 + yOffset, 0.15);
+        const stripe2 = new THREE.Mesh(new THREE.BoxGeometry(4.2, 0.015, 0.12), new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.1 }));
+        stripe2.position.set(0, 0.66 + yOffset, -0.15);
+        group.add(stripe1, stripe2);
+    }
+    if (hasFlameDecal) {
+        // Decal api di samping pintu kiri & kanan
+        const flameMat = new THREE.MeshBasicMaterial({ color: 0xff3c00, transparent: true, opacity: 0.9 });
+        const flameL = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.22, 0.02), flameMat);
+        flameL.position.set(-0.2, 0.48 + yOffset, 0.91);
+        flameL.rotation.y = Math.PI / 180 * 2;
+        const flameR = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.22, 0.02), flameMat);
+        flameR.position.set(-0.2, 0.48 + yOffset, -0.91);
+        flameR.rotation.y = -Math.PI / 180 * 2;
+        group.add(flameL, flameR);
+    }
+    if (hasSakuraDecal) {
+        const sakuraMat = new THREE.MeshBasicMaterial({ color: 0xffa3be, transparent: true, opacity: 0.85 });
+        const sakuraL = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.25, 0.02), sakuraMat);
+        sakuraL.position.set(0.1, 0.48 + yOffset, 0.91);
+        const sakuraR = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.25, 0.02), sakuraMat);
+        sakuraR.position.set(0.1, 0.48 + yOffset, -0.91);
+        group.add(sakuraL, sakuraR);
+    }
+    if (hasSponsorDecals) {
+        const sponsorMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.9 });
+        const sponsorL = new THREE.Mesh(new THREE.BoxGeometry(1.0, 0.08, 0.02), sponsorMat);
+        sponsorL.position.set(-0.3, 0.25 + yOffset, 0.91);
+        const sponsorR = new THREE.Mesh(new THREE.BoxGeometry(1.0, 0.08, 0.02), sponsorMat);
+        sponsorR.position.set(-0.3, 0.25 + yOffset, -0.91);
+        group.add(sponsorL, sponsorR);
+    }
+
+    // 3. INTERIOR DETAILS
+    const seatMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.7 });
+    const seat1 = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.5, 0.45), seatMat);
+    seat1.position.set(0.1, 0.65 + yOffset, 0.35);
+    const seat2 = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.5, 0.45), seatMat);
+    seat2.position.set(0.1, 0.65 + yOffset, -0.35);
+    
+    // Setir kemudi
+    const steeringWheel = new THREE.Mesh(new THREE.TorusGeometry(0.15, 0.03, 8, 16), carbonMaterial);
+    steeringWheel.position.set(0.45, 0.78 + yOffset, 0.35);
+    steeringWheel.rotation.y = Math.PI / 2;
+    steeringWheel.rotation.x = 0.2;
+    group.add(seat1, seat2, steeringWheel);
+
+    // 4. DETAIL LAMPU (LED/Headlight)
+    const headlightGlass = new THREE.MeshPhysicalMaterial({ color: 0xffffee, transmission: 0.9, opacity: 0.9, transparent: true });
+    const headlightL = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.14, 0.28), headlightGlass);
+    headlightL.position.set(2.15, 0.45 + yOffset, 0.62);
+    const headlightR = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.14, 0.28), headlightGlass);
+    headlightR.position.set(2.15, 0.45 + yOffset, -0.62);
+    group.add(headlightL, headlightR);
+
+    // Taillight
+    const taillightMat = new THREE.MeshBasicMaterial({ color: 0xff1111 });
+    const taillightL = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.1, 0.38), taillightMat);
+    taillightL.position.set(-2.15, 0.48 + yOffset, 0.6);
+    const taillightR = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.1, 0.38), taillightMat);
+    taillightR.position.set(-2.15, 0.48 + yOffset, -0.6);
+    group.add(taillightL, taillightR);
+
+    // Grill Depan Chrome
+    const grill = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.25, 0.90), chromeMaterial);
+    grill.position.set(2.16, 0.36 + yOffset, 0);
+    group.add(grill);
+
+    // 5. WHEELS & CALIPERS (Realistic)
+    let wRadius = 0.44;
+    let wThickness = 0.30;
+
+    const monsterWheel = parts.find(p => p.templateId === "wheel-monster");
+    const tankWheel = parts.find(p => p.templateId === "wheel-tank");
+    const slickWheel = parts.find(p => p.templateId === "wheel-slick-racing");
+    const chromeWheel = parts.find(p => p.templateId === "wheel-chrome-luxury");
+    const alloyWheel = parts.find(p => p.templateId === "wheel-alloy-sport" || p.templateId === "wheel-jdm-classic");
+    const steelieWheel = parts.find(p => p.templateId === "wheel-steelie");
+    const mudWheel = parts.find(p => p.templateId === "wheel-mt-mud" || p.templateId === "wheel-at-offroad");
+
+    let activeTireMat = tireMaterial;
+    let activeRimMat = rimMaterial;
+
+    if (chromeWheel) {
+        activeRimMat = chromeMaterial;
+        wRadius = 0.48;
+    } else if (alloyWheel) {
+        activeRimMat = alloyWheel.templateId.includes("classic") ? new THREE.MeshStandardMaterial({ color: 0xd4af37, metalness: 0.95, roughness: 0.15 }) : rimMaterial;
+        wRadius = 0.45;
+    } else if (steelieWheel) {
+        activeRimMat = blackMaterial;
+        wRadius = 0.40;
+    } else if (slickWheel) {
+        activeTireMat = new THREE.MeshStandardMaterial({ color: 0x080808, roughness: 0.2 });
+        wRadius = 0.44;
+    } else if (monsterWheel) {
+        wRadius = 0.75;
+        wThickness = 0.6;
+    } else if (mudWheel) {
+        wRadius = 0.52;
+        wThickness = 0.42;
+    }
+
+    function addWheelModel(x, z) {
+        const wGroup = new THREE.Group();
+        
+        // Ban Karet
+        const tire = new THREE.Mesh(new THREE.CylinderGeometry(wRadius, wRadius, wThickness, 24), activeTireMat);
+        tire.rotateX(Math.PI / 2);
+        wGroup.add(tire);
+
+        // Jari-jari Velg Detail
+        const rimGroup = new THREE.Group();
+        const rimBase = new THREE.Mesh(new THREE.CylinderGeometry(wRadius * 0.7, wRadius * 0.7, wThickness + 0.02, 16), activeRimMat);
+        rimBase.rotateX(Math.PI / 2);
+        rimGroup.add(rimBase);
+
+        // Palang-palang Velg (Spokes)
+        const spokeGeo = new THREE.BoxGeometry(wRadius * 0.65, 0.04, 0.04);
+        for (let i = 0; i < 5; i++) {
+            const spoke = new THREE.Mesh(spokeGeo, activeRimMat);
+            spoke.rotation.z = (Math.PI / 180) * (i * 72);
+            rimGroup.add(spoke);
+        }
+        wGroup.add(rimGroup);
+
+        // Brake Caliper (Tidak berputar dengan roda)
+        const brakeCaliperGroup = new THREE.Group();
+        const disk = new THREE.Mesh(new THREE.CylinderGeometry(wRadius * 0.45, wRadius * 0.45, 0.06, 12), chromeMaterial);
+        disk.rotateX(Math.PI / 2);
+        const caliper = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.22, wThickness - 0.04), caliperMaterial);
+        caliper.position.set(wRadius * 0.22, wRadius * 0.22, 0);
+        brakeCaliperGroup.add(disk, caliper);
+        brakeCaliperGroup.position.set(x, wRadius - 0.1, z * 0.9);
+        group.add(brakeCaliperGroup);
+
+        wGroup.position.set(x, wRadius - 0.1, z);
+        
+        if (wheelsArrayRef) wheelsArrayRef.push(wGroup);
+        group.add(wGroup);
+    }
+
+    if (tankWheel) {
+        // Tank tracks
+        const trackL = new THREE.Mesh(new THREE.BoxGeometry(3.3, 0.78, 0.35), carbonMaterial);
+        trackL.position.set(0, 0.28, 0.95);
+        const trackR = new THREE.Mesh(new THREE.BoxGeometry(3.3, 0.78, 0.35), carbonMaterial);
+        trackR.position.set(0, 0.28, -0.95);
+        group.add(trackL, trackR);
+    } else {
+        let zPos = chassisType === 'suv' ? 0.95 : 0.9;
+        let xFront = 1.35;
+        let xRear = -1.35;
+        addWheelModel(xFront, zPos);
+        addWheelModel(xFront, -zPos);
+        addWheelModel(xRear, zPos);
+        addWheelModel(xRear, -zPos);
+    }
+
+    // 6. DYNAMIC EXTRAS / PARTS
+    parts.forEach(part => {
+        if (part.templateId.startsWith('wheel-') || part.templateId === "suspension-ceper" || part.templateId.startsWith('sticker-')) return;
+
+        const partMeshGroup = new THREE.Group();
+
+        if (part.templateId.includes('spoiler')) {
+            let xPos = chassisType === 'suv' || chassisType === 'hatchback' ? -1.75 : -2.0;
+            let yPos = chassisType === 'suv' ? 1.52 : chassisType === 'hatchback' ? 1.2 : 0.65;
+            
+            if (part.templateId === 'spoiler-carbon') {
+                const blade = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.04, 1.8), carbonMaterial);
+                const supportL = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.25, 0.08), carbonMaterial);
+                supportL.position.set(0, -0.125, 0.55);
+                const supportR = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.25, 0.08), carbonMaterial);
+                supportR.position.set(0, -0.125, -0.55);
+                partMeshGroup.add(blade, supportL, supportR);
+            } else if (part.templateId === 'spoiler-biplane') {
+                const blade1 = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.04, 1.7), carbonMaterial);
+                blade1.position.set(0, 0.16, 0);
+                const blade2 = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.04, 1.7), carbonMaterial);
+                const supportL = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.35, 0.08), carbonMaterial);
+                supportL.position.set(0, -0.1, 0.5);
+                const supportR = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.35, 0.08), carbonMaterial);
+                supportR.position.set(0, -0.1, -0.5);
+                partMeshGroup.add(blade1, blade2, supportL, supportR);
+            } else {
+                const ducktail = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.08, 1.65), carbonMaterial);
+                ducktail.rotation.z = -0.3;
+                partMeshGroup.add(ducktail);
+            }
+            partMeshGroup.position.set(xPos, yPos + yOffset, 0);
+        }
+        
+        else if (part.templateId.includes('front-')) {
+            if (part.templateId === 'front-ram') {
+                const ram = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.75, 1.65), carbonMaterial);
+                partMeshGroup.add(ram);
+            } else if (part.templateId === 'front-winch') {
+                const block = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.25, 0.45), carbonMaterial);
+                const spool = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.35), chromeMaterial);
+                spool.rotation.z = Math.PI / 2;
+                partMeshGroup.add(block, spool);
+            }
+            partMeshGroup.position.set(2.22, 0.35 + yOffset, 0);
+        }
+        
+        else if (part.templateId.includes('roof-') || part.templateId.includes('solar')) {
+            let yPos = chassisType === 'suv' ? 1.65 : chassisType === 'hatchback' ? 1.38 : 1.2;
+            
+            if (part.templateId === 'roof-siren') {
+                const stand = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.08, 0.65), carbonMaterial);
+                const blueL = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.14, 0.24), new THREE.MeshBasicMaterial({ color: 0x0055ff }));
+                blueL.position.set(0, 0.08, 0.16);
+                const redR = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.14, 0.24), new THREE.MeshBasicMaterial({ color: 0xff2222 }));
+                redR.position.set(0, 0.08, -0.16);
+                partMeshGroup.add(stand, blueL, redR);
+
+                // Add small PointLight sources to siren for real blinking in loop
+                const blueLight = new THREE.PointLight(0x0055ff, 2.0, 3.0);
+                blueLight.position.set(0, 0.5, 0.5);
+                const redLight = new THREE.PointLight(0xff2222, 2.0, 3.0);
+                redLight.position.set(0, 0.5, -0.5);
+                partMeshGroup.add(blueLight, redLight);
+            } else if (part.templateId === 'roof-solar' || part.templateId === 'solar') {
+                const cell = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.04, 1.15), new THREE.MeshStandardMaterial({ color: 0x0c1f38, metalness: 0.95, roughness: 0.08 }));
+                partMeshGroup.add(cell);
+            }
+            partMeshGroup.position.set(0, yPos + yOffset, 0);
+        }
+
+        else if (part.templateId.includes('neon-')) {
+            let neonColor = 0x00ffcc;
+            if (part.templateId.includes('pink')) neonColor = 0xff00cc;
+            if (part.templateId.includes('green')) neonColor = 0x00ff00;
+            
+            const light = new THREE.PointLight(neonColor, 3.0, 2.8);
+            light.position.set(0, -0.2, 0);
+            partMeshGroup.add(light);
+        }
+        
+        else if (part.templateId.includes('exhaust-')) {
+            const tip = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.45), chromeMaterial);
+            tip.rotation.z = Math.PI / 2;
+            partMeshGroup.add(tip);
+            partMeshGroup.position.set(-2.18, 0.22 + yOffset, 0.55);
+
+            // Exhaust Smoke Particle System (Local Emitter)
+            if (smokeParticlesArrayRef && smokeGroup) {
+                for (let i = 0; i < 20; i++) {
+                    const smokeGeo = new THREE.SphereGeometry(0.02 + Math.random() * 0.04, 8, 8);
+                    const smokeMat = new THREE.MeshBasicMaterial({ color: 0xcccccc, transparent: true, opacity: 0.0 });
+                    const sMesh = new THREE.Mesh(smokeGeo, smokeMat);
+                    // Spawn behind exhaust
+                    sMesh.position.set(-2.3 - Math.random() * 0.2, 0.22 + yOffset, 0.55);
+                    
+                    // Custom state
+                    sMesh.userData = {
+                        life: Math.random() * 1.5,
+                        maxLife: 1.5,
+                        speedX: -0.8 - Math.random() * 0.6,
+                        speedY: 0.1 + Math.random() * 0.3,
+                        speedZ: (Math.random() - 0.5) * 0.2,
+                        exhaustX: -2.3,
+                        exhaustY: 0.22 + yOffset,
+                        exhaustZ: 0.55
+                    };
+                    
+                    smokeParticlesArrayRef.push(sMesh);
+                    smokeGroup.add(sMesh);
+                }
+            }
+        }
+
+        // Offsets & sizing from customization
+        partMeshGroup.scale.set(part.scale, part.scale, part.scale);
+        partMeshGroup.rotation.y += part.rotation * (Math.PI / 180);
+        if (part.flipped) {
+            partMeshGroup.scale.x *= -1;
+        }
+
+        group.add(partMeshGroup);
+    });
+
+    return group;
+}
+
+// 3D Studio Setup
+function init3DStudio() {
+    const container = document.getElementById('car-canvas-stage');
+    if (!container) return;
+
+    // Dispose old studio scene
+    if (studio3D.renderer) {
+        cancelAnimationFrame(studio3D.animationId);
+        container.removeChild(studio3D.renderer.domElement);
+        studio3D.renderer.dispose();
+    }
+
+    // Hide old 2D wrappers
+    const oldChassis = document.getElementById('car-chassis-wrapper');
+    const oldParts = document.getElementById('parts-container');
+    if (oldChassis) oldChassis.style.display = 'none';
+    if (oldParts) oldParts.style.display = 'none';
+
+    // Scene
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x06080d);
+    scene.fog = new THREE.FogExp2(0x06080d, 0.06);
+
+    // Camera
+    const camera = new THREE.PerspectiveCamera(40, 600 / 300, 0.1, 100);
+    camera.position.set(5.5, 2.5, 7.0);
+
+    // Renderer
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+    renderer.setSize(600, 300);
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.setPixelRatio(window.devicePixelRatio);
+    container.appendChild(renderer.domElement);
+
+    // Controls
+    const controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.05;
+    controls.maxPolarAngle = Math.PI / 2 - 0.04;
+    controls.minDistance = 3.2;
+    controls.maxDistance = 12;
+
+    // Lighting (Premium Studio Lights)
+    const ambient = new THREE.AmbientLight(0xffffff, 0.45);
+    scene.add(ambient);
+
+    const mainLight = new THREE.DirectionalLight(0xffffff, 0.85);
+    mainLight.position.set(4, 8, 5);
+    mainLight.castShadow = true;
+    scene.add(mainLight);
+
+    const fillLight = new THREE.DirectionalLight(0x00ffdd, 0.45);
+    fillLight.position.set(-6, 4, -5);
+    scene.add(fillLight);
+
+    const rimLight = new THREE.SpotLight(0xffffff, 0.75, 12, Math.PI / 6, 0.4, 1);
+    rimLight.position.set(0, 6, 0);
+    scene.add(rimLight);
+
+    // Emitter smoke group
+    const smokeGroup = new THREE.Group();
+    scene.add(smokeGroup);
+
+    // Grid Floor
+    const grid = new THREE.GridHelper(22, 22, 0x00ffcc, 0x1a2335);
+    scene.add(grid);
+
+    studio3D.scene = scene;
+    studio3D.camera = camera;
+    studio3D.renderer = renderer;
+    studio3D.controls = controls;
+    studio3D.smokeSystem = smokeGroup;
+
+    // Render loop
+    function animate() {
+        studio3D.animationId = requestAnimationFrame(animate);
+        const dt = studio3D.clock.getDelta();
+        const elapsed = studio3D.clock.getElapsedTime();
+
+        // 1. Suspension Breathing / Hovering Animation
+        if (studio3D.carGroup) {
+            studio3D.carGroup.position.y = Math.sin(elapsed * 1.5) * 0.04;
+        }
+
+        // 2. Rolling Exhaust Smoke Particles Update
+        studio3D.smokeParticles.forEach(p => {
+            p.userData.life += dt;
+            if (p.userData.life >= p.userData.maxLife) {
+                // Respawn
+                p.userData.life = 0;
+                p.position.set(p.userData.exhaustX, p.userData.exhaustY, p.userData.exhaustZ);
+                p.material.opacity = 0.0;
+            } else {
+                p.position.x += p.userData.speedX * dt;
+                p.position.y += p.userData.speedY * dt;
+                p.position.z += p.userData.speedZ * dt;
+                
+                // Fade out opacity
+                const ratio = p.userData.life / p.userData.maxLife;
+                p.material.opacity = (1.0 - ratio) * 0.42;
+                p.scale.setScalar(1.0 + ratio * 2.5);
+            }
+        });
+
+        // 3. Siren Blink Animation
+        if (studio3D.carGroup) {
+            const sirenLight = studio3D.carGroup.getObjectByProperty('type', 'PointLight');
+            if (sirenLight) {
+                // Alternating color
+                sirenLight.intensity = Math.sin(elapsed * 10) > 0 ? 3.0 : 0.0;
+            }
+        }
+
+        controls.update();
+        renderer.render(scene, camera);
+    }
+    animate();
+}
+
+function updateStudio3DModel() {
+    if (!studio3D.scene) init3DStudio();
+    
+    if (studio3D.carGroup) {
+        studio3D.scene.remove(studio3D.carGroup);
+    }
+
+    studio3D.wheels = [];
+    studio3D.smokeParticles = [];
+    studio3D.smokeSystem.clear();
+
+    studio3D.carGroup = create3DCarGroup(
+        currentChassis, 
+        carColor, 
+        placedParts, 
+        studio3D.wheels, 
+        studio3D.smokeParticles, 
+        studio3D.smokeSystem
+    );
+    studio3D.scene.add(studio3D.carGroup);
+
+    carRotX = 0;
+    carRotY = 0;
+}
+
+// Showroom WebGL 3D (Negotiation Screen)
+function initShowroom3D() {
+    const container = document.getElementById('showroom-car-target');
+    if (!container) return;
+
+    if (showroom3D.renderer) {
+        cancelAnimationFrame(showroom3D.animationId);
+        container.removeChild(showroom3D.renderer.domElement);
+        showroom3D.renderer.dispose();
+    }
+
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x020306);
+    scene.fog = new THREE.FogExp2(0x020306, 0.05);
+
+    const camera = new THREE.PerspectiveCamera(40, container.clientWidth / container.clientHeight, 0.1, 100);
+    camera.position.set(6.2, 2.2, 6.5);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(container.clientWidth, container.clientHeight);
+    container.appendChild(renderer.domElement);
+
+    const controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.05;
+    controls.autoRotate = true;
+    controls.autoRotateSpeed = 3.5; // Constant rot speed
+    controls.minDistance = 3.5;
+    controls.maxDistance = 10;
+
+    // Premium Lights
+    const ambient = new THREE.AmbientLight(0xffffff, 0.5);
+    scene.add(ambient);
+
+    const topSpot = new THREE.SpotLight(0xffffff, 1.8, 15, Math.PI / 4, 0.5, 1);
+    topSpot.position.set(0, 7, 0);
+    scene.add(topSpot);
+
+    const backAccent = new THREE.DirectionalLight(0xff4c00, 0.65);
+    backAccent.position.set(6, 3, 4);
+    scene.add(backAccent);
+
+    // Base cylinder pedestal
+    const pedestal = new THREE.Mesh(
+        new THREE.CylinderGeometry(2.7, 2.9, 0.22, 32),
+        new THREE.MeshStandardMaterial({ color: 0x111116, roughness: 0.35, metalness: 0.8 })
+    );
+    pedestal.position.y = -0.11;
+    scene.add(pedestal);
+
+    const smokeGroup = new THREE.Group();
+    scene.add(smokeGroup);
+
+    showroom3D.scene = scene;
+    showroom3D.camera = camera;
+    showroom3D.renderer = renderer;
+    showroom3D.controls = controls;
+    showroom3D.smokeSystem = smokeGroup;
+
+    function animate() {
+        showroom3D.animationId = requestAnimationFrame(animate);
+        const dt = showroom3D.clock.getDelta();
+        const elapsed = showroom3D.clock.getElapsedTime();
+
+        // 1. Roda berputar (rolling wheels) di showroom
+        showroom3D.wheels.forEach(w => {
+            w.rotation.z -= 4.0 * dt; // spin
+        });
+
+        // 2. Asap knalpot mengepul di showroom
+        showroom3D.smokeParticles.forEach(p => {
+            p.userData.life += dt;
+            if (p.userData.life >= p.userData.maxLife) {
+                p.userData.life = 0;
+                p.position.set(p.userData.exhaustX, p.userData.exhaustY, p.userData.exhaustZ);
+                p.material.opacity = 0.0;
+            } else {
+                p.position.x += p.userData.speedX * dt;
+                p.position.y += p.userData.speedY * dt;
+                p.position.z += p.userData.speedZ * dt;
+                
+                const ratio = p.userData.life / p.userData.maxLife;
+                p.material.opacity = (1.0 - ratio) * 0.42;
+                p.scale.setScalar(1.0 + ratio * 2.5);
+            }
+        });
+
+        controls.update();
+        renderer.render(scene, camera);
+    }
+    animate();
+}
+
+function updateShowroom3DModel(chassis, color, parts) {
+    if (!showroom3D.scene) initShowroom3D();
+    
+    if (showroom3D.carGroup) {
+        showroom3D.scene.remove(showroom3D.carGroup);
+    }
+
+    showroom3D.wheels = [];
+    showroom3D.smokeParticles = [];
+    showroom3D.smokeSystem.clear();
+
+    showroom3D.carGroup = create3DCarGroup(
+        chassis, 
+        color, 
+        parts, 
+        showroom3D.wheels, 
+        showroom3D.smokeParticles, 
+        showroom3D.smokeSystem
+    );
+    showroom3D.scene.add(showroom3D.carGroup);
+}
+
 // --- ROTATION STATE ---
 let carRotX = 0;
 let carRotY = 0;
-const ROT_STEP = 45; // degrees per button click
+const ROT_STEP = 30; // degrees per button click
 
 function applyCanvasRotation() {
-    const stage = document.getElementById('car-canvas-stage');
-    if (stage) {
-        stage.style.transform = `rotateX(${carRotX}deg) rotateY(${carRotY}deg)`;
+    if (studio3D.carGroup) {
+        studio3D.carGroup.rotation.x = carRotX * (Math.PI / 180);
+        studio3D.carGroup.rotation.y = carRotY * (Math.PI / 180);
     }
 }
 
@@ -469,6 +1225,9 @@ function resetCanvasRotation() {
     carRotX = 0;
     carRotY = 0;
     applyCanvasRotation();
+    if (studio3D.controls) {
+        studio3D.controls.reset();
+    }
 }
 
 // --- TOOLTIP SYSTEM ---
@@ -1058,28 +1817,27 @@ function openStudioEditor(slotIdx) {
     studioCarModelName.innerText = carModel.name;
     studioCashVal.innerText = `$${gameState.cash.toLocaleString()}`;
     
+    // Swap screen
+    document.getElementById('dashboard-screen').classList.remove('active');
+    document.getElementById('studio-screen').classList.add('active');
+    
+    // Initialize 3D WebGL Studio
+    init3DStudio();
+    
     loadChassis(currentChassis);
     applyColor(carColor);
     renderPlacedParts();
     updateStats();
-    
-    // Swap screen
-    document.getElementById('dashboard-screen').classList.remove('active');
-    document.getElementById('studio-screen').classList.add('active');
-    // Reset car rotation when entering studio
-    resetCanvasRotation();
 }
 
 function loadChassis(type) {
-    carChassisWrapper.innerHTML = CHASSIS_SVG[type];
+    currentChassis = type;
+    updateStudio3DModel();
 }
 
 function applyColor(color) {
     carColor = color;
-    const paintablePaths = carChassisWrapper.querySelectorAll('.car-paintable');
-    paintablePaths.forEach(path => {
-        path.setAttribute('fill', color);
-    });
+    updateStudio3DModel();
     
     // Sync swatch borders
     colorSwatches.forEach(swatch => {
@@ -1154,121 +1912,54 @@ function addPartToCanvas(partTemplate, x = 300, y = 150, scale = 1, rotation = 0
 }
 
 function renderPlacedParts() {
-    partsContainer.innerHTML = '';
-    
-    // Check if lowering suspension is installed
-    const isLowered = placedParts.some(p => p.templateId === "suspension-ceper");
-    if (isLowered) {
-        carChassisWrapper.style.transform = "translateY(25px)";
-    } else {
-        carChassisWrapper.style.transform = "none";
-    }
-    
-    placedParts.forEach((part, index) => {
-        const div = document.createElement('div');
-        div.className = `placed-part ${index === selectedPartIndex ? 'selected' : ''}`;
-        div.style.left = `${part.x}px`;
-        
-        if (isLowered && !part.templateId.startsWith('wheel-')) {
-            div.style.top = `${part.y + 25}px`;
+    partsContainer.innerHTML = ''; // Keep empty
+
+    // Update 3D studio model
+    updateStudio3DModel();
+
+    // Render list komponen terpasang di transform-panel
+    const listContainer = document.getElementById('installed-parts-list');
+    const controlsWrap = document.getElementById('transform-controls-wrap');
+    if (listContainer) {
+        listContainer.innerHTML = '';
+        if (placedParts.length === 0) {
+            listContainer.innerHTML = '<div style="padding: 10px; text-align: center; font-style: italic;">Belum ada komponen terpasang</div>';
+            if (controlsWrap) controlsWrap.style.display = 'none';
         } else {
-            div.style.top = `${part.y}px`;
+            placedParts.forEach((part, index) => {
+                const item = document.createElement('div');
+                item.className = 'installed-part-item';
+                item.style.cssText = 'padding: 6px 10px; margin-bottom: 4px; background: rgba(255,255,255,0.05); border-radius: 4px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; border: 1px solid transparent;';
+                if (index === selectedPartIndex) {
+                    item.style.borderColor = 'var(--accent)';
+                    item.style.background = 'rgba(0, 255, 204, 0.1)';
+                }
+
+                item.innerHTML = `
+                    <span>${part.name}</span>
+                    <span style="color: var(--accent); font-weight: bold;">$${part.price.toLocaleString()}</span>
+                `;
+
+                item.addEventListener('click', () => {
+                    selectPart(index);
+                });
+
+                listContainer.appendChild(item);
+            });
+            if (controlsWrap) {
+                controlsWrap.style.display = selectedPartIndex !== null ? 'block' : 'none';
+            }
         }
-        div.style.width = '100px'; 
-        div.style.height = '100px';
-        
-        let transformStr = `translate(-50%, -50%) rotate(${part.rotation}deg) scale(${part.scale})`;
-        if (part.flipped) {
-            transformStr += ' scaleX(-1)';
-        }
-        div.style.transform = transformStr;
-        div.innerHTML = part.svg;
-        
-        setupPartDragging(div, index);
-        
-        div.addEventListener('mousedown', (e) => {
-            e.stopPropagation();
-            selectPart(index);
-        });
-        
-        partsContainer.appendChild(div);
-    });
+    }
 }
 
 function setupPartDragging(element, index) {
-    let startX, startY;
-    let initialX, initialY;
-    
-    element.addEventListener('mousedown', dragStart);
-    element.addEventListener('touchstart', dragStart, { passive: false });
-    
-    function dragStart(e) {
-        e.preventDefault();
-        selectPart(index);
-        
-        const clientX = e.type === 'touchstart' ? e.touches[0].clientX : e.clientX;
-        const clientY = e.type === 'touchstart' ? e.touches[0].clientY : e.clientY;
-        
-        startX = clientX;
-        startY = clientY;
-        
-        initialX = placedParts[index].x;
-        initialY = placedParts[index].y;
-        
-        document.addEventListener('mousemove', dragMove);
-        document.addEventListener('mouseup', dragEnd);
-        document.addEventListener('touchmove', dragMove, { passive: false });
-        document.addEventListener('touchend', dragEnd);
-    }
-    
-    function dragMove(e) {
-        if (selectedPartIndex === null) return;
-        e.preventDefault();
-        
-        const clientX = e.type === 'touchmove' ? e.touches[0].clientX : e.clientX;
-        const clientY = e.type === 'touchmove' ? e.touches[0].clientY : e.clientY;
-        
-        const dx = clientX - startX;
-        const dy = clientY - startY;
-        
-        let newX = initialX + dx;
-        let newY = initialY + dy;
-        
-        newX = Math.max(10, Math.min(590, newX));
-        newY = Math.max(10, Math.min(290, newY));
-        
-        placedParts[index].x = newX;
-        placedParts[index].y = newY;
-        
-        element.style.left = `${newX}px`;
-        element.style.top = `${newY}px`;
-    }
-    
-    function dragEnd() {
-        document.removeEventListener('mousemove', dragMove);
-        document.removeEventListener('mouseup', dragEnd);
-        document.removeEventListener('touchmove', dragMove);
-        document.removeEventListener('touchend', dragEnd);
-        saveActiveSlotChanges();
-    }
+    // Deprecated in 3D anchor positioning
 }
 
 function selectPart(index) {
     selectedPartIndex = index;
-    const domParts = partsContainer.querySelectorAll('.placed-part');
-    domParts.forEach((partEl, idx) => {
-        if (idx === index) {
-            partEl.classList.add('selected');
-        } else {
-            partEl.classList.remove('selected');
-        }
-    });
-    
-    if (index !== null) {
-        transformPanel.classList.remove('hidden');
-    } else {
-        transformPanel.classList.add('hidden');
-    }
+    renderPlacedParts();
 }
 
 // Deselect on canvas click
@@ -1601,45 +2292,9 @@ function triggerLaunchNegotiation() {
     document.getElementById('studio-screen').classList.remove('active');
     document.getElementById('terminal-negotiation-screen').classList.add('active');
     
-    // Render left split Showroom
-    showroomCarTarget.innerHTML = CHASSIS_SVG[carModel.baseChassis];
-    const showroomPaint = showroomCarTarget.querySelectorAll('.car-paintable');
-    showroomPaint.forEach(p => p.setAttribute('fill', slot.car.color));
-    
-    // Check if lowering suspension is installed
-    const isLoweredShowroom = slot.car.parts.some(p => p.templateId === "suspension-ceper");
-    if (isLoweredShowroom) {
-        showroomCarTarget.querySelector('svg').style.transform = "translateY(25px)";
-    }
-    
-    // Render placed parts in showroom
-    const targetPartsWrap = document.createElement('div');
-    targetPartsWrap.style.position = 'absolute';
-    targetPartsWrap.style.width = '100%';
-    targetPartsWrap.style.height = '100%';
-    targetPartsWrap.style.top = '0';
-    targetPartsWrap.style.left = '0';
-    
-    slot.car.parts.forEach(part => {
-        const div = document.createElement('div');
-        div.className = `placed-part`;
-        div.style.left = `${part.x}px`;
-        
-        if (isLoweredShowroom && !part.templateId.startsWith('wheel-')) {
-            div.style.top = `${part.y + 25}px`;
-        } else {
-            div.style.top = `${part.y}px`;
-        }
-        
-        div.style.width = '100px'; 
-        div.style.height = '100px';
-        let transformStr = `translate(-50%, -50%) rotate(${part.rotation}deg) scale(${part.scale})`;
-        if (part.flipped) transformStr += ' scaleX(-1)';
-        div.style.transform = transformStr;
-        div.innerHTML = part.svg;
-        targetPartsWrap.appendChild(div);
-    });
-    showroomCarTarget.appendChild(targetPartsWrap);
+    // Initialize 3D Showroom WebGL
+    initShowroom3D();
+    updateShowroom3DModel(carModel.baseChassis, slot.car.color, slot.car.parts);
     
     showroomCarTitle.innerText = carModel.name;
     showroomCarSpecs.innerText = `Top Speed: ${speed} km/h | Accel: ${accel.toFixed(1)}s | Investasi: $${partPrices.toLocaleString()}`;
@@ -1835,50 +2490,28 @@ function executeAcceptDeal() {
 
 // 2. Counter-Offer (Tawar Balik)
 function executeCounterOffer(offer) {
-    if (negoSession.patience <= 0) {
-        logToTerminal(`Kesabaran buyer sudah habis! Buyer menolak tawaran Anda dan walkout.`, 'error');
-        executeWalkout();
-        return;
-    }
-    
     negoSession.counterCount++;
-    negoSession.patience--;
-    
-    updateTerminalPatienceDisplay();
     
     // Evaluation math logic
     const margin = offer / negoSession.initialBid;
-    let acceptChance = 0;
     
-    if (margin <= 1.05) acceptChance = 0.95;
-    else if (margin <= 1.15) acceptChance = 0.75;
-    else if (margin <= 1.30) acceptChance = 0.40;
-    else if (margin <= 1.50) acceptChance = 0.15;
-    else acceptChance = 0.02;
-    
-    // Rayu buff
-    if (negoSession.persuaded) {
-        acceptChance += 0.25;
-    }
-    
-    const success = Math.random() < acceptChance;
+    // Auto accept up to 1.50x of initialBid
+    const success = (margin <= 1.50);
     
     if (success) {
         negoSession.currentBid = offer;
         const dialogue = getBuyerDialogue(negoSession.buyer.id, 'tawar_sukses', { offer: offer });
         logToTerminal(`${negoSession.buyer.name}: "${dialogue}"`, 'success');
-        logToTerminal(`Ketik /terima untuk mengonfirmasi penjualan!`, 'sys');
+        logToTerminal(`AUTO-ACCEPT: Transaksi diterima secara otomatis! Menyelesaikan penjualan...`, 'sys');
+        
+        // Auto accept deal!
+        setTimeout(() => {
+            executeAcceptDeal();
+        }, 1200);
     } else {
-        // Buyer rejects counter offer but proposes a compromise
-        const compromise = Math.round(negoSession.currentBid * (1 + (acceptChance * 0.15)));
-        negoSession.currentBid = Math.max(compromise, negoSession.currentBid);
-        
-        const dialogue = getBuyerDialogue(negoSession.buyer.id, 'tawar_tolak', { offer: offer, compromise: compromise });
-        logToTerminal(`${negoSession.buyer.name}: "${dialogue}"`, 'normal');
-        
-        if (negoSession.patience <= 0) {
-            logToTerminal(`[WARNING]: Kesabaran buyer habis! Nego satu kali lagi akan membuat buyer walkout!`, 'error');
-        }
+        // Rejection compromise without losing patience (no walkouts)
+        const maxNego = Math.round(negoSession.initialBid * 1.50);
+        logToTerminal(`${negoSession.buyer.name}: "Tawaran Anda terlalu tinggi! Anggaran maksimal saya adalah $${maxNego.toLocaleString()}. Tolong ajukan penawaran di bawah itu."`, 'normal');
     }
 }
 
@@ -2160,49 +2793,75 @@ function setupGlobalEventListeners() {
     });
     
     // Transform operations
-    document.getElementById('transform-flip').addEventListener('click', () => {
-        if (selectedPartIndex !== null) {
-            placedParts[selectedPartIndex].flipped = !placedParts[selectedPartIndex].flipped;
-            renderPlacedParts();
-            saveActiveSlotChanges();
-        }
-    });
-    document.getElementById('transform-scale-up').addEventListener('click', () => {
-        if (selectedPartIndex !== null) {
-            placedParts[selectedPartIndex].scale = Math.min(2.5, placedParts[selectedPartIndex].scale + 0.1);
-            renderPlacedParts();
-            saveActiveSlotChanges();
-        }
-    });
-    document.getElementById('transform-scale-down').addEventListener('click', () => {
-        if (selectedPartIndex !== null) {
-            placedParts[selectedPartIndex].scale = Math.max(0.4, placedParts[selectedPartIndex].scale - 0.1);
-            renderPlacedParts();
-            saveActiveSlotChanges();
-        }
-    });
-    document.getElementById('transform-rotate-left').addEventListener('click', () => {
-        if (selectedPartIndex !== null) {
-            placedParts[selectedPartIndex].rotation = (placedParts[selectedPartIndex].rotation - 15) % 360;
-            renderPlacedParts();
-            saveActiveSlotChanges();
-        }
-    });
-    document.getElementById('transform-rotate-right').addEventListener('click', () => {
-        if (selectedPartIndex !== null) {
-            placedParts[selectedPartIndex].rotation = (placedParts[selectedPartIndex].rotation + 15) % 360;
-            renderPlacedParts();
-            saveActiveSlotChanges();
-        }
-    });
-    document.getElementById('transform-delete').addEventListener('click', () => {
-        if (selectedPartIndex !== null) {
-            placedParts.splice(selectedPartIndex, 1);
-            selectPart(null);
-            renderPlacedParts();
-            saveActiveSlotChanges();
-        }
-    });
+    // Transform operations (wrapped in checks since they are replaced in HTML by installed list)
+    const btnFlip = document.getElementById('transform-flip');
+    if (btnFlip) {
+        btnFlip.addEventListener('click', () => {
+            if (selectedPartIndex !== null) {
+                placedParts[selectedPartIndex].flipped = !placedParts[selectedPartIndex].flipped;
+                renderPlacedParts();
+                saveActiveSlotChanges();
+            }
+        });
+    }
+    const btnScaleUp = document.getElementById('transform-scale-up');
+    if (btnScaleUp) {
+        btnScaleUp.addEventListener('click', () => {
+            if (selectedPartIndex !== null) {
+                placedParts[selectedPartIndex].scale = Math.min(2.5, placedParts[selectedPartIndex].scale + 0.1);
+                renderPlacedParts();
+                saveActiveSlotChanges();
+            }
+        });
+    }
+    const btnScaleDown = document.getElementById('transform-scale-down');
+    if (btnScaleDown) {
+        btnScaleDown.addEventListener('click', () => {
+            if (selectedPartIndex !== null) {
+                placedParts[selectedPartIndex].scale = Math.max(0.4, placedParts[selectedPartIndex].scale - 0.1);
+                renderPlacedParts();
+                saveActiveSlotChanges();
+            }
+        });
+    }
+    const btnRotLeft = document.getElementById('transform-rotate-left');
+    if (btnRotLeft) {
+        btnRotLeft.addEventListener('click', () => {
+            if (selectedPartIndex !== null) {
+                placedParts[selectedPartIndex].rotation = (placedParts[selectedPartIndex].rotation - 15) % 360;
+                renderPlacedParts();
+                saveActiveSlotChanges();
+            }
+        });
+    }
+    const btnRotRight = document.getElementById('transform-rotate-right');
+    if (btnRotRight) {
+        btnRotRight.addEventListener('click', () => {
+            if (selectedPartIndex !== null) {
+                placedParts[selectedPartIndex].rotation = (placedParts[selectedPartIndex].rotation + 15) % 360;
+                renderPlacedParts();
+                saveActiveSlotChanges();
+            }
+        });
+    }
+    
+    const btnDelete = document.getElementById('transform-delete');
+    if (btnDelete) {
+        btnDelete.addEventListener('click', () => {
+            if (selectedPartIndex !== null) {
+                const refund = Math.round(placedParts[selectedPartIndex].price * 0.5);
+                gameState.cash += refund;
+                studioCashVal.innerText = `$${gameState.cash.toLocaleString()}`;
+                alert(`Komponen dihapus! Anda mendapatkan pengembalian kas 50% sebesar $${refund.toLocaleString()}.`);
+                
+                placedParts.splice(selectedPartIndex, 1);
+                selectPart(null);
+                renderPlacedParts();
+                saveActiveSlotChanges();
+                updateHUD();
+            }
+        });
+    }
     
     // Reset game button
     document.getElementById('btn-reset-game').addEventListener('click', () => {
