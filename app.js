@@ -1205,7 +1205,10 @@ function updateStudio3DModel() {
 
     studio3D.wheels = [];
     studio3D.smokeParticles = [];
-    studio3D.smokeSystem.clear();
+    if (studio3D.smokeSystem) {
+        dispose3DObject(studio3D.smokeSystem);
+        studio3D.smokeSystem.clear();
+    }
 
     studio3D.carGroup = create3DCarGroup(
         currentChassis, 
@@ -1328,7 +1331,10 @@ function updateShowroom3DModel(chassis, color, parts) {
 
     showroom3D.wheels = [];
     showroom3D.smokeParticles = [];
-    showroom3D.smokeSystem.clear();
+    if (showroom3D.smokeSystem) {
+        dispose3DObject(showroom3D.smokeSystem);
+        showroom3D.smokeSystem.clear();
+    }
 
     showroom3D.carGroup = create3DCarGroup(
         chassis, 
