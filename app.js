@@ -653,6 +653,23 @@ function create3DCarGroup(chassisType, colorHex, parts, wheelsArrayRef, smokePar
         group.add(bodyLower);
     }
 
+    // Underchassis details (Knalpot kolong, drive shaft, fuel tank, engine oil pan)
+    const exhaustUnder = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 2.5), chromeMaterial);
+    exhaustUnder.rotation.z = Math.PI / 2;
+    exhaustUnder.position.set(-0.5, 0.12 + yOffset, 0.15); // knalpot kolong
+
+    const driveShaft = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 2.8), rimMaterial);
+    driveShaft.rotation.z = Math.PI / 2;
+    driveShaft.position.set(-0.3, 0.12 + yOffset, -0.15); // shaft transfer daya
+
+    const fuelTank = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.22, 1.2), carbonMaterial);
+    fuelTank.position.set(-1.4, 0.16 + yOffset, 0); // tangki bensin belakang
+
+    const enginePan = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.15, 1.3), rimMaterial);
+    enginePan.position.set(1.4, 0.15 + yOffset, 0); // oil pan depan
+
+    group.add(exhaustUnder, driveShaft, fuelTank, enginePan);
+
     // 2. STICKER DECALS (3D Mesh Layering)
     if (hasCarbonHood && bodyLower) {
         // Kap depan hitam bermaterial karbon
@@ -988,7 +1005,7 @@ function init3DStudio() {
     const controls = new THREE.OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
     controls.dampingFactor = 0.05;
-    controls.maxPolarAngle = Math.PI / 2 - 0.04;
+    controls.maxPolarAngle = Math.PI - 0.05; // Allow seeing undercarriage
     controls.minDistance = 3.2;
     controls.maxDistance = 12;
 
@@ -1123,6 +1140,7 @@ function initShowroom3D() {
     controls.autoRotateSpeed = 3.5; // Constant rot speed
     controls.minDistance = 3.5;
     controls.maxDistance = 10;
+    controls.maxPolarAngle = Math.PI - 0.05; // Allow seeing undercarriage
 
     // Premium Lights
     const ambient = new THREE.AmbientLight(0xffffff, 0.5);
@@ -1610,6 +1628,60 @@ function startMarketEventsTicker() {
     marketEventTimer = setInterval(rollEvent, 90000); // Roll market updates every 90 seconds
 }
 
+function showSpecialOrderNotification() {
+    try {
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(880, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(440, audioCtx.currentTime + 0.15);
+        gain.gain.setValueAtTime(0.12, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.3);
+    } catch (e) {
+        console.log("AudioContext blocked or not supported");
+    }
+
+    const banner = document.createElement('div');
+    banner.style.cssText = `
+        position: fixed;
+        top: 25px;
+        left: 50%;
+        transform: translateX(-50%) translateY(-120px);
+        background: rgba(6, 7, 10, 0.95);
+        border: 2px solid var(--orange);
+        box-shadow: 0 0 25px rgba(255, 102, 0, 0.45), inset 0 0 10px rgba(255, 102, 0, 0.2);
+        border-radius: 8px;
+        padding: 12px 24px;
+        z-index: 99999;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        font-family: 'Orbitron', var(--font-tech), sans-serif;
+        color: #fff;
+        transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        pointer-events: none;
+    `;
+    banner.innerHTML = `
+        <div style="font-size: 1.6rem; color: var(--orange);"><i class="fa-solid fa-triangle-exclamation"></i></div>
+        <div>
+            <div style="font-weight: 900; font-size: 0.85rem; letter-spacing: 1.5px; color: var(--orange);">MISI KHUSUS MASUK!</div>
+            <div style="font-size: 0.70rem; color: var(--text-secondary); margin-top: 2px;">Seorang klien mengirimkan pesanan spesifikasi khusus ke Terminal!</div>
+        </div>
+    `;
+    document.body.appendChild(banner);
+
+    setTimeout(() => { banner.style.transform = 'translateX(-50%) translateY(0)'; }, 100);
+    setTimeout(() => {
+        banner.style.transform = 'translateX(-50%) translateY(-150px)';
+        setTimeout(() => { banner.remove(); }, 600);
+    }, 4200);
+}
+
 function startSpecialOrderTriggers() {
     function rollSpecialOrder() {
         if (gameState.isPaused) return; // Skip if paused
@@ -1639,6 +1711,7 @@ function startSpecialOrderTriggers() {
             };
             
             renderSpecialOrder();
+            showSpecialOrderNotification(); // Trigger alert banner sound
         }
     }
     
@@ -2095,78 +2168,97 @@ function getBuyerDialogue(buyerId, dialogType, data = {}) {
     const offerStr = data.offer ? data.offer.toLocaleString() : "";
     const compromiseStr = data.compromise ? data.compromise.toLocaleString() : "";
 
-    const dialogues = {
-        tambang: {
-            intro: `Bah! Sasisnya kokoh betul. Penampilan paten lah. Langsung aja, saya tawar awal $${priceStr} buat diangkut langsung ke site tambang.`,
-            tawar_sukses: `Deal! Harga $${offerStr} masuk akal untuk ketahanan sasis begini. Salaman kita!`,
-            tawar_tolak: `Bujang! Jangan serakah kau! Penawaran $${offerStr} terlalu mahal buat sasis ginian. Pasnya $${compromiseStr}, mau tidak?`,
-            rayu_sukses: `Hmm... masuk akal juga cakapmu. Dengan spek itu, bisa hemat solar dan tahan banting di medan lumpur. Oke, saya naikkan tawaran jadi $${priceStr}!`,
-            rayu_gagal: `Ah, jangan kau tipu-tipu saya pakai sales talk kosmetik begitu. Gak mempan!`,
-            walkout: `Sudahlah, bertele-tele kau! Kelamaan nego bikin pusing kepala. Saya cari builder lain saja yang gak banyak cakap!`
-        },
-        eksekutif: {
-            intro: `Selamat siang. Rancangan kendaraan Anda cukup menarik secara estetika korporat. Saya ajukan penawaran awal di angka $${priceStr}.`,
-            tawar_sukses: `Setelah saya kalkulasi ulang dampaknya terhadap profitabilitas, angka $${offerStr} masih dalam batas wajar. Saya setuju.`,
-            tawar_tolak: `Maaf, nilai $${offerStr} sudah melewati estimasi budget plan kami. Kami tawarkan kesepakatan tengah di angka $${compromiseStr}.`,
-            rayu_sukses: `Poin efisiensi dan analisis ROI yang Anda sampaikan cukup krusial bagi kebutuhan operasional kami. Baik, saya revisi penawaran menjadi $${priceStr}.`,
-            rayu_gagal: `Argumen Anda kurang memiliki business case yang kuat dan kurang selaras dengan kebutuhan korporasi kami.`,
-            walkout: `Sayang sekali, negosiasi ini tidak berjalan efisien dan tidak menguntungkan. Kami batalkan penjajakan ini.`
-        },
-        sultan: {
-            intro: `Gokil parah bro! Rancangannya eye-catching abis, auto jadi pusat perhatian di jalanan. Gimana kalau gw tebus $${priceStr} dulu buat pembukaan?`,
-            tawar_sukses: `Anjay, langsung deal! $${offerStr} mah kecil buat konten vlog terbaru gw. Bungkus bro!`,
-            tawar_tolak: `Waduh bro, $${offerStr} agak kemahalan buat belanjaan impulsif hari ini. Turunin dikit lah ke $${compromiseStr}, deal gak?`,
-            rayu_sukses: `Wah gila sih, bener kata lu! Kalo gw spill spek eksklusif ini di medsos pasti viral parah. Oke lah, gw naikin ke $${priceStr}!`,
-            rayu_gagal: `Biasa aja sih penjelasannya, kurang nge-hype dan kurang bikin merinding buat followers gw.`,
-            walkout: `Kelamaan nego bro, gak asik ah. Gw cari builder lain aja yang lebih gercep dan gak pake ribet!`
-        },
-        kolektor: {
-            intro: `Sungguh karya yang elok dan sarat estetika klasik, anak muda. Mengingatkan saya pada memori masa lampau. Saya tawarkan $${priceStr} untuk mengawalinya.`,
-            tawar_sukses: `Harga $${offerStr} sangat pantas untuk menghargai karya seni bernilai sejarah tinggi ini. Saya setuju.`,
-            tawar_tolak: `Aduh, $${offerStr} sepertinya agak terlalu tinggi untuk nilai taksir koleksi saya. Bagaimana kalau jalan tengahnya $${compromiseStr} saja?`,
-            rayu_sukses: `Penjelasan Anda mengenai detail sejarah dan filosofi komponennya sungguh menyentuh hati saya. Baik, saya hargai karyamu di angka $${priceStr}.`,
-            rayu_gagal: `Hmm, saya rasa modifikasi Anda agak terlalu modern dan merusak cita rasa nostalgia yang saya cari.`,
-            walkout: `Sayang sekali, kita tidak sejalan dalam menghargai keindahan historis ini. Permisi dulu, anak muda.`
-        },
-        sirkus: {
-            intro: `Luar biasa! Spektakuler! Desain yang sungguh ajaib, lucu, dan penuh kejutan! Saya buka atraksi penawaran ini di harga $${priceStr}!`,
-            tawar_sukses: `Abrakadabra! Harga $${offerStr} disetujui! Mobil ini akan menjadi bintang utama di bawah tenda sirkus kami!`,
-            tawar_tolak: `Wah, penonton bisa menangis kalau saya bayar $${offerStr}! Tiket sirkus kami tidak semahal itu. Pasnya $${compromiseStr}!`,
-            rayu_sukses: `Hahaha! Penjelasanmu bagai pertunjukan sulap yang memukau hati! Baiklah, saya sulap penawaran saya menjadi $${priceStr}!`,
-            rayu_gagal: `Kurang lucu! Leluconmu tidak membuat monyet sirkus saya tertawa atau terhibur.`,
-            walkout: `Pertunjukan selesai! Penonton kecewa dengan penawaran bertele-tele ini. Saya harus pergi!`
-        },
-        ibu: {
-            intro: `Aduh Jeng, aduh Kang, mobilnya lucu banget ya. Tapi harganya jangan mahal-mahal dong, saya tawar awal $${priceStr} ya?`,
-            tawar_sukses: `Ya sudah deh, harga $${offerStr} saya ambil. Untung dapet uang arisan bulanan kemarin.`,
-            tawar_tolak: `Aduh mas, $${offerStr} mah bisa buat belanja beras sekontainer! Dompet ibu-ibu bisa menjerit mas. Tolong dong $${compromiseStr} aja?`,
-            rayu_sukses: `Oh, ada panel surya sama bagasi luas ya? Pas banget buat jemput anak sekolah dan belanja mingguan. Ya sudah, saya naikkan tawaran ke $${priceStr}.`,
-            rayu_gagal: `Ah, rayuan masnya gak mempan. Saya ini udah biasa nawar cabai dan sayur di pasar induk!`,
-            walkout: `Ih, pelit banget masnya gak mau ditawar lagi. Mending saya cari di showroom sebelah aja!`
-        },
-        pembalap: {
-            intro: `Mobil rakitan lu kelihatan kencang di atas kertas. Gw buka penawaran di harga $${priceStr}. Deal?`,
-            tawar_sukses: `Oke, harga $${offerStr} dapet spek sepadan buat melibas tikungan sirkuit. Kita deal!`,
-            tawar_tolak: `Jangan bercanda lu, $${offerStr} kemahalan buat mobil yang belum gw tes di jalanan. Gw berani di angka $${compromiseStr}.`,
-            rayu_sukses: `Spoiler serat karbon dan jet booster ya? Menarik... bisa potong waktu lap gw di sirkuit. Deal, gw bayar $${priceStr}!`,
-            rayu_gagal: `Sales talk lu gak bakal bisa nambah tenaga mesin atau traksi ban di atas aspal basah.`,
-            walkout: `Terlalu banyak omong lu. Kelamaan nego bikin mesin gw dingin dan ban kehilangan grip. Gw cabut!`
-        }
+    const carName = negoSession && negoSession.car ? CARS_CATALOG.find(c => c.id === negoSession.car.carId).name : "mobil ini";
+    const carType = negoSession && negoSession.car ? negoSession.car.carId.split("_")[0] : "mobil";
+    
+    const intros = {
+        tambang: [
+            `Rancangan sasis ${carName} ini terlihat sangat solid dan kokoh. Cocok untuk kebutuhan operasional berat kami. Saya buka penawaran awal di $${priceStr}.`,
+            `Kendaraan tangguh ini memiliki struktur bodi yang andal untuk melibas medan berbatu. Bagaimana jika saya ambil di harga awal $${priceStr}?`,
+            `Saya suka ketahanan sasis dasar ${carType} yang Anda buat. Saya ajukan penawaran pertama sebesar $${priceStr}.`
+        ],
+        eksekutif: [
+            `Kendaraan ${carName} yang Anda presentasikan memiliki estetika profesional yang sangat baik. Untuk memulainya, saya tawarkan $${priceStr}.`,
+            `Spesifikasi rancangan ini sangat sesuai dengan standar kenyamanan operasional korporat kami. Saya ajukan tawaran awal sebesar $${priceStr}.`,
+            `Kami melihat nilai efisiensi yang menjanjikan pada mobil ini. Penawaran pembuka kami adalah $${priceStr}.`
+        ],
+        sultan: [
+            `Desain mobil ${carName} ini benar-benar luar biasa dan berkelas. Sangat cocok dengan selera anak muda masa kini. Saya tawar awal $${priceStr}.`,
+            `Rancangan Anda memiliki gaya modern yang sangat mencolok dan menonjol. Bagaimana kalau saya tebus seharga $${priceStr}?`,
+            `Kombinasi warna dan modifikasi mobil ini sangat mengagumkan. Saya buka penawaran pertama di angka $${priceStr}.`
+        ],
+        kolektor: [
+            `Desain ${carName} ini memiliki keindahan garis bodi klasik yang sangat menawan dan langka. Saya tawarkan $${priceStr} untuk mengawalinya.`,
+            `Saya sangat menghargai nilai historis dan pengerjaan vintage pada mobil ini. Saya bersedia membuka penawaran di harga $${priceStr}.`,
+            `Rancangan retro-modern ini sungguh mengingatkan saya pada masa jaya otomotif masa lalu. Penawaran pertama saya adalah $${priceStr}.`
+        ],
+        sirkus: [
+            `Rancangan ${carName} yang Anda buat ini sungguh unik, kreatif, dan penuh imajinasi menarik. Penawaran pembuka dari saya adalah $${priceStr}.`,
+            `Konsep modifikasi mobil ini sangat atraktif dan pasti akan memukau siapa saja yang melihatnya. Bagaimana jika saya tawar awal $${priceStr}?`,
+            `Desain yang berani dan spektakuler! Saya tawarkan harga pertama sebesar $${priceStr} untuk kendaraan ini.`
+        ],
+        ibu: [
+            `Mobil ${carName} ini terlihat sangat praktis, nyaman, dan aman untuk dikendarai sehari-hari. Saya tawar awal $${priceStr} ya?`,
+            `Rancangannya sangat ramah untuk kebutuhan keluarga dan belanja mingguan kami. Boleh saya tawar pertama di harga $${priceStr}?`,
+            `Saya menyukai aspek fungsionalitas dan keamanan dari mobil ini. Saya buka penawaran awal sebesar $${priceStr}.`
+        ],
+        pembalap: [
+            `Sasis ${carName} ini memiliki tingkat aerodinamis dan performa kecepatan yang sangat menjanjikan untuk jalanan. Saya buka tawar awal $${priceStr}.`,
+            `Rancangan bodi ceper dan modifikasi mesin mobil ini terlihat sangat agresif. Saya tawar awal sebesar $${priceStr}.`,
+            `Mobil ini dirancang dengan fokus performa yang sangat tajam. Penawaran pertama saya adalah $${priceStr}.`
+        ]
     };
 
-    const defaultDialogues = {
-        intro: `Rancangan ini lumayan. Saya tawarkan harga awal $${priceStr}.`,
-        tawar_sukses: `Tawaran yang masuk akal. Saya setuju dengan harga $${offerStr}.`,
-        tawar_tolak: `Hmm... harga $${offerStr} terlalu mahal. Bagaimana jika $${compromiseStr}?`,
-        rayu_sukses: `Bujukan Anda sangat meyakinkan. Saya naikkan tawaran saya menjadi $${priceStr}.`,
-        rayu_gagal: `Saya rasa argumen Anda kurang relevan dengan preferensi berkendara saya.`,
-        walkout: `Buyer menolak bernegosiasi lagi dan meninggalkan studio Anda!`
+    const successDialogues = {
+        tambang: [
+            `Tawaran Anda seharga $${offerStr} sangat pantas untuk kualitas sasis kokoh ini. Saya terima dengan senang hati!`,
+            `Harga $${offerStr} disetujui. Mesin tangguh ini resmi menjadi milik kami untuk medan tambang.`
+        ],
+        eksekutif: [
+            `Penawaran $${offerStr} berada dalam batas anggaran wajar kami. Transaksi ini disetujui secara resmi.`,
+            `Kami menerima kesepakatan harga $${offerStr}. Pembayaran akan segera diproses.`
+        ],
+        sultan: [
+            `Tawaran seharga $${offerStr} langsung saya terima! Mobil ini resmi saya beli untuk koleksi terbaru.`,
+            `Harga yang pas! Mobil ini langsung saya angkut sekarang juga!`
+        ],
+        kolektor: [
+            `Harga $${offerStr} adalah apresiasi yang sangat adil untuk mahakarya klasik ini. Saya setuju.`,
+            `Saya sepakat dengan harga $${offerStr}. Mobil indah ini akan mendapat tempat terbaik di garasi saya.`
+        ],
+        sirkus: [
+            `Kesepakatan tercapai! Harga $${offerStr} sangat sepadan untuk keunikan mobil ini.`,
+            `Luar biasa! Saya setuju dengan harga $${offerStr}. Ini akan menjadi pusat perhatian baru.`
+        ],
+        ibu: [
+            `Baiklah, harga $${offerStr} saya rasa cukup adil untuk mobil keluarga seaman ini. Saya beli!`,
+            `Saya setuju dengan harga $${offerStr}. Terima kasih sudah memberikan penawaran yang baik.`
+        ],
+        pembalap: [
+            `Harga $${offerStr} disetujui! Mobil berkecepatan tinggi ini resmi berpindah tangan ke garasi balap saya.`,
+            `Deal! Performa mobil ini sangat sepadan dengan harga $${offerStr} yang Anda tawarkan.`
+        ]
     };
 
-    if (dialogues[buyerId] && dialogues[buyerId][dialogType]) {
-        return dialogues[buyerId][dialogType];
+    const buyerKey = intros[buyerId] ? buyerId : 'tambang';
+
+    if (dialogType === 'intro') {
+        const list = intros[buyerKey];
+        return list[Math.floor(Math.random() * list.length)];
+    } else if (dialogType === 'tawar_sukses') {
+        const list = successDialogues[buyerKey];
+        return list[Math.floor(Math.random() * list.length)];
+    } else if (dialogType === 'tawar_tolak') {
+        return `Tawaran Anda seharga $${offerStr} sedikit melebihi budget kami saat ini. Bagaimana jika kita sepakati harga tengah sebesar $${compromiseStr}?`;
+    } else if (dialogType === 'rayu_sukses') {
+        return `Poin keunggulan spesifikasi komponen yang Anda jelaskan sangat masuk akal. Saya setuju untuk menaikkan penawaran saya menjadi $${priceStr}.`;
+    } else if (dialogType === 'rayu_gagal') {
+        return `Penjelasan Anda mengenai komponen tersebut kurang relevan dengan kebutuhan prioritas saya saat ini.`;
+    } else if (dialogType === 'walkout') {
+        return `Waktu negosiasi sudah habis dan kita belum menemukan titik temu. Saya terpaksa membatalkan transaksi ini.`;
     }
-    return defaultDialogues[dialogType] || "";
+
+    return "";
 }
 
 // --- TERMINAL NEGOTIATION SCREEN LOGIC (SPLIT-SCREEN) ---
