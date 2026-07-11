@@ -1086,10 +1086,27 @@ function init3DStudio() {
     animate();
 }
 
+function dispose3DObject(obj) {
+    if (!obj) return;
+    obj.traverse(child => {
+        if (child.isMesh) {
+            if (child.geometry) child.geometry.dispose();
+            if (child.material) {
+                if (Array.isArray(child.material)) {
+                    child.material.forEach(mat => mat.dispose());
+                } else {
+                    child.material.dispose();
+                }
+            }
+        }
+    });
+}
+
 function updateStudio3DModel() {
     if (!studio3D.scene) init3DStudio();
     
     if (studio3D.carGroup) {
+        dispose3DObject(studio3D.carGroup);
         studio3D.scene.remove(studio3D.carGroup);
     }
 
@@ -1209,6 +1226,7 @@ function updateShowroom3DModel(chassis, color, parts) {
     if (!showroom3D.scene) initShowroom3D();
     
     if (showroom3D.carGroup) {
+        dispose3DObject(showroom3D.carGroup);
         showroom3D.scene.remove(showroom3D.carGroup);
     }
 
