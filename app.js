@@ -2499,7 +2499,8 @@ function executeAcceptDeal() {
     gameState.slots[activeSlotIndex] = { occupied: false, car: null };
     
     logToTerminal(`PENGIRIMAN DATA TRANSAKSI... BERHASIL!`, 'sys');
-    logToTerminal(`Kas Anda saat ini: $${gameState.cash.toLocaleString()}`, 'success');
+    logToTerminal(`HARGA DEAL SEPAKAT: $${negoSession.currentBid.toLocaleString()}`, 'success');
+    logToTerminal(`Kas Studio (Total): $${gameState.cash.toLocaleString()}`, 'sys');
     
     if (negoSession.isSpecialOrder) {
         // Special order success: +1 star, cash reward is already included in bid price
