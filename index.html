@@ -369,6 +369,10 @@
                             <i class="fa-solid fa-note-sticky"></i>
                             <span>Stiker</span>
                         </button>
+                        <button class="tab-btn" data-tab="interior">
+                            <i class="fa-solid fa-couch"></i>
+                            <span>Interior</span>
+                        </button>
                     </div>
                     
                     <div class="parts-drawer">
@@ -395,6 +399,7 @@
                             <button class="rot-btn" id="rot-x-down" title="Putar Bawah"><i class="fa-solid fa-arrow-down"></i></button>
                         </div>
                         <button class="rot-btn rot-reset" id="rot-reset" title="Reset Rotasi"><i class="fa-solid fa-undo"></i> Reset</button>
+                        <button class="rot-btn" id="btn-toggle-interior" style="background: rgba(0, 255, 204, 0.15); border-color: var(--accent); color: var(--accent);" title="Lihat/Modif Interior"><i class="fa-solid fa-couch"></i> Interior: OFF</button>
                     </div>
                     
                     <div class="canvas-stage-wrapper">
@@ -427,6 +432,13 @@
                                 <button class="color-swatch" style="background-color: #1a1a1a;" data-color="#1a1a1a"></button>
                                 <button class="color-swatch" style="background-color: #0066ff;" data-color="#0066ff"></button>
                                 <button class="color-swatch" style="background-color: #00ff00;" data-color="#00ff00"></button>
+                                <!-- Gradients & Chameleon Paints -->
+                                <button class="color-swatch" style="background: linear-gradient(135deg, #ffcc00, #ff0055);" data-color="gradient-sunset" title="Sunset Gold-Red"></button>
+                                <button class="color-swatch" style="background: linear-gradient(135deg, #00ffcc, #9900ff);" data-color="gradient-chameleon" title="Teal-Purple Chameleon"></button>
+                                <button class="color-swatch" style="background: linear-gradient(135deg, #ff00ff, #00ffff);" data-color="gradient-cyberpunk" title="Cyberpunk Pink-Blue"></button>
+                                <button class="color-swatch" style="background: linear-gradient(135deg, #006600, #ffff00);" data-color="gradient-forest" title="Forest Green-Yellow"></button>
+                                <button class="color-swatch" style="background: linear-gradient(135deg, #0000ff, #00ffaa);" data-color="gradient-aurora" title="Aurora Blue-Green"></button>
+                                <button class="color-swatch" style="background: linear-gradient(135deg, #111111, #444444);" data-color="gradient-midnight" title="Midnight Carbon"></button>
                             </div>
                         </div>
                         

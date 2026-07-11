@@ -1002,6 +1002,7 @@ body {
     display: flex;
     flex-direction: column;
     background: rgba(2, 3, 5, 0.4);
+    overflow-y: auto;
 }
 
 .tab-btn {

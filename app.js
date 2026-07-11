@@ -245,6 +245,12 @@ const PARTS_LIBRARY = {
         { id: "sticker-carbon-hood", name: "Carbon Hood Wrap", price: 2500, effect: { speed: 12, accel: -0.3, eco: -1, flex: 30, defense: 2 }, desc: "Melapisi kap mesin depan dengan serat karbon hitam bertekstur.", svg: `<svg viewBox="0 0 100 60" width="100" height="60"><rect x="15" y="10" width="70" height="40" fill="#333" rx="4" stroke="#fff" stroke-width="1"/><rect x="25" y="18" width="50" height="24" fill="#111" stroke-dasharray="2,2" stroke="#444"/></svg>` },
         { id: "sticker-sakura", name: "Sakura Blossom Decal", price: 1000, effect: { speed: 0, accel: 0, eco: 5, flex: 20, defense: 0 }, desc: "Stiker kelopak bunga sakura merah muda bergaya JDM klasik.", svg: `<svg viewBox="0 0 100 60" width="100" height="60"><rect x="15" y="10" width="70" height="40" fill="#2d152a" rx="4"/><circle cx="35" cy="25" r="4" fill="#ffb7c5"/><circle cx="45" cy="35" r="5" fill="#ffb7c5"/><circle cx="65" cy="25" r="4" fill="#ffb7c5"/></svg>` },
         { id: "sticker-sponsor", name: "Sponsor Decals JDM", price: 800, effect: { speed: 3, accel: -0.1, eco: -1, flex: 18, defense: 0 }, desc: "Stiker sponsor otomotif profesional di pintu samping bawah.", svg: `<svg viewBox="0 0 100 60" width="100" height="60"><rect x="15" y="10" width="70" height="40" fill="#222" rx="4"/><text x="50" y="30" fill="#fff" font-size="7" font-weight="bold" font-family="sans-serif" text-anchor="middle">SPONSOR</text><text x="50" y="42" fill="#00ffcc" font-size="5" font-family="sans-serif" text-anchor="middle">TUNING RACING</text></svg>` }
+    ],
+    interior: [
+        { id: "interior-seat-sparco", name: "Jok Balap Sparco (Red)", price: 1800, effect: { speed: 0, accel: 0, eco: 0, flex: 20, defense: 5 }, desc: "Jok balap sport Sparco merah yang nyaman dan memegang erat tubuh.", svg: `<svg viewBox="0 0 100 80" width="80" height="80"><rect x="30" y="10" width="40" height="60" rx="10" fill="#ff2200" stroke="#fff" stroke-width="2"/><rect x="25" y="35" width="50" height="20" rx="5" fill="#ff2200"/><rect x="35" y="55" width="30" height="15" rx="3" fill="#111"/></svg>` },
+        { id: "interior-wheel-momo", name: "Setir Balap MOMO Carbon", price: 1200, effect: { speed: 5, accel: -0.1, eco: 0, flex: 15, defense: 0 }, desc: "Setir sport MOMO berbahan serat karbon ultra ringan.", svg: `<svg viewBox="0 0 80 80" width="80" height="80"><circle cx="40" cy="40" r="30" fill="none" stroke="#222" stroke-width="8"/><circle cx="40" cy="40" r="28" fill="none" stroke="#ffff00" stroke-width="2" stroke-dasharray="10,25"/><rect x="37" y="15" width="6" height="50" fill="#333"/><rect x="15" y="37" width="50" height="6" fill="#333"/></svg>` },
+        { id: "interior-rollcage", name: "Roll Cage Pengaman Kuning", price: 2500, effect: { speed: -5, accel: 0.2, eco: -2, flex: 10, defense: 45 }, desc: "Struktur pipa pelindung baja untuk memperkuat kabin.", svg: `<svg viewBox="0 0 100 80" width="100" height="80"><rect x="15" y="15" width="70" height="50" rx="8" fill="none" stroke="#ffcc00" stroke-width="5"/><line x1="15" y1="15" x2="85" y2="65" stroke="#ffcc00" stroke-width="5"/><line x1="85" y1="15" x2="15" y2="65" stroke="#ffcc00" stroke-width="5"/></svg>` },
+        { id: "interior-led-neon", name: "Dashboard LED Neon", price: 1500, effect: { speed: 0, accel: 0, eco: -1, flex: 25, defense: 0 }, desc: "Lampu pendaran neon dinamis di sepanjang dashboard interior.", svg: `<svg viewBox="0 0 100 30" width="100" height="30"><rect x="5" y="10" width="90" height="8" rx="4" fill="#00ffcc" filter="drop-shadow(0 0 3px #00ffcc)"/><line x1="10" y1="14" x2="90" y2="14" stroke="#fff" stroke-width="1.5"/></svg>` }
     ]
 };
 
@@ -360,6 +366,7 @@ let currentChassis = 'sedan';
 let carColor = '#ff0055';
 let placedParts = [];
 let selectedPartIndex = null;
+let viewInteriorActive = false;
 let partIdCounter = 0;
 
 // Negotiation session variables
@@ -515,24 +522,58 @@ function create3DCarGroup(chassisType, colorHex, parts, wheelsArrayRef, smokePar
     if (wheelsArrayRef) wheelsArrayRef.length = 0;
     if (smokeParticlesArrayRef) smokeParticlesArrayRef.length = 0;
 
-    // Premium Realistic Car Paint Material (MeshPhysicalMaterial)
+    // Premium Realistic Car Paint Material (MeshPhysicalMaterial with Sheen chameleon)
+    let baseColor = colorHex;
+    let sheenColorVal = null;
+    let sheenVal = 0.0;
+
+    if (colorHex === 'gradient-sunset') {
+        baseColor = 0xffaa00;
+        sheenColorVal = 0xff0055;
+        sheenVal = 1.0;
+    } else if (colorHex === 'gradient-chameleon') {
+        baseColor = 0x00ffcc;
+        sheenColorVal = 0x9900ff;
+        sheenVal = 1.0;
+    } else if (colorHex === 'gradient-cyberpunk') {
+        baseColor = 0xff00ff;
+        sheenColorVal = 0x00ffff;
+        sheenVal = 1.0;
+    } else if (colorHex === 'gradient-forest') {
+        baseColor = 0x005500;
+        sheenColorVal = 0xddff00;
+        sheenVal = 1.0;
+    } else if (colorHex === 'gradient-aurora') {
+        baseColor = 0x0000bb;
+        sheenColorVal = 0x00ffaa;
+        sheenVal = 1.0;
+    } else if (colorHex === 'gradient-midnight') {
+        baseColor = 0x111111;
+        sheenColorVal = 0x666666;
+        sheenVal = 0.8;
+    }
+
     const bodyMaterial = new THREE.MeshPhysicalMaterial({
-        color: new THREE.Color(colorHex),
+        color: new THREE.Color(baseColor),
         metalness: 0.9,
         roughness: 0.08,
         clearcoat: 1.0,
         clearcoatRoughness: 0.05,
-        reflectivity: 1.0
+        reflectivity: 1.0,
+        sheen: sheenVal,
+        sheenColor: sheenColorVal ? new THREE.Color(sheenColorVal) : undefined,
+        sheenRoughness: 0.1
     });
 
     // Dark Tinted Realistic Glass Material
+    const isViewingInterior = (typeof viewInteriorActive !== 'undefined') && viewInteriorActive;
     const glassMaterial = new THREE.MeshPhysicalMaterial({
-        color: 0x0a0a0d,
+        color: isViewingInterior ? 0x00ffcc : 0x0a0a0d,
         metalness: 0.9,
         roughness: 0.05,
-        transmission: 0.4,
+        transmission: isViewingInterior ? 0.98 : 0.4,
         transparent: true,
-        opacity: 0.85
+        opacity: isViewingInterior ? 0.05 : 0.85
     });
 
     // Realistic Rubber Tire Material
@@ -596,11 +637,13 @@ function create3DCarGroup(chassisType, colorHex, parts, wheelsArrayRef, smokePar
         group.add(cabin);
 
         // Pillar bodi tipis di kabin untuk realisme
-        const pillarFront = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.55, 1.57), carbonMaterial);
-        pillarFront.position.set(0.75, 0.9 + yOffset, 0);
-        const pillarRear = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.55, 1.57), carbonMaterial);
-        pillarRear.position.set(-1.25, 0.9 + yOffset, 0);
-        group.add(pillarFront, pillarRear);
+        if (!isViewingInterior) {
+            const pillarFront = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.55, 1.57), carbonMaterial);
+            pillarFront.position.set(0.75, 0.9 + yOffset, 0);
+            const pillarRear = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.55, 1.57), carbonMaterial);
+            pillarRear.position.set(-1.25, 0.9 + yOffset, 0);
+            group.add(pillarFront, pillarRear);
+        }
     } else if (chassisType === 'suv') {
         bodyLower = new THREE.Mesh(new THREE.BoxGeometry(4.0, 0.75, 1.85), activeBodyMat);
         bodyLower.position.set(0, 0.55 + yOffset, 0);
@@ -611,9 +654,11 @@ function create3DCarGroup(chassisType, colorHex, parts, wheelsArrayRef, smokePar
         group.add(cabin);
 
         // SUV Pillars
-        const pillarB = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.7, 1.67), carbonMaterial);
-        pillarB.position.set(-0.1, 1.25 + yOffset, 0);
-        group.add(pillarB);
+        if (!isViewingInterior) {
+            const pillarB = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.7, 1.67), carbonMaterial);
+            pillarB.position.set(-0.1, 1.25 + yOffset, 0);
+            group.add(pillarB);
+        }
     } else if (chassisType === 'hatchback') {
         bodyLower = new THREE.Mesh(new THREE.BoxGeometry(3.7, 0.6, 1.75), activeBodyMat);
         bodyLower.position.set(0, 0.45 + yOffset, 0);
@@ -714,18 +759,66 @@ function create3DCarGroup(chassisType, colorHex, parts, wheelsArrayRef, smokePar
     }
 
     // 3. INTERIOR DETAILS
-    const seatMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.7 });
+    const hasSparcoSeat = parts.some(p => p.templateId === "interior-seat-sparco");
+    const hasMomoWheel = parts.some(p => p.templateId === "interior-wheel-momo");
+    const hasRollcage = parts.some(p => p.templateId === "interior-rollcage");
+    const hasLedNeon = parts.some(p => p.templateId === "interior-led-neon");
+
+    // Seat Material
+    const seatColor = hasSparcoSeat ? 0xff1100 : 0x111111;
+    const seatMat = new THREE.MeshStandardMaterial({ 
+        color: seatColor, 
+        roughness: 0.7,
+        metalness: hasSparcoSeat ? 0.3 : 0.0
+    });
+    
     const seat1 = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.5, 0.45), seatMat);
     seat1.position.set(0.1, 0.65 + yOffset, 0.35);
     const seat2 = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.5, 0.45), seatMat);
     seat2.position.set(0.1, 0.65 + yOffset, -0.35);
-    
-    // Setir kemudi
-    const steeringWheel = new THREE.Mesh(new THREE.TorusGeometry(0.15, 0.03, 8, 16), carbonMaterial);
+    group.add(seat1, seat2);
+
+    // Steering Wheel Material
+    const wheelMat = hasMomoWheel ? 
+        new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.3, metalness: 0.9 }) : 
+        carbonMaterial;
+    const steeringWheel = new THREE.Mesh(new THREE.TorusGeometry(0.15, 0.03, 8, 16), wheelMat);
     steeringWheel.position.set(0.45, 0.78 + yOffset, 0.35);
     steeringWheel.rotation.y = Math.PI / 2;
     steeringWheel.rotation.x = 0.2;
-    group.add(seat1, seat2, steeringWheel);
+    group.add(steeringWheel);
+
+    // Rollcage
+    if (hasRollcage) {
+        const rollCageGroup = new THREE.Group();
+        const cageMat = new THREE.MeshStandardMaterial({ color: 0xffcc00, metalness: 0.9, roughness: 0.1 });
+        
+        const barLeft = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 1.4), cageMat);
+        barLeft.position.set(0, 0.9 + yOffset, 0.65);
+        barLeft.rotation.x = 0.2;
+        
+        const barRight = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 1.4), cageMat);
+        barRight.position.set(0, 0.9 + yOffset, -0.65);
+        barRight.rotation.x = -0.2;
+        
+        const crossBar = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 1.3), cageMat);
+        crossBar.position.set(-0.5, 0.8 + yOffset, 0);
+        crossBar.rotation.x = Math.PI / 2;
+        
+        rollCageGroup.add(barLeft, barRight, crossBar);
+        group.add(rollCageGroup);
+    }
+
+    // Dashboard Neon
+    if (hasLedNeon) {
+        const neonBar = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.03, 1.2), new THREE.MeshBasicMaterial({ color: 0x00ffcc }));
+        neonBar.position.set(0.65, 0.78 + yOffset, 0);
+        group.add(neonBar);
+        
+        const neonLED = new THREE.PointLight(0x00ffcc, 1.8, 2.5);
+        neonLED.position.set(0.65, 0.8 + yOffset, 0);
+        group.add(neonLED);
+    }
 
     // 4. DETAIL LAMPU (LED/Headlight)
     const headlightGlass = new THREE.MeshPhysicalMaterial({ color: 0xffffee, transmission: 0.9, opacity: 0.9, transparent: true });
@@ -1132,6 +1225,9 @@ function updateStudio3DModel() {
 function initShowroom3D() {
     const container = document.getElementById('showroom-car-target');
     if (!container) return;
+    
+    // Reset interior view mode during showroom negotiations
+    viewInteriorActive = false;
 
     if (showroom3D.renderer) {
         cancelAnimationFrame(showroom3D.animationId);
@@ -1409,6 +1505,24 @@ const terminalCliInput = document.getElementById('terminal-cli-input');
 // --- INITIALIZATION ---
 window.addEventListener('DOMContentLoaded', () => {
     try {
+        // Detect cloud/url save parameter
+        const urlParams = new URLSearchParams(window.location.search);
+        const urlSaveData = urlParams.get('save');
+        if (urlSaveData) {
+            try {
+                const decoded = atob(urlSaveData);
+                const parsed = JSON.parse(decoded);
+                if (parsed.account && parsed.game) {
+                    localStorage.setItem('car_lab_account', JSON.stringify(parsed.account));
+                    localStorage.setItem('keep_notes_car_lab_save', JSON.stringify(parsed.game));
+                    window.history.replaceState({}, document.title, window.location.pathname);
+                    alert("⚠️ PROGRES SYNCED: Akun & progres game berhasil dimuat dari URL!");
+                }
+            } catch(e) {
+                console.error("Gagal memuat URL sync:", e);
+            }
+        }
+
         setupGlobalEventListeners();
         // Check for existing account
         const saved = localStorage.getItem('car_lab_account');
@@ -1437,6 +1551,19 @@ function showIntroScreen() {
 // Save and Load logic (LocalStorage Persistence)
 function saveGameData() {
     localStorage.setItem('keep_notes_car_lab_save', JSON.stringify(gameState));
+    
+    // Auto-update URL query string with encoded base64 save data
+    try {
+        const combined = {
+            account: JSON.parse(localStorage.getItem('car_lab_account') || '{}'),
+            game: gameState
+        };
+        const encoded = btoa(JSON.stringify(combined));
+        const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname + "?save=" + encodeURIComponent(encoded);
+        window.history.replaceState({ path: newUrl }, '', newUrl);
+    } catch (e) {
+        console.error("Gagal meng-update URL query save:", e);
+    }
 }
 
 function loadGameData() {
@@ -1902,6 +2029,12 @@ function openStudioEditor(slotIdx) {
     carColor = slot.car.color;
     placedParts = JSON.parse(JSON.stringify(slot.car.parts)); // clone
     selectedPartIndex = null;
+    viewInteriorActive = false;
+    const btnToggleInterior = document.getElementById('btn-toggle-interior');
+    if (btnToggleInterior) {
+        btnToggleInterior.innerHTML = `<i class="fa-solid fa-couch"></i> Interior: OFF`;
+        btnToggleInterior.style.background = "rgba(0, 255, 204, 0.15)";
+    }
     
     // Setup Header & DOM
     activeSlotName.innerText = `WORKSPACE SLOT ${slotIdx + 1}`;
@@ -1980,6 +2113,29 @@ function renderPartsDrawer(category) {
 }
 
 function addPartToCanvas(partTemplate, x = 300, y = 150, scale = 1, rotation = 0, flipped = false) {
+    // Modular auto-replace logic
+    let prefix = null;
+    if (partTemplate.id.startsWith('wheel-')) prefix = 'wheel-';
+    else if (partTemplate.id.startsWith('interior-seat-')) prefix = 'interior-seat-';
+    else if (partTemplate.id.startsWith('interior-wheel-')) prefix = 'interior-wheel-';
+    else if (partTemplate.id.startsWith('interior-rollcage')) prefix = 'interior-rollcage';
+    else if (partTemplate.id.startsWith('interior-led-')) prefix = 'interior-led-';
+    else if (partTemplate.id.startsWith('neon-')) prefix = 'neon-';
+    else if (partTemplate.id.startsWith('roof-')) prefix = 'roof-';
+    else if (partTemplate.id.startsWith('front-')) prefix = 'front-';
+    else if (partTemplate.id.startsWith('spoiler-')) prefix = 'spoiler-';
+
+    if (prefix) {
+        const existingIndex = placedParts.findIndex(p => p.templateId.startsWith(prefix));
+        if (existingIndex !== -1) {
+            const refund = Math.round(placedParts[existingIndex].price * 0.5);
+            gameState.cash += refund;
+            // Notify via studio cash update
+            studioCashVal.innerText = `$${gameState.cash.toLocaleString()}`;
+            placedParts.splice(existingIndex, 1);
+        }
+    }
+
     const id = `placed-${partIdCounter++}`;
     
     const newPart = {
@@ -3044,6 +3200,31 @@ function setupGlobalEventListeners() {
     if (rotXUp) rotXUp.addEventListener('click', () => { carRotX = (carRotX - ROT_STEP) % 720; applyCanvasRotation(); });
     if (rotXDown) rotXDown.addEventListener('click', () => { carRotX = (carRotX + ROT_STEP) % 720; applyCanvasRotation(); });
     if (rotReset) rotReset.addEventListener('click', resetCanvasRotation);
+
+    const btnToggleInterior = document.getElementById('btn-toggle-interior');
+    if (btnToggleInterior) {
+        btnToggleInterior.addEventListener('click', () => {
+            viewInteriorActive = !viewInteriorActive;
+            if (viewInteriorActive) {
+                btnToggleInterior.innerHTML = `<i class="fa-solid fa-couch"></i> Interior: ON`;
+                btnToggleInterior.style.background = "rgba(0, 255, 204, 0.35)";
+                if (studio3D.controls && studio3D.camera) {
+                    studio3D.camera.position.set(0, 1.8, 3.5);
+                    studio3D.controls.target.set(0, 0.8, 0);
+                    studio3D.controls.update();
+                }
+            } else {
+                btnToggleInterior.innerHTML = `<i class="fa-solid fa-couch"></i> Interior: OFF`;
+                btnToggleInterior.style.background = "rgba(0, 255, 204, 0.15)";
+                if (studio3D.controls && studio3D.camera) {
+                    studio3D.camera.position.set(5.5, 2.5, 7.0);
+                    studio3D.controls.target.set(0, 0.4, 0);
+                    studio3D.controls.update();
+                }
+            }
+            updateStudio3DModel();
+        });
+    }
 
     // Drag to rotate canvas
     const rotWrapper = document.getElementById('canvas-rotation-wrapper');
