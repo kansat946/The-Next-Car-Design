@@ -323,7 +323,8 @@ let gameState = {
     placementStreak: [], // array of booleans/strings
     // Special Order
     activeOrder: null, // order object or null
-    orderTimerId: null
+    orderTimerId: null,
+    isPaused: false
 };
 
 // Editor temporary variables
@@ -452,479 +453,15 @@ function startGame() {
     }
 }
 
-// --- THREE.JS 3D SYSTEM ---
-let studio3D = {
-    renderer: null,
-    scene: null,
-    camera: null,
-    controls: null,
-    carGroup: null,
-    animationId: null
-};
-
-let showroom3D = {
-    renderer: null,
-    scene: null,
-    camera: null,
-    controls: null,
-    carGroup: null,
-    animationId: null
-};
-
-// Procedural 3D Car Model Builder
-function create3DCarGroup(chassisType, colorHex, parts) {
-    const group = new THREE.Group();
-
-    // Body Material (metallic paint)
-    const bodyMaterial = new THREE.MeshStandardMaterial({
-        color: new THREE.Color(colorHex),
-        metalness: 0.85,
-        roughness: 0.15
-    });
-
-    // Windows Material
-    const windowMaterial = new THREE.MeshStandardMaterial({
-        color: 0x111111,
-        metalness: 0.9,
-        roughness: 0.1,
-        transparent: true,
-        opacity: 0.75
-    });
-
-    // Tires Material
-    const tireMaterial = new THREE.MeshStandardMaterial({
-        color: 0x181818,
-        roughness: 0.85
-    });
-    
-    // Rims Material
-    const rimMaterial = new THREE.MeshStandardMaterial({
-        color: 0xdddddd,
-        metalness: 0.9,
-        roughness: 0.15
-    });
-
-    // Carbon / Black Trim Material
-    const blackMaterial = new THREE.MeshStandardMaterial({
-        color: 0x222222,
-        roughness: 0.6
-    });
-
-    // Shiny Chrome Material
-    const chromeMaterial = new THREE.MeshStandardMaterial({
-        color: 0xf5f5f5,
-        metalness: 0.95,
-        roughness: 0.05
-    });
-
-    let bodyLower, cabin;
-    let isLowered = parts.some(p => p.templateId === "suspension-ceper");
-    let yOffset = isLowered ? -0.15 : 0.0;
-
-    // Build base sasis 3D shapes
-    if (chassisType === 'sedan') {
-        bodyLower = new THREE.Mesh(new THREE.BoxGeometry(4.3, 0.5, 1.8), bodyMaterial);
-        bodyLower.position.set(0, 0.4 + yOffset, 0);
-        group.add(bodyLower);
-
-        cabin = new THREE.Mesh(new THREE.BoxGeometry(2.1, 0.55, 1.55), windowMaterial);
-        cabin.position.set(-0.2, 0.9 + yOffset, 0);
-        group.add(cabin);
-    } else if (chassisType === 'suv') {
-        bodyLower = new THREE.Mesh(new THREE.BoxGeometry(4.0, 0.75, 1.85), bodyMaterial);
-        bodyLower.position.set(0, 0.55 + yOffset, 0);
-        group.add(bodyLower);
-
-        cabin = new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.7, 1.65), windowMaterial);
-        cabin.position.set(-0.1, 1.25 + yOffset, 0);
-        group.add(cabin);
-    } else if (chassisType === 'hatchback') {
-        bodyLower = new THREE.Mesh(new THREE.BoxGeometry(3.7, 0.6, 1.75), bodyMaterial);
-        bodyLower.position.set(0, 0.45 + yOffset, 0);
-        group.add(bodyLower);
-
-        cabin = new THREE.Mesh(new THREE.BoxGeometry(2.1, 0.6, 1.55), windowMaterial);
-        cabin.position.set(-0.2, 1.05 + yOffset, 0);
-        group.add(cabin);
-    } else if (chassisType === 'sports') {
-        bodyLower = new THREE.Mesh(new THREE.BoxGeometry(4.5, 0.38, 1.95), bodyMaterial);
-        bodyLower.position.set(0, 0.3 + yOffset, 0);
-        group.add(bodyLower);
-
-        cabin = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.48, 1.6), windowMaterial);
-        cabin.position.set(-0.2, 0.7 + yOffset, 0);
-        group.add(cabin);
-    } else if (chassisType === 'pickup') {
-        bodyLower = new THREE.Mesh(new THREE.BoxGeometry(4.5, 0.6, 1.8), bodyMaterial);
-        bodyLower.position.set(0, 0.45 + yOffset, 0);
-        group.add(bodyLower);
-
-        cabin = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.7, 1.6), windowMaterial);
-        cabin.position.set(0.4, 1.1 + yOffset, 0);
-        group.add(cabin);
-
-        // Pickup bed open area
-        const bedL = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.5, 0.1), bodyMaterial);
-        bedL.position.set(-1.1, 0.7 + yOffset, 0.85);
-        const bedR = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.5, 0.1), bodyMaterial);
-        bedR.position.set(-1.1, 0.7 + yOffset, -0.85);
-        const bedBack = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.5, 1.8), bodyMaterial);
-        bedBack.position.set(-2.2, 0.7 + yOffset, 0);
-        group.add(bedL, bedR, bedBack);
-    } else {
-        bodyLower = new THREE.Mesh(new THREE.BoxGeometry(4.1, 0.5, 1.8), bodyMaterial);
-        bodyLower.position.set(0, 0.4 + yOffset, 0);
-        group.add(bodyLower);
-    }
-
-    // Detail Lights
-    const headGeo = new THREE.BoxGeometry(0.1, 0.12, 0.25);
-    const headMat = new THREE.MeshBasicMaterial({ color: 0xffffee });
-    const headlightL = new THREE.Mesh(headGeo, headMat);
-    headlightL.position.set(2.1, 0.45 + yOffset, 0.6);
-    const headlightR = new THREE.Mesh(headGeo, headMat);
-    headlightR.position.set(2.1, 0.45 + yOffset, -0.6);
-    group.add(headlightL, headlightR);
-
-    const tailGeo = new THREE.BoxGeometry(0.1, 0.1, 0.35);
-    const tailMat = new THREE.MeshBasicMaterial({ color: 0xff2222 });
-    const taillightL = new THREE.Mesh(tailGeo, tailMat);
-    taillightL.position.set(-2.1, 0.45 + yOffset, 0.6);
-    const taillightR = new THREE.Mesh(tailGeo, tailMat);
-    taillightR.position.set(-2.1, 0.45 + yOffset, -0.6);
-    group.add(taillightL, taillightR);
-
-    // Wheels
-    let wRadius = 0.42;
-    let wThickness = 0.28;
-
-    const monsterWheel = parts.find(p => p.templateId === "wheel-monster");
-    const tankWheel = parts.find(p => p.templateId === "wheel-tank");
-    const slickWheel = parts.find(p => p.templateId === "wheel-slick-racing");
-    const chromeWheel = parts.find(p => p.templateId === "wheel-chrome-luxury");
-    const alloyWheel = parts.find(p => p.templateId === "wheel-alloy-sport" || p.templateId === "wheel-jdm-classic");
-    const steelieWheel = parts.find(p => p.templateId === "wheel-steelie");
-    const mudWheel = parts.find(p => p.templateId === "wheel-mt-mud" || p.templateId === "wheel-at-offroad");
-
-    let activeTireMat = tireMaterial;
-    let activeRimMat = rimMaterial;
-
-    if (chromeWheel) {
-        activeRimMat = chromeMaterial;
-        wRadius = 0.46;
-    } else if (alloyWheel) {
-        activeRimMat = alloyWheel.templateId.includes("classic") ? new THREE.MeshStandardMaterial({ color: 0xd4af37, metalness: 0.9, roughness: 0.15 }) : rimMaterial;
-    } else if (steelieWheel) {
-        activeRimMat = blackMaterial;
-        wRadius = 0.39;
-    } else if (slickWheel) {
-        activeTireMat = new THREE.MeshStandardMaterial({ color: 0x0a0a0a, roughness: 0.25 });
-        wRadius = 0.43;
-    } else if (monsterWheel) {
-        wRadius = 0.72;
-        wThickness = 0.55;
-    } else if (mudWheel) {
-        wRadius = 0.5;
-        wThickness = 0.38;
-    }
-
-    function renderWheel(x, z) {
-        const wheel = new THREE.Group();
-        const tire = new THREE.Mesh(new THREE.CylinderGeometry(wRadius, wRadius, wThickness, 24), activeTireMat);
-        tire.rotateX(Math.PI / 2);
-        wheel.add(tire);
-
-        const rim = new THREE.Mesh(new THREE.CylinderGeometry(wRadius * 0.65, wRadius * 0.65, wThickness + 0.02, 16), activeRimMat);
-        rim.rotateX(Math.PI / 2);
-        wheel.add(rim);
-
-        wheel.position.set(x, wRadius - 0.1, z);
-        group.add(wheel);
-    }
-
-    if (tankWheel) {
-        // Tank tracks
-        const trackL = new THREE.Mesh(new THREE.BoxGeometry(3.3, 0.75, 0.35), blackMaterial);
-        trackL.position.set(0, 0.28, 0.95);
-        const trackR = new THREE.Mesh(new THREE.BoxGeometry(3.3, 0.75, 0.35), blackMaterial);
-        trackR.position.set(0, 0.28, -0.95);
-        group.add(trackL, trackR);
-    } else {
-        let zPos = chassisType === 'suv' ? 0.95 : 0.9;
-        let xFront = 1.35;
-        let xRear = -1.35;
-        renderWheel(xFront, zPos);
-        renderWheel(xFront, -zPos);
-        renderWheel(xRear, zPos);
-        renderWheel(xRear, -zPos);
-    }
-
-    // Dynamic Parts Positioning
-    parts.forEach(part => {
-        if (part.templateId.startsWith('wheel-') || part.templateId === "suspension-ceper") return;
-
-        const partMeshGroup = new THREE.Group();
-
-        if (part.templateId.includes('spoiler')) {
-            let xPos = chassisType === 'suv' || chassisType === 'hatchback' ? -1.7 : -1.95;
-            let yPos = chassisType === 'suv' ? 1.5 : chassisType === 'hatchback' ? 1.2 : 0.65;
-            
-            if (part.templateId === 'spoiler-carbon') {
-                const blade = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.04, 1.8), blackMaterial);
-                const supportL = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.25, 0.08), blackMaterial);
-                supportL.position.set(0, -0.125, 0.55);
-                const supportR = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.25, 0.08), blackMaterial);
-                supportR.position.set(0, -0.125, -0.55);
-                partMeshGroup.add(blade, supportL, supportR);
-            } else if (part.templateId === 'spoiler-biplane') {
-                const blade1 = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.04, 1.7), blackMaterial);
-                blade1.position.set(0, 0.15, 0);
-                const blade2 = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.04, 1.7), blackMaterial);
-                const supportL = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.35, 0.08), blackMaterial);
-                supportL.position.set(0, -0.1, 0.5);
-                const supportR = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.35, 0.08), blackMaterial);
-                supportR.position.set(0, -0.1, -0.5);
-                partMeshGroup.add(blade1, blade2, supportL, supportR);
-            } else {
-                // Ducktail
-                const ducktail = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.08, 1.65), blackMaterial);
-                ducktail.rotation.z = -0.28;
-                partMeshGroup.add(ducktail);
-            }
-            partMeshGroup.position.set(xPos, yPos + yOffset, 0);
-        }
-        
-        else if (part.templateId.includes('front-')) {
-            if (part.templateId === 'front-ram') {
-                const ram = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.75, 1.6), chromeMaterial);
-                partMeshGroup.add(ram);
-            } else if (part.templateId === 'front-winch') {
-                const block = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.25, 0.45), blackMaterial);
-                const spool = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.35), chromeMaterial);
-                spool.rotation.z = Math.PI / 2;
-                partMeshGroup.add(block, spool);
-            }
-            partMeshGroup.position.set(2.2, 0.35 + yOffset, 0);
-        }
-        
-        else if (part.templateId.includes('roof-') || part.templateId.includes('solar')) {
-            let yPos = chassisType === 'suv' ? 1.65 : chassisType === 'hatchback' ? 1.38 : 1.2;
-            
-            if (part.templateId === 'roof-siren') {
-                const stand = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.08, 0.65), blackMaterial);
-                const blueL = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.14, 0.24), new THREE.MeshBasicMaterial({ color: 0x0055ff }));
-                blueL.position.set(0, 0.08, 0.16);
-                const redR = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.14, 0.24), new THREE.MeshBasicMaterial({ color: 0xff2222 }));
-                redR.position.set(0, 0.08, -0.16);
-                partMeshGroup.add(stand, blueL, redR);
-            } else if (part.templateId === 'roof-solar' || part.templateId === 'solar') {
-                const cell = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.04, 1.15), new THREE.MeshStandardMaterial({ color: 0x0b1f33, metalness: 0.9, roughness: 0.1 }));
-                partMeshGroup.add(cell);
-            }
-            partMeshGroup.position.set(0, yPos + yOffset, 0);
-        }
-
-        else if (part.templateId.includes('neon-')) {
-            let neonColor = 0x00ffcc;
-            if (part.templateId.includes('pink')) neonColor = 0xff00cc;
-            if (part.templateId.includes('green')) neonColor = 0x00ff00;
-            
-            const light = new THREE.PointLight(neonColor, 2.5, 2.5);
-            light.position.set(0, -0.2, 0);
-            partMeshGroup.add(light);
-        }
-        
-        else if (part.templateId.includes('exhaust-')) {
-            const tip = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.45), chromeMaterial);
-            tip.rotation.z = Math.PI / 2;
-            partMeshGroup.add(tip);
-            partMeshGroup.position.set(-2.15, 0.22 + yOffset, 0.55);
-        }
-
-        // Apply scale, rotation, and offsets from transform panel
-        partMeshGroup.scale.set(part.scale, part.scale, part.scale);
-        partMeshGroup.rotation.y += part.rotation * (Math.PI / 180);
-        if (part.flipped) {
-            partMeshGroup.scale.x *= -1;
-        }
-
-        group.add(partMeshGroup);
-    });
-
-    return group;
-}
-
-// 3D Scene Initialization
-function init3DStudio() {
-    const container = document.getElementById('car-canvas-stage');
-    if (!container) return;
-
-    // Clean up old canvas/renderer
-    if (studio3D.renderer) {
-        cancelAnimationFrame(studio3D.animationId);
-        container.removeChild(studio3D.renderer.domElement);
-        studio3D.renderer.dispose();
-    }
-
-    // Hide old 2D divs
-    const oldChassis = document.getElementById('car-chassis-wrapper');
-    const oldParts = document.getElementById('parts-container');
-    if (oldChassis) oldChassis.style.display = 'none';
-    if (oldParts) oldParts.style.display = 'none';
-
-    // Scene
-    const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x06070a);
-    scene.fog = new THREE.FogExp2(0x06070a, 0.05);
-
-    // Camera
-    const camera = new THREE.PerspectiveCamera(40, 600 / 300, 0.1, 100);
-    camera.position.set(5.5, 3.0, 7.5);
-
-    // Renderer
-    const renderer = new THREE.WebGLRenderer({ antialias: true });
-    renderer.setSize(600, 300);
-    renderer.shadowMap.enabled = true;
-    renderer.setPixelRatio(window.devicePixelRatio);
-    container.appendChild(renderer.domElement);
-
-    // Controls
-    const controls = new THREE.OrbitControls(camera, renderer.domElement);
-    controls.enableDamping = true;
-    controls.dampingFactor = 0.05;
-    controls.maxPolarAngle = Math.PI / 2 - 0.05; // Don't go below floor
-    controls.minDistance = 3.5;
-    controls.maxDistance = 15;
-
-    // Lighting
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
-    scene.add(ambientLight);
-
-    const dirLight1 = new THREE.DirectionalLight(0xffffff, 0.8);
-    dirLight1.position.set(5, 10, 7);
-    scene.add(dirLight1);
-
-    const dirLight2 = new THREE.DirectionalLight(0x00ffcc, 0.4);
-    dirLight2.position.set(-5, 5, -7);
-    scene.add(dirLight2);
-
-    // Grid Floor
-    const grid = new THREE.GridHelper(20, 20, 0x00ffcc, 0x1f2635);
-    grid.position.y = 0;
-    scene.add(grid);
-
-    // Store state
-    studio3D.scene = scene;
-    studio3D.camera = camera;
-    studio3D.renderer = renderer;
-    studio3D.controls = controls;
-
-    // Start render loop
-    function animate() {
-        studio3D.animationId = requestAnimationFrame(animate);
-        controls.update();
-        renderer.render(scene, camera);
-    }
-    animate();
-}
-
-function updateStudio3DModel() {
-    if (!studio3D.scene) init3DStudio();
-    
-    // Remove old car model
-    if (studio3D.carGroup) {
-        studio3D.scene.remove(studio3D.carGroup);
-    }
-
-    // Build new car
-    studio3D.carGroup = create3DCarGroup(currentChassis, carColor, placedParts);
-    studio3D.scene.add(studio3D.carGroup);
-
-    // Reset local rotation state variable
-    carRotX = 0;
-    carRotY = 0;
-}
-
-// Showroom 3D Renderer (for Negotiation Screen)
-function initShowroom3D() {
-    const container = document.getElementById('showroom-car-target');
-    if (!container) return;
-
-    if (showroom3D.renderer) {
-        cancelAnimationFrame(showroom3D.animationId);
-        container.removeChild(showroom3D.renderer.domElement);
-        showroom3D.renderer.dispose();
-    }
-
-    const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x020305);
-    scene.fog = new THREE.FogExp2(0x020305, 0.05);
-
-    const camera = new THREE.PerspectiveCamera(40, container.clientWidth / container.clientHeight, 0.1, 100);
-    camera.position.set(6.0, 2.5, 6.5);
-
-    const renderer = new THREE.WebGLRenderer({ antialias: true });
-    renderer.setSize(container.clientWidth, container.clientHeight);
-    container.appendChild(renderer.domElement);
-
-    const controls = new THREE.OrbitControls(camera, renderer.domElement);
-    controls.enableDamping = true;
-    controls.dampingFactor = 0.05;
-    controls.autoRotate = true;
-    controls.autoRotateSpeed = 2.0;
-
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.45);
-    scene.add(ambientLight);
-
-    const spotlight = new THREE.SpotLight(0xffffff, 1.5, 20, Math.PI / 4, 0.5, 1);
-    spotlight.position.set(0, 8, 0);
-    scene.add(spotlight);
-
-    const accentLight = new THREE.DirectionalLight(0xff9100, 0.6);
-    accentLight.position.set(5, 3, 5);
-    scene.add(accentLight);
-
-    // Stage pedestal
-    const pedestal = new THREE.Mesh(
-        new THREE.CylinderGeometry(2.8, 3.0, 0.25, 32),
-        new THREE.MeshStandardMaterial({ color: 0x11111b, roughness: 0.4 })
-    );
-    pedestal.position.y = -0.125;
-    scene.add(pedestal);
-
-    showroom3D.scene = scene;
-    showroom3D.camera = camera;
-    showroom3D.renderer = renderer;
-    showroom3D.controls = controls;
-
-    function animate() {
-        showroom3D.animationId = requestAnimationFrame(animate);
-        controls.update();
-        renderer.render(scene, camera);
-    }
-    animate();
-}
-
-function updateShowroom3DModel(chassis, color, parts) {
-    if (!showroom3D.scene) initShowroom3D();
-    
-    if (showroom3D.carGroup) {
-        showroom3D.scene.remove(showroom3D.carGroup);
-    }
-
-    showroom3D.carGroup = create3DCarGroup(chassis, color, parts);
-    showroom3D.scene.add(showroom3D.carGroup);
-}
-
 // --- ROTATION STATE ---
 let carRotX = 0;
 let carRotY = 0;
-const ROT_STEP = 30; // degrees per button click
+const ROT_STEP = 45; // degrees per button click
 
 function applyCanvasRotation() {
-    if (studio3D.carGroup) {
-        studio3D.carGroup.rotation.x = carRotX * (Math.PI / 180);
-        studio3D.carGroup.rotation.y = carRotY * (Math.PI / 180);
+    const stage = document.getElementById('car-canvas-stage');
+    if (stage) {
+        stage.style.transform = `rotateX(${carRotX}deg) rotateY(${carRotY}deg)`;
     }
 }
 
@@ -932,11 +469,7 @@ function resetCanvasRotation() {
     carRotX = 0;
     carRotY = 0;
     applyCanvasRotation();
-    if (studio3D.controls) {
-        studio3D.controls.reset();
-    }
 }
-
 
 // --- TOOLTIP SYSTEM ---
 let tooltipTimer = null;
@@ -1166,6 +699,23 @@ function updateHUD() {
         }
     }
     
+    // Render Reputation Percentage
+    const repPercentEl = document.getElementById('hud-reputation-percent');
+    if (repPercentEl) {
+        let percentVal = 0;
+        if (gameState.rank === 6) {
+            percentVal = 100;
+        } else if (gameState.inPlacement) {
+            percentVal = Math.round((gameState.placementProgress / 7) * 100);
+        } else {
+            percentVal = Math.round((gameState.stars / 10) * 100);
+        }
+        repPercentEl.innerText = `${percentVal}%`;
+    }
+
+    // Render Pause Button UI
+    updatePauseButtonUI();
+    
     hudStreak.innerText = `${gameState.winStreak} 🔥`;
     
     // Mythic Placement Board rendering
@@ -1188,6 +738,29 @@ function updateHUD() {
     // Bankruptcy check
     checkBankruptcy();
 }
+
+function updatePauseButtonUI() {
+    const btnPause = document.getElementById('btn-pause-game');
+    const lblStatus = document.getElementById('lbl-game-status');
+    if (!btnPause) return;
+    
+    if (gameState.isPaused) {
+        // Paused state
+        btnPause.innerHTML = `<i class="fa-solid fa-play"></i> RESUME`;
+        btnPause.className = 'btn btn-danger btn-xs';
+        btnPause.style.borderColor = 'rgba(255, 51, 0, 0.4)';
+        btnPause.style.boxShadow = '0 0 10px rgba(255, 51, 0, 0.3)';
+        if (lblStatus) lblStatus.innerHTML = `GAME SPEED: <span style="color: var(--red); font-weight: bold;">PAUSED</span>`;
+    } else {
+        // Running state
+        btnPause.innerHTML = `<i class="fa-solid fa-pause"></i> PAUSE`;
+        btnPause.className = 'btn btn-warning btn-xs';
+        btnPause.style.borderColor = 'rgba(255, 170, 0, 0.3)';
+        btnPause.style.boxShadow = 'none';
+        if (lblStatus) lblStatus.innerHTML = `GAME SPEED: <span style="color: var(--green); font-weight: bold;">NORMAL</span>`;
+    }
+}
+
 
 function checkBankruptcy() {
     const hasAssets = gameState.slots.some(s => s.occupied);
@@ -1260,6 +833,7 @@ function startMarketEventsTicker() {
     ];
     
     function rollEvent() {
+        if (gameState.isPaused) return; // Skip if paused
         const roll = Math.random();
         if (roll < 0.6) {
             const evt = marketEvents[Math.floor(Math.random() * marketEvents.length)];
@@ -1279,6 +853,7 @@ function startMarketEventsTicker() {
 
 function startSpecialOrderTriggers() {
     function rollSpecialOrder() {
+        if (gameState.isPaused) return; // Skip if paused
         if (gameState.activeOrder) return; // Order is already active
         
         // 25% chance to trigger an order if not in placement challenge
@@ -1331,6 +906,8 @@ function renderSpecialOrder() {
         // Start countdown timer
         if (gameState.orderTimerId) clearInterval(gameState.orderTimerId);
         gameState.orderTimerId = setInterval(() => {
+            if (gameState.isPaused) return; // Skip countdown if paused
+            
             gameState.activeOrder.timeLeft--;
             if (gameState.activeOrder.timeLeft <= 0) {
                 // Time's up
@@ -1481,6 +1058,7 @@ function openStudioEditor(slotIdx) {
     studioCarModelName.innerText = carModel.name;
     studioCashVal.innerText = `$${gameState.cash.toLocaleString()}`;
     
+    loadChassis(currentChassis);
     applyColor(carColor);
     renderPlacedParts();
     updateStats();
@@ -1488,21 +1066,20 @@ function openStudioEditor(slotIdx) {
     // Swap screen
     document.getElementById('dashboard-screen').classList.remove('active');
     document.getElementById('studio-screen').classList.add('active');
-    
-    // Initialize & Update 3D Canvas
-    setTimeout(() => {
-        init3DStudio();
-        updateStudio3DModel();
-    }, 50);
+    // Reset car rotation when entering studio
+    resetCanvasRotation();
 }
 
 function loadChassis(type) {
-    // Left empty for compatibility, chassis is rendered in 3D
+    carChassisWrapper.innerHTML = CHASSIS_SVG[type];
 }
 
 function applyColor(color) {
     carColor = color;
-    updateStudio3DModel();
+    const paintablePaths = carChassisWrapper.querySelectorAll('.car-paintable');
+    paintablePaths.forEach(path => {
+        path.setAttribute('fill', color);
+    });
     
     // Sync swatch borders
     colorSwatches.forEach(swatch => {
@@ -1512,10 +1089,6 @@ function applyColor(color) {
             swatch.classList.remove('active');
         }
     });
-}
-
-function renderPlacedParts() {
-    updateStudio3DModel();
 }
 
 function renderPartsDrawer(category) {
@@ -2028,11 +1601,45 @@ function triggerLaunchNegotiation() {
     document.getElementById('studio-screen').classList.remove('active');
     document.getElementById('terminal-negotiation-screen').classList.add('active');
     
-    // Render left split Showroom in 3D
-    setTimeout(() => {
-        initShowroom3D();
-        updateShowroom3DModel(carModel.baseChassis, slot.car.color, slot.car.parts);
-    }, 50);
+    // Render left split Showroom
+    showroomCarTarget.innerHTML = CHASSIS_SVG[carModel.baseChassis];
+    const showroomPaint = showroomCarTarget.querySelectorAll('.car-paintable');
+    showroomPaint.forEach(p => p.setAttribute('fill', slot.car.color));
+    
+    // Check if lowering suspension is installed
+    const isLoweredShowroom = slot.car.parts.some(p => p.templateId === "suspension-ceper");
+    if (isLoweredShowroom) {
+        showroomCarTarget.querySelector('svg').style.transform = "translateY(25px)";
+    }
+    
+    // Render placed parts in showroom
+    const targetPartsWrap = document.createElement('div');
+    targetPartsWrap.style.position = 'absolute';
+    targetPartsWrap.style.width = '100%';
+    targetPartsWrap.style.height = '100%';
+    targetPartsWrap.style.top = '0';
+    targetPartsWrap.style.left = '0';
+    
+    slot.car.parts.forEach(part => {
+        const div = document.createElement('div');
+        div.className = `placed-part`;
+        div.style.left = `${part.x}px`;
+        
+        if (isLoweredShowroom && !part.templateId.startsWith('wheel-')) {
+            div.style.top = `${part.y + 25}px`;
+        } else {
+            div.style.top = `${part.y}px`;
+        }
+        
+        div.style.width = '100px'; 
+        div.style.height = '100px';
+        let transformStr = `translate(-50%, -50%) rotate(${part.rotation}deg) scale(${part.scale})`;
+        if (part.flipped) transformStr += ' scaleX(-1)';
+        div.style.transform = transformStr;
+        div.innerHTML = part.svg;
+        targetPartsWrap.appendChild(div);
+    });
+    showroomCarTarget.appendChild(targetPartsWrap);
     
     showroomCarTitle.innerText = carModel.name;
     showroomCarSpecs.innerText = `Top Speed: ${speed} km/h | Accel: ${accel.toFixed(1)}s | Investasi: $${partPrices.toLocaleString()}`;
@@ -2637,6 +2244,16 @@ function setupGlobalEventListeners() {
     const btnCreateAcc = document.getElementById('btn-create-account');
     if (btnCreateAcc) {
         btnCreateAcc.addEventListener('click', createAccount);
+    }
+
+    // Pause game button
+    const btnPauseGame = document.getElementById('btn-pause-game');
+    if (btnPauseGame) {
+        btnPauseGame.addEventListener('click', () => {
+            gameState.isPaused = !gameState.isPaused;
+            updatePauseButtonUI();
+            saveGameData();
+        });
     }
 
     // Enter key on account inputs
