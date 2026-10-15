@@ -296,6 +296,35 @@ let showroom3D = {
     clock: new THREE.Clock()
 };
 
+// Gradient Presets Map
+const GRADIENT_PALETTES = {
+    'gradient-sunset':    { col1: '#ffaa00', col2: '#ff0055', hex1: 0xffaa00, hex2: 0xff0055 },
+    'gradient-chameleon': { col1: '#00ffcc', col2: '#9900ff', hex1: 0x00ffcc, hex2: 0x9900ff },
+    'gradient-cyberpunk': { col1: '#ff00ff', col2: '#00ffff', hex1: 0xff00ff, hex2: 0x00ffff },
+    'gradient-forest':    { col1: '#006600', col2: '#ffff00', hex1: 0x006600, hex2: 0xffff00 },
+    'gradient-aurora':    { col1: '#0000ff', col2: '#00ffaa', hex1: 0x0000ff, hex2: 0x00ffaa },
+    'gradient-midnight':  { col1: '#111111', col2: '#444444', hex1: 0x111111, hex2: 0x444444 }
+};
+
+// Generates procedural canvas texture for smooth 3D gradients
+function createProceduralGradientTexture(gradKey) {
+    const pal = GRADIENT_PALETTES[gradKey];
+    if (!pal) return null;
+    const canvas = document.createElement('canvas');
+    canvas.width = 512;
+    canvas.height = 512;
+    const ctx = canvas.getContext('2d');
+    const grad = ctx.createLinearGradient(0, 0, 512, 512);
+    grad.addColorStop(0, pal.col1);
+    grad.addColorStop(1, pal.col2);
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, 512, 512);
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.wrapS = THREE.RepeatWrapping;
+    texture.wrapT = THREE.RepeatWrapping;
+    return texture;
+}
+
 // Procedural Highly-Realistic 3D Car Model Builder
 function create3DCarGroup(chassisType, colorHex, parts, wheelsArrayRef, smokeParticlesArrayRef, smokeGroup) {
     const group = new THREE.Group();
@@ -304,47 +333,26 @@ function create3DCarGroup(chassisType, colorHex, parts, wheelsArrayRef, smokePar
     if (wheelsArrayRef) wheelsArrayRef.length = 0;
     if (smokeParticlesArrayRef) smokeParticlesArrayRef.length = 0;
 
-    // Premium Realistic Car Paint Material (MeshPhysicalMaterial with Sheen chameleon)
-    let baseColor = colorHex;
-    let sheenColorVal = null;
-    let sheenVal = 0.0;
+    // Premium Realistic Car Paint Material (MeshPhysicalMaterial with Gradient & Sheen support)
+    const isGradient = colorHex && colorHex.startsWith('gradient-');
+    const pal = isGradient ? GRADIENT_PALETTES[colorHex] : null;
+    const gradTexture = isGradient ? createProceduralGradientTexture(colorHex) : null;
 
-    if (colorHex === 'gradient-sunset') {
-        baseColor = 0xffaa00;
-        sheenColorVal = 0xff0055;
-        sheenVal = 1.0;
-    } else if (colorHex === 'gradient-chameleon') {
-        baseColor = 0x00ffcc;
-        sheenColorVal = 0x9900ff;
-        sheenVal = 1.0;
-    } else if (colorHex === 'gradient-cyberpunk') {
-        baseColor = 0xff00ff;
-        sheenColorVal = 0x00ffff;
-        sheenVal = 1.0;
-    } else if (colorHex === 'gradient-forest') {
-        baseColor = 0x005500;
-        sheenColorVal = 0xddff00;
-        sheenVal = 1.0;
-    } else if (colorHex === 'gradient-aurora') {
-        baseColor = 0x0000bb;
-        sheenColorVal = 0x00ffaa;
-        sheenVal = 1.0;
-    } else if (colorHex === 'gradient-midnight') {
-        baseColor = 0x111111;
-        sheenColorVal = 0x666666;
-        sheenVal = 0.8;
-    }
+    let baseColor = isGradient ? (pal ? pal.hex1 : 0xff0055) : colorHex;
+    let sheenColorVal = pal ? pal.hex2 : null;
+    let sheenVal = isGradient ? 1.0 : 0.0;
 
     const bodyMaterial = new THREE.MeshPhysicalMaterial({
-        color: new THREE.Color(baseColor),
-        metalness: 0.9,
-        roughness: 0.08,
+        color: gradTexture ? 0xffffff : new THREE.Color(baseColor),
+        map: gradTexture || null,
+        metalness: isGradient ? 0.75 : 0.85,
+        roughness: isGradient ? 0.12 : 0.08,
         clearcoat: 1.0,
         clearcoatRoughness: 0.05,
         reflectivity: 1.0,
         sheen: sheenVal,
         sheenColor: sheenColorVal ? new THREE.Color(sheenColorVal) : undefined,
-        sheenRoughness: 0.1
+        sheenRoughness: 0.15
     });
 
     // Dark Tinted Realistic Glass Material
@@ -875,6 +883,29 @@ function init3DStudio() {
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     renderer.setPixelRatio(window.devicePixelRatio);
     container.appendChild(renderer.domElement);
+
+    // HTML5 Drag and Drop component installer directly onto 3D stage
+    container.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'copy';
+        container.classList.add('drag-over');
+    });
+    container.addEventListener('dragleave', () => {
+        container.classList.remove('drag-over');
+    });
+    container.addEventListener('drop', (e) => {
+        e.preventDefault();
+        container.classList.remove('drag-over');
+        try {
+            const dataStr = e.dataTransfer.getData('application/json');
+            if (dataStr) {
+                const part = JSON.parse(dataStr);
+                buyAndInstallPart(part);
+            }
+        } catch (err) {
+            console.error("Drop error:", err);
+        }
+    });
 
     // Controls
     const controls = new THREE.OrbitControls(camera, renderer.domElement);
@@ -1520,9 +1551,19 @@ function renderDashboardSlots() {
             
             // Preview
             const previewWrap = activeView.querySelector('.slot-car-preview');
-            previewWrap.innerHTML = CHASSIS_SVG[carModel.baseChassis];
-            const paintable = previewWrap.querySelectorAll('.car-paintable');
-            paintable.forEach(p => p.setAttribute('fill', slot.car.color));
+            const svgContent = CHASSIS_SVG[carModel.baseChassis];
+            if (slot.car.color && slot.car.color.startsWith('gradient-') && GRADIENT_PALETTES[slot.car.color]) {
+                const pal = GRADIENT_PALETTES[slot.car.color];
+                const gradId = `slot-grad-${index}`;
+                const gradDef = `<defs><linearGradient id="${gradId}" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="${pal.col1}"/><stop offset="100%" stop-color="${pal.col2}"/></linearGradient></defs>`;
+                previewWrap.innerHTML = svgContent.replace('<svg ', `<svg >${gradDef}`);
+                const paintable = previewWrap.querySelectorAll('.car-paintable');
+                paintable.forEach(p => p.setAttribute('fill', `url(#${gradId})`));
+            } else {
+                previewWrap.innerHTML = svgContent;
+                const paintable = previewWrap.querySelectorAll('.car-paintable');
+                paintable.forEach(p => p.setAttribute('fill', slot.car.color || '#ff0055'));
+            }
         } else {
             card.classList.add('empty');
             emptyView.classList.remove('hidden');
@@ -1754,10 +1795,17 @@ function renderCatalogGrid(catFilter = "all", varFilter = "all", searchStr = "")
     list.forEach(car => {
         const card = document.createElement('div');
         card.className = 'catalog-car-card';
+        const photoUrl = (typeof CAR_PHOTOS !== 'undefined') && CAR_PHOTOS[car.name];
+        const visualContent = photoUrl 
+            ? `<div class="catalog-car-photo-wrap">
+                   <img class="catalog-car-photo" src="${photoUrl}" alt="${car.name}" loading="lazy" onerror="this.onerror=null; this.parentElement.innerHTML=\`${CHASSIS_SVG[car.baseChassis].replace(/`/g, '\\`')}\`;" />
+               </div>`
+            : `<div class="catalog-car-svg-wrap">
+                   ${CHASSIS_SVG[car.baseChassis]}
+               </div>`;
+
         card.innerHTML = `
-            <div class="catalog-car-svg-wrap">
-                ${CHASSIS_SVG[car.baseChassis]}
-            </div>
+            ${visualContent}
             <div class="catalog-car-info">
                 <span class="category-label">${car.categoryName}</span>
                 <span class="tag ${car.colorClass}">${car.variantName}</span>
@@ -1863,11 +1911,89 @@ function applyColor(color) {
 
 function renderPartsDrawer(category) {
     partsDrawer.innerHTML = '';
+
+    // Specialized AI Auto Recommendation Tab in Studio Drawer
+    if (category === 'ai_rec') {
+        const promptWrap = document.createElement('div');
+        promptWrap.className = 'studio-ai-prompt-box';
+        promptWrap.innerHTML = `
+            <div style="font-size: 0.72rem; font-weight: 700; color: var(--accent); display: flex; align-items: center; gap: 6px;">
+                <i class="fa-solid fa-robot"></i> AI Rekomendasi Komponen
+            </div>
+            <textarea id="studio-ai-input" placeholder="Tulis gaya mobil... (misal: mobil balap cepat, drift JDM, mewah, offroad lumpur)"></textarea>
+            <button class="btn btn-primary btn-xs btn-block" id="btn-studio-ai-run">
+                <i class="fa-solid fa-wand-magic-sparkles"></i> Cari & Drag Komponen
+            </button>
+        `;
+        partsDrawer.appendChild(promptWrap);
+
+        const recsContainer = document.createElement('div');
+        recsContainer.id = 'studio-ai-recs';
+        recsContainer.style.display = 'flex';
+        recsContainer.style.flexDirection = 'column';
+        recsContainer.style.gap = '8px';
+        partsDrawer.appendChild(recsContainer);
+
+        function refreshStudioRecs(query) {
+            recsContainer.innerHTML = '';
+            const recs = runAdvisorAnalysis(query || 'balap kencang keren');
+            if (recs.length === 0) {
+                recsContainer.innerHTML = '<div style="font-size:0.75rem; color:var(--text-muted); text-align:center; padding:10px;">Tidak ada rekomendasi yang cocok.</div>';
+                return;
+            }
+            recs.forEach(({ part, score }) => {
+                const pc = PART_PRO_CON[part.id] || { pro: 'Meningkatkan nilai', con: 'Biaya pemasangan' };
+                const card = document.createElement('div');
+                card.className = 'part-card';
+                card.draggable = true;
+                card.innerHTML = `
+                    <div class="part-icon-preview">${part.svg}</div>
+                    <div class="part-info">
+                        <div class="part-name" style="display:flex; justify-content:space-between; align-items:center;">
+                            <span>${part.name}</span>
+                            <span class="advisor-match-badge advisor-match-${score >= 5 ? 'high' : 'med'}">${score >= 5 ? 'Sangat Cocok' : 'Cocok'}</span>
+                        </div>
+                        <div class="part-price">$${part.price.toLocaleString()}</div>
+                        <div class="part-effect" style="color: var(--green);">✅ ${pc.pro}</div>
+                        <div class="part-effect" style="color: var(--red);">⚠️ ${pc.con}</div>
+                    </div>
+                `;
+                card.addEventListener('dragstart', (e) => {
+                    e.dataTransfer.setData('application/json', JSON.stringify(part));
+                    e.dataTransfer.effectAllowed = 'copy';
+                });
+                card.addEventListener('click', () => {
+                    buyAndInstallPart(part);
+                });
+                attachPartTooltip(card, part);
+                recsContainer.appendChild(card);
+            });
+        }
+
+        const runBtn = promptWrap.querySelector('#btn-studio-ai-run');
+        const inputArea = promptWrap.querySelector('#studio-ai-input');
+        runBtn.addEventListener('click', () => {
+            refreshStudioRecs(inputArea.value.trim());
+        });
+        inputArea.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                refreshStudioRecs(inputArea.value.trim());
+            }
+        });
+
+        // Initial default recommendation
+        refreshStudioRecs('');
+        return;
+    }
+
     const parts = PARTS_LIBRARY[category];
+    if (!parts) return;
     
     parts.forEach(part => {
         const card = document.createElement('div');
         card.className = 'part-card';
+        card.draggable = true;
         card.innerHTML = `
             <div class="part-icon-preview">${part.svg}</div>
             <div class="part-info">
@@ -1877,20 +2003,14 @@ function renderPartsDrawer(category) {
             </div>
         `;
         
+        // Drag and drop event
+        card.addEventListener('dragstart', (e) => {
+            e.dataTransfer.setData('application/json', JSON.stringify(part));
+            e.dataTransfer.effectAllowed = 'copy';
+        });
+
         card.addEventListener('click', () => {
-            // Check if player has enough money to buy this component
-            if (gameState.cash < part.price) {
-                alert("Modal kas tidak mencukupi untuk membeli komponen ini!");
-                return;
-            }
-            
-            // Buy part
-            gameState.cash -= part.price;
-            studioCashVal.innerText = `$${gameState.cash.toLocaleString()}`;
-            saveGameData();
-            updateHUD();
-            
-            addPartToCanvas(part);
+            buyAndInstallPart(part);
         });
 
         // Attach tooltip on hover/right-click
@@ -1898,6 +2018,18 @@ function renderPartsDrawer(category) {
         
         partsDrawer.appendChild(card);
     });
+}
+
+function buyAndInstallPart(part) {
+    if (gameState.cash < part.price) {
+        alert("Modal kas tidak mencukupi untuk membeli komponen ini!");
+        return;
+    }
+    gameState.cash -= part.price;
+    studioCashVal.innerText = `$${gameState.cash.toLocaleString()}`;
+    saveGameData();
+    updateHUD();
+    addPartToCanvas(part);
 }
 
 
@@ -2170,71 +2302,129 @@ function getBuyerDialogue(buyerId, dialogType, data = {}) {
     
     const intros = {
         tambang: [
-            `Rancangan sasis ${carName} ini terlihat sangat solid dan kokoh. Cocok untuk kebutuhan operasional berat kami. Saya buka penawaran awal di $${priceStr}.`,
-            `Kendaraan tangguh ini memiliki struktur bodi yang andal untuk melibas medan berbatu. Bagaimana jika saya ambil di harga awal $${priceStr}?`,
-            `Saya suka ketahanan sasis dasar ${carType} yang Anda buat. Saya ajukan penawaran pertama sebesar $${priceStr}.`
+            `Halo bos! Gua liat sasis ${carName} lu ini kokoh banget. Di lokasi tambang batubara gua lagi butuh armada badak begini. Berani lepas di angka $${priceStr} gak?`,
+            `Wah, sasisnya keliatan tebel dan gak kaleng-kaleng nih! Buat hantam jalur berlumpur sama bebatuan tajam pas banget. Buka harga santai dulu, gimana kalau $${priceStr}?`,
+            `Mantap bener tongkrongannya! Jarang-jarang ada workshop bikin sasis sekuat ini. Gua serius minat, gua buka penawaran pertama $${priceStr}, deal gak?`
         ],
         eksekutif: [
-            `Kendaraan ${carName} yang Anda presentasikan memiliki estetika profesional yang sangat baik. Untuk memulainya, saya tawarkan $${priceStr}.`,
-            `Spesifikasi rancangan ini sangat sesuai dengan standar kenyamanan operasional korporat kami. Saya ajukan tawaran awal sebesar $${priceStr}.`,
-            `Kami melihat nilai efisiensi yang menjanjikan pada mobil ini. Penawaran pembuka kami adalah $${priceStr}.`
+            `Selamat siang rekan. Saya sedang mencari unit kendaraan representatif seperti ${carName} ini untuk operasional direksi. Saya ajukan tawaran pembuka sebesar $${priceStr}.`,
+            `Garis bodi mobil ini bersih, elegan, dan punya impresi prestisius. Sangat pantas terparkir di lobi kantor kami. Penawaran pertama dari pihak kami adalah $${priceStr}.`,
+            `Kesan pertama saya: berkelas dan efisien. Jika Anda bersedia melepasnya di angka $${priceStr}, kontrak pembelian bisa kita sepakati sekarang.`
         ],
         sultan: [
-            `Desain mobil ${carName} ini benar-benar luar biasa dan berkelas. Sangat cocok dengan selera anak muda masa kini. Saya tawar awal $${priceStr}.`,
-            `Rancangan Anda memiliki gaya modern yang sangat mencolok dan menonjol. Bagaimana kalau saya tebus seharga $${priceStr}?`,
-            `Kombinasi warna dan modifikasi mobil ini sangat mengagumkan. Saya buka penawaran pertama di angka $${priceStr}.`
+            `Woy bro! Asli ini mobil gokil parah! Tongkrongan ${carName} lu eye-catching banget, pas buat konten flexing malam minggu di PIK. Gua bayarin $${priceStr} langsung bungkus yuk!`,
+            `Gila sih, auranya dapet banget! Kalau gua bawa jalan pasti auto disorot kamera seantero kota. Gua buka penawaran pertama di $${priceStr}, kurang gak tuh bro?`,
+            `Nah ini dia yang gua cari-cari! Desainnya antimainstream dan berani beda. Gua gas $${priceStr} sekarang, transfer instan gak pake lama!`
         ],
         kolektor: [
-            `Desain ${carName} ini memiliki keindahan garis bodi klasik yang sangat menawan dan langka. Saya tawarkan $${priceStr} untuk mengawalinya.`,
-            `Saya sangat menghargai nilai historis dan pengerjaan vintage pada mobil ini. Saya bersedia membuka penawaran di harga $${priceStr}.`,
-            `Rancangan retro-modern ini sungguh mengingatkan saya pada masa jaya otomotif masa lalu. Penawaran pertama saya adalah $${priceStr}.`
+            `Permisi nak... Garis siluet ${carName} ini mengingatkan saya pada masa-masa kejayaan otomotif era dulu. Pengerjaannya rapi sekali. Boleh saya tawar awal $${priceStr}?`,
+            `Sungguh langka melihat perakit muda yang masih menaruh rasa hormat pada proporsi klasik seperti ini. Saya ingin memajangnya di museum pribadi saya di angka $${priceStr}.`,
+            `Karakter vintage-nya sangat kental dan berjiwa. Sebagai pembuka pembicaraan kita, bagaimana jika di harga $${priceStr}?`
         ],
         sirkus: [
-            `Rancangan ${carName} yang Anda buat ini sungguh unik, kreatif, dan penuh imajinasi menarik. Penawaran pembuka dari saya adalah $${priceStr}.`,
-            `Konsep modifikasi mobil ini sangat atraktif dan pasti akan memukau siapa saja yang melihatnya. Bagaimana jika saya tawar awal $${priceStr}?`,
-            `Desain yang berani dan spektakuler! Saya tawarkan harga pertama sebesar $${priceStr} untuk kendaraan ini.`
+            `Hahaha mantap jiwa! Ini mobil beneran gokil dan nyentrik abis! Pas banget buat pawai karnaval keliling kota. Gua tebus $${priceStr} ya bro?`,
+            `Woooww, liat bentuknya aja penonton sirkus gua pasti langsung teriak heboh! Unik parah! Gua buka harga di $${priceStr}, gimana mas bro?`,
+            `Gak ada duanya di dunia! Mobil dengan visual se-eksentrik ini wajib masuk sirkus gua. Nih gua buka penawaran awal $${priceStr}!`
         ],
         ibu: [
-            `Mobil ${carName} ini terlihat sangat praktis, nyaman, dan aman untuk dikendarai sehari-hari. Saya tawar awal $${priceStr} ya?`,
-            `Rancangannya sangat ramah untuk kebutuhan keluarga dan belanja mingguan kami. Boleh saya tawar pertama di harga $${priceStr}?`,
-            `Saya menyukai aspek fungsionalitas dan keamanan dari mobil ini. Saya buka penawaran awal sebesar $${priceStr}.`
+            `Permisi mas... Saya lagi nyari mobil yang aman buat antar-jemput anak les sama belanja bulanan. ${carName} ini bagasinya lega gak ya? Saya tawar dulu ya mas $${priceStr}.`,
+            `Aduh modelnya manis ya, keliatan nyaman buat keluarga. Kalau harganya cocok saya mau ambil nih. Boleh ya dibuka di $${priceStr}?`,
+            `Keliatannya stabil dan gak rewel ya mas. Saya suka mobil yang ramah di kantong dan aman. Saya tawar pertama $${priceStr} ya mas ganteng.`
         ],
         pembalap: [
-            `Sasis ${carName} ini memiliki tingkat aerodinamis dan performa kecepatan yang sangat menjanjikan untuk jalanan. Saya buka tawar awal $${priceStr}.`,
-            `Rancangan bodi ceper dan modifikasi mesin mobil ini terlihat sangat agresif. Saya tawar awal sebesar $${priceStr}.`,
-            `Mobil ini dirancang dengan fokus performa yang sangat tajam. Penawaran pertama saya adalah $${priceStr}.`
+            `Bro, setup sasis ${carName} lu tajem banget downforce-nya. Siap gua bawa track day ke Sentul nih! Buka harga balap dulu ya, $${priceStr} gua tebus.`,
+            `Gua perhatiin stance-nya udah center of gravity-nya mantep buat libas tikungan sirkuit. Gua serius mau turunin ke aspal, gua buka di $${priceStr} ya!`,
+            `Aura kompetisinya kerasa kenceng banget bro! Mesin sama setup suspensinya pas. Gimana kalau $${priceStr} langsung salaman di pit stop?`
         ]
     };
 
     const successDialogues = {
         tambang: [
-            `Tawaran Anda seharga $${offerStr} sangat pantas untuk kualitas sasis kokoh ini. Saya terima dengan senang hati!`,
-            `Harga $${offerStr} disetujui. Mesin tangguh ini resmi menjadi milik kami untuk medan tambang.`
+            `Sip bos! Harga $${offerStr} masuk akal banget buat unit sebadak ini. Langsung gua angkut ke site tambang sekarang!`,
+            `Nah gitu dong, asik nego sama lu! Gua bayar lunas $${offerStr}, kunci langsung gua bawa ya.`
         ],
         eksekutif: [
-            `Penawaran $${offerStr} berada dalam batas anggaran wajar kami. Transaksi ini disetujui secara resmi.`,
-            `Kami menerima kesepakatan harga $${offerStr}. Pembayaran akan segera diproses.`
+            `Angka $${offerStr} disetujui. Tim finance kami akan segera menerbitkan surat transfer pembayaran resmi hari ini. Terima kasih atas profesionalismenya.`,
+            `Sangat adil. Kesepakatan $${offerStr} memenuhi standar anggaran pengadaan kami. Senang berbisnis dengan Anda.`
         ],
         sultan: [
-            `Tawaran seharga $${offerStr} langsung saya terima! Mobil ini resmi saya beli untuk koleksi terbaru.`,
-            `Harga yang pas! Mobil ini langsung saya angkut sekarang juga!`
+            `Gassspoll bro! $${offerStr} langsung gua transfer detik ini juga! Kunci mobilnya sini, mau langsung gua bawa pamer keliling Senopati!`,
+            `Sip deal tanpa ribet! $${offerStr} mah receh buat karya sebagus ini bro. Gua mention garasi lu di Instagram gua ya!`
         ],
         kolektor: [
-            `Harga $${offerStr} adalah apresiasi yang sangat adil untuk mahakarya klasik ini. Saya setuju.`,
-            `Saya sepakat dengan harga $${offerStr}. Mobil indah ini akan mendapat tempat terbaik di garasi saya.`
+            `Alhamdulillah nak... $${offerStr} adalah penghargaan yang sangat pantas untuk mahakarya seni ini. Mobil ini akan saya rawat sepenuh hati di garasi pribadi.`,
+            `Kesepakatan yang indah di harga $${offerStr}. Terima kasih sudah mau melepas permata klasik ini kepada saya.`
         ],
         sirkus: [
-            `Kesepakatan tercapai! Harga $${offerStr} sangat sepadan untuk keunikan mobil ini.`,
-            `Luar biasa! Saya setuju dengan harga $${offerStr}. Ini akan menjadi pusat perhatian baru.`
+            `Horeeee deal! Di harga $${offerStr} ini bakal jadi bintang panggung utama karnaval malam ini! Makasih banyak ya sobat kreatif!`,
+            `Asikkk bungkus bro! $${offerStr} siap gua bayar kontan. Penonton sirkus pasti histeris liat mobil ini!`
         ],
         ibu: [
-            `Baiklah, harga $${offerStr} saya rasa cukup adil untuk mobil keluarga seaman ini. Saya beli!`,
-            `Saya setuju dengan harga $${offerStr}. Terima kasih sudah memberikan penawaran yang baik.`
+            `Alhamdulillah mas, harga $${offerStr} cocok sama tabungan suami saya. Makasih banyak ya mas, anak-anak pasti seneng banget!`,
+            `Wah terima kasih banyak ya mas udah mau kasih harga baik $${offerStr}. Semoga bengkel modifnya tambah berkah dan laris terus!`
         ],
         pembalap: [
-            `Harga $${offerStr} disetujui! Mobil berkecepatan tinggi ini resmi berpindah tangan ke garasi balap saya.`,
-            `Deal! Performa mobil ini sangat sepadan dengan harga $${offerStr} yang Anda tawarkan.`
+            `Gokil bro! Di angka $${offerStr} mobil ini sah jadi senjata baru gua di lintasan balap. Gua tes di sirkuit sore ini juga!`,
+            `Deal bro! $${offerStr} harga yang pantas buat karya tuner berkelas kayak lu. Sampai ketemu di podium juara!`
         ]
+    };
+
+    const rayuSuksesDialogues = {
+        tambang: [
+            `Wah bener juga lu bos! Masuk akal penjelasannya, besi sama bannya emang badak. Gua naikin penawaran gua jadi $${priceStr} dah!`,
+            `Hahaha pinter lu jelasin fungsi lapangannya! Gua demen orang ngerti alat berat. Gua tambahin deh jadi $${priceStr}!`
+        ],
+        eksekutif: [
+            `Penjelasan Anda mengenai efisiensi dan standar kenyamanan interiornya sangat meyakinkan komite kami. Kami setuju menaikkan pagu menjadi $${priceStr}.`,
+            `Argumen yang sangat profesional dan berbasis data teknis. Saya setuju menaikkan alokasi anggaran ke $${priceStr}.`
+        ],
+        sultan: [
+            `Anjayyy bener juga omongan lu bro! Detailnya makin diliat makin eye-catching parah. Oke gua naikin tawaran gua jadi $${priceStr}, puas kan lu?`,
+            `Wah gila sih, setelah lu sebut fitur itu gua makin gak sabar pamerin ke tongkrongan gua! Nih gua kasih $${priceStr}!`
+        ],
+        kolektor: [
+            `Pengetahuan Anda tentang orisinalitas dan filosofi komponennya sungguh menyentuh hati saya. Baiklah, saya naikkan penghargaan saya menjadi $${priceStr}.`,
+            `Tepat sekali nak... Jarang ada pemuda yang paham nilai historis seperti Anda. Saya hargai itu dengan menaikkan ke $${priceStr}.`
+        ],
+        sirkus: [
+            `Wahahah bener banget! Part itu emang bikin aura mobilnya makin kocak dan spektakuler! Nih gua tambahin jadi $${priceStr}!`
+        ],
+        ibu: [
+            `Oh begitu ya mas? Bagus dong kalau fiturnya beneran bikin anak-anak aman dan nyaman di jalan. Ya udah deh mas, saya naikin jadi $${priceStr} ya.`
+        ],
+        pembalap: [
+            `Gua suka cara lu tuning part itu! Aerodinamika sama traksi grip-nya emang beneran ngaruh di tikungan tajam. Gua naikin jadi $${priceStr} bro!`
+        ]
+    };
+
+    const rayuGagalDialogues = {
+        tambang: `Alah bos, gak ngaruh gituan buat di lumpur tambang! Jangan jualan angin ke gua, lu kira gua anak kemarin sore?`,
+        eksekutif: `Mohon maaf, fitur yang Anda sebutkan tidak relevan dengan kriteria kendaraan dinas formal kami. Fokus ke efisiensi saja.`,
+        sultan: `Dih apaan dah bro, itu mah standar biasa aja kali di tongkrongan gua. Gak bikin gua terkesan tuh!`,
+        kolektor: `Sayang sekali nak, sentuhan itu justru mengurangi kemurnian estetika era aslinya di mata saya.`,
+        sirkus: `Kurang heboh ah mas bro! Masa gituan doang dibilang atraksi panggung? Masih terlalu biasa buat sirkus gua!`,
+        ibu: `Duh mas, hal-hal begituan mah gak penting buat saya yang penting aman sama gak boros bensin ya mas.`,
+        pembalap: `Gimmick doang itu mah bro, gak bakal nambah lap time gua di sirkuit. Gak ngaruh ke kecepatan puncak!`
+    };
+
+    const tawarTolakDialogues = {
+        tambang: `Waduh bos, $${offerStr} kemahalan! Anggaran operasional gua mentok di $${compromiseStr}. Gimana, mau ambil gak?`,
+        eksekutif: `Angka $${offerStr} melampaui otorisasi anggaran dewan direksi. Batas maksimal yang bisa kami setujui adalah $${compromiseStr}.`,
+        sultan: `Santuy bro, $${offerStr} mah ketinggian amat! Gua tau mobil keren tapi gua gak mau rugi bandar. Gua mentok di $${compromiseStr} ya!`,
+        kolektor: `Tawaran $${offerStr} agak terlalu berlebihan untuk kondisi saat ini nak. Batas apresiasi wajar saya ada di $${compromiseStr}.`,
+        sirkus: `Waduh bosku, tiket sirkus belum nutup kalau $${offerStr}! Kasih gua harga bersahabat di $${compromiseStr} dong!`,
+        ibu: `Aduh mas, $${offerStr} mah bisa diomelin suami saya di rumah. Kalau boleh $${compromiseStr} saya usahain deh mas ya.`,
+        pembalap: `Weits santai bro, $${offerStr} kemahalan buat modal balap gua. Budget tim gua mentok di $${compromiseStr}, deal?`
+    };
+
+    const walkoutDialogues = {
+        tambang: `Udah bos, gua ada janji sama mandor tambang lain. Gak ketemu harganya, gua cabut dulu ya!`,
+        eksekutif: `Mohon maaf, waktu negosiasi kami terbatas dan kita tidak mencapai titik temu. Pertemuan ini kami akhiri.`,
+        sultan: `Yaelah alot bener bro kayak makan sandal! Gua cari mobil lain aja deh di dealer sebelah, bye bro!`,
+        kolektor: `Rupanya kita belum berjodoh nak. Semoga mobil ini kelak menemukan pemilik yang tepat. Permisi...`,
+        sirkus: `Yah penonton udah pada nunggu nih bosku! Gua cabut duluan ya, dadah!`,
+        ibu: `Ya ampun mas alot banget, udah jam jemput anak sekolah nih. Saya cari tempat lain aja ya mas, permisi.`,
+        pembalap: `Sesi kualifikasi gua udah mau mulai nih bro. Gak dapet harga pas, gua cabut ke paddock sebelah!`
     };
 
     const buyerKey = intros[buyerId] ? buyerId : 'tambang';
@@ -2246,13 +2436,14 @@ function getBuyerDialogue(buyerId, dialogType, data = {}) {
         const list = successDialogues[buyerKey];
         return list[Math.floor(Math.random() * list.length)];
     } else if (dialogType === 'tawar_tolak') {
-        return `Tawaran Anda seharga $${offerStr} sedikit melebihi budget kami saat ini. Bagaimana jika kita sepakati harga tengah sebesar $${compromiseStr}?`;
+        return tawarTolakDialogues[buyerKey] || `Tawaran $${offerStr} terlalu tinggi. Anggaran maksimal saya adalah $${compromiseStr}.`;
     } else if (dialogType === 'rayu_sukses') {
-        return `Poin keunggulan spesifikasi komponen yang Anda jelaskan sangat masuk akal. Saya setuju untuk menaikkan penawaran saya menjadi $${priceStr}.`;
+        const list = rayuSuksesDialogues[buyerKey] || [`Poin yang Anda jelaskan masuk akal. Saya naikkan tawaran saya menjadi $${priceStr}.`];
+        return list[Math.floor(Math.random() * list.length)];
     } else if (dialogType === 'rayu_gagal') {
-        return `Penjelasan Anda mengenai komponen tersebut kurang relevan dengan kebutuhan prioritas saya saat ini.`;
+        return rayuGagalDialogues[buyerKey] || `Penjelasan Anda kurang relevan dengan kebutuhan prioritas saya.`;
     } else if (dialogType === 'walkout') {
-        return `Waktu negosiasi sudah habis dan kita belum menemukan titik temu. Saya terpaksa membatalkan transaksi ini.`;
+        return walkoutDialogues[buyerKey] || `Waktu negosiasi sudah habis. Saya batalkan transaksi ini.`;
     }
 
     return "";
