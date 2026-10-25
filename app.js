@@ -308,20 +308,30 @@ const GRADIENT_PALETTES = {
 
 // Generates procedural canvas texture for smooth 3D gradients
 function createProceduralGradientTexture(gradKey) {
-    const pal = GRADIENT_PALETTES[gradKey];
-    if (!pal) return null;
+    let col1 = '#ffaa00', col2 = '#ff0055';
+    if (gradKey && gradKey.startsWith('custom-grad:')) {
+        const parts = gradKey.split(':');
+        col1 = parts[1] || '#ff0055';
+        col2 = parts[2] || '#00ffcc';
+    } else {
+        const pal = GRADIENT_PALETTES[gradKey];
+        if (!pal) return null;
+        col1 = pal.col1;
+        col2 = pal.col2;
+    }
     const canvas = document.createElement('canvas');
     canvas.width = 512;
     canvas.height = 512;
     const ctx = canvas.getContext('2d');
     const grad = ctx.createLinearGradient(0, 0, 512, 512);
-    grad.addColorStop(0, pal.col1);
-    grad.addColorStop(1, pal.col2);
+    grad.addColorStop(0, col1);
+    grad.addColorStop(1, col2);
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, 512, 512);
     const texture = new THREE.CanvasTexture(canvas);
     texture.wrapS = THREE.RepeatWrapping;
     texture.wrapT = THREE.RepeatWrapping;
+    texture.needsUpdate = true;
     return texture;
 }
 
@@ -334,16 +344,25 @@ function create3DCarGroup(chassisType, colorHex, parts, wheelsArrayRef, smokePar
     if (smokeParticlesArrayRef) smokeParticlesArrayRef.length = 0;
 
     // Premium Realistic Car Paint Material (MeshPhysicalMaterial with Gradient & Sheen support)
-    const isGradient = colorHex && colorHex.startsWith('gradient-');
-    const pal = isGradient ? GRADIENT_PALETTES[colorHex] : null;
+    const isGradient = colorHex && (colorHex.startsWith('gradient-') || colorHex.startsWith('custom-grad:'));
+    const pal = (isGradient && GRADIENT_PALETTES[colorHex]) ? GRADIENT_PALETTES[colorHex] : null;
     const gradTexture = isGradient ? createProceduralGradientTexture(colorHex) : null;
 
-    let baseColor = isGradient ? (pal ? pal.hex1 : 0xff0055) : colorHex;
-    let sheenColorVal = pal ? pal.hex2 : null;
+    let baseColor = 0xffffff;
+    if (!isGradient) {
+        if (typeof colorHex === 'string' && colorHex.startsWith('#')) {
+            baseColor = colorHex;
+        } else if (typeof colorHex === 'number') {
+            baseColor = colorHex;
+        } else {
+            baseColor = 0xff0055;
+        }
+    }
+    let sheenColorVal = pal ? pal.hex2 : (isGradient ? 0x00ffcc : null);
     let sheenVal = isGradient ? 1.0 : 0.0;
 
     const bodyMaterial = new THREE.MeshPhysicalMaterial({
-        color: gradTexture ? 0xffffff : new THREE.Color(baseColor),
+        color: isGradient ? 0xffffff : new THREE.Color(baseColor),
         map: gradTexture || null,
         metalness: isGradient ? 0.75 : 0.85,
         roughness: isGradient ? 0.12 : 0.08,
@@ -1572,10 +1591,20 @@ function renderDashboardSlots() {
             // Preview
             const previewWrap = activeView.querySelector('.slot-car-preview');
             const svgContent = CHASSIS_SVG[carModel.baseChassis];
-            if (slot.car.color && slot.car.color.startsWith('gradient-') && GRADIENT_PALETTES[slot.car.color]) {
+            let gradCol1 = null, gradCol2 = null;
+            if (slot.car.color && slot.car.color.startsWith('custom-grad:')) {
+                const parts = slot.car.color.split(':');
+                gradCol1 = parts[1];
+                gradCol2 = parts[2];
+            } else if (slot.car.color && slot.car.color.startsWith('gradient-') && GRADIENT_PALETTES[slot.car.color]) {
                 const pal = GRADIENT_PALETTES[slot.car.color];
+                gradCol1 = pal.col1;
+                gradCol2 = pal.col2;
+            }
+
+            if (gradCol1 && gradCol2) {
                 const gradId = `slot-grad-${index}`;
-                const gradDef = `<defs><linearGradient id="${gradId}" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="${pal.col1}"/><stop offset="100%" stop-color="${pal.col2}"/></linearGradient></defs>`;
+                const gradDef = `<defs><linearGradient id="${gradId}" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="${gradCol1}"/><stop offset="100%" stop-color="${gradCol2}"/></linearGradient></defs>`;
                 previewWrap.innerHTML = svgContent.replace('<svg ', `<svg >${gradDef}`);
                 const paintable = previewWrap.querySelectorAll('.car-paintable');
                 paintable.forEach(p => p.setAttribute('fill', `url(#${gradId})`));
@@ -1832,22 +1861,78 @@ function renderCatalogGrid(catFilter = "all", varFilter = "all", searchStr = "")
                 <h4>${car.name}</h4>
                 <p class="desc">${car.description}</p>
                 <div class="catalog-price-row">
-                    <span class="catalog-sasis-label">✅ Sasis Gratis</span>
+                    <span class="catalog-sasis-label">Harga Asli Real-Life</span>
                     <span class="catalog-inv-badge">💰 $${car.price.toLocaleString()}</span>
                 </div>
             </div>
         `;
         
         card.addEventListener('click', () => {
-            // Put the selected chassis into the active workspace slot
-            selectChassisForActiveSlot(car);
+            // Open full chassis preview modal before purchasing
+            openChassisPurchasePreview(car);
         });
         
         carCatalogGrid.appendChild(card);
     });
 }
 
+// Fullscreen-style Chassis Purchase Preview Modal
+let pendingPurchaseCar = null;
+
+function openChassisPurchasePreview(car) {
+    pendingPurchaseCar = car;
+    const modal = document.getElementById('chassis-preview-modal');
+    if (!modal) {
+        selectChassisForActiveSlot(car);
+        return;
+    }
+
+    const photoUrl = (typeof CAR_PHOTOS !== 'undefined') && CAR_PHOTOS[car.name];
+    const imgEl = document.getElementById('chassis-preview-img');
+    if (photoUrl) {
+        imgEl.src = photoUrl;
+        imgEl.style.display = 'block';
+    } else {
+        imgEl.style.display = 'none';
+    }
+
+    document.getElementById('chassis-preview-cat').innerText = car.categoryName.toUpperCase();
+    const tagEl = document.getElementById('chassis-preview-tag');
+    tagEl.innerText = car.variantName;
+    tagEl.className = `tag ${car.colorClass}`;
+
+    document.getElementById('chassis-preview-name').innerText = car.name;
+    document.getElementById('chassis-preview-desc').innerText = car.description;
+
+    // Chassis base specs
+    const baseDef = CHASSIS_DEFINITIONS[car.baseChassis] || { speed: 180, accel: 8.5, eco: 50, flex: 10 };
+    document.getElementById('chassis-preview-speed').innerText = `${baseDef.speed} km/h`;
+    document.getElementById('chassis-preview-accel').innerText = `${baseDef.accel.toFixed(1)}s`;
+    document.getElementById('chassis-preview-eco').innerText = baseDef.eco >= 70 ? 'Sangat Irit' : (baseDef.eco >= 40 ? 'Moderat' : 'Boros');
+    document.getElementById('chassis-preview-flex').innerText = baseDef.flex >= 40 ? 'Sultan / Mewah' : (baseDef.flex >= 20 ? 'Keren' : 'Standar');
+
+    document.getElementById('chassis-preview-price').innerText = `$${car.price.toLocaleString()}`;
+    document.getElementById('chassis-preview-wallet').innerText = `$${gameState.cash.toLocaleString()}`;
+
+    const btnConfirm = document.getElementById('btn-confirm-buy-chassis');
+    btnConfirm.innerHTML = `<i class="fa-solid fa-cart-shopping"></i> Beli Sasis Sekarang ($${car.price.toLocaleString()})`;
+
+    modal.classList.remove('hidden');
+}
+
+function closeChassisPurchasePreview() {
+    const modal = document.getElementById('chassis-preview-modal');
+    if (modal) modal.classList.add('hidden');
+    pendingPurchaseCar = null;
+}
+
 function selectChassisForActiveSlot(carCatalogItem) {
+    // Check if player has enough cash
+    if (gameState.cash < carCatalogItem.price) {
+        alert(`Uang kas tidak cukup! Kamu membutuhkan $${carCatalogItem.price.toLocaleString()}, saldo kamu saat ini $${gameState.cash.toLocaleString()}.`);
+        return;
+    }
+
     // Confirm logic if active slot has parts
     const currentSlot = gameState.slots[activeSlotIndex];
     if (currentSlot.occupied && currentSlot.car.parts.length > 0) {
@@ -1855,6 +1940,9 @@ function selectChassisForActiveSlot(carCatalogItem) {
         if (!sure) return;
     }
     
+    // Deduct cash for car purchase
+    gameState.cash -= carCatalogItem.price;
+
     // Setup workspace slot
     gameState.slots[activeSlotIndex] = {
         occupied: true,
@@ -1863,13 +1951,15 @@ function selectChassisForActiveSlot(carCatalogItem) {
             carName: carCatalogItem.name,
             color: '#ff0055', // default
             parts: [],
-            investment: 0
+            investment: carCatalogItem.price
         }
     };
     
     saveGameData();
+    closeChassisPurchasePreview();
     dealerModal.classList.add('hidden');
     renderDashboardSlots();
+    updateHUD();
     openStudioEditor(activeSlotIndex);
 }
 
@@ -2011,8 +2101,9 @@ function renderPartsDrawer(category) {
     if (!parts) return;
     
     parts.forEach(part => {
+        const isRec = activeAiRecommendedPartIds.has(part.id);
         const card = document.createElement('div');
-        card.className = 'part-card';
+        card.className = `part-card ${isRec ? 'recommended-glow' : ''}`;
         card.draggable = true;
         card.innerHTML = `
             <div class="part-icon-preview">${part.svg}</div>
@@ -3310,6 +3401,35 @@ function setupGlobalEventListeners() {
 
     // AI Advisor
     setupAdvisorEvents();
+
+    // Custom Gradient Maker button listener
+    const btnApplyCustomGrad = document.getElementById('btn-apply-custom-grad');
+    if (btnApplyCustomGrad) {
+        btnApplyCustomGrad.addEventListener('click', () => {
+            const c1 = document.getElementById('custom-grad-1').value || '#ff0055';
+            const c2 = document.getElementById('custom-grad-2').value || '#00ffcc';
+            applyColor(`custom-grad:${c1}:${c2}`);
+            saveActiveSlotChanges();
+        });
+    }
+
+    // Chassis Purchase Preview Modal Listeners
+    const btnClosePreview = document.getElementById('btn-close-chassis-preview');
+    if (btnClosePreview) {
+        btnClosePreview.addEventListener('click', closeChassisPurchasePreview);
+    }
+    const btnCancelPreview = document.getElementById('btn-cancel-chassis-preview');
+    if (btnCancelPreview) {
+        btnCancelPreview.addEventListener('click', closeChassisPurchasePreview);
+    }
+    const btnConfirmBuy = document.getElementById('btn-confirm-buy-chassis');
+    if (btnConfirmBuy) {
+        btnConfirmBuy.addEventListener('click', () => {
+            if (pendingPurchaseCar) {
+                selectChassisForActiveSlot(pendingPurchaseCar);
+            }
+        });
+    }
 }
 
 // ─────────────────────────────────────────────
@@ -3353,48 +3473,59 @@ const PART_PRO_CON = {
     'interior-rollcage':     { pro: 'Defense +45, safety',           con: 'Speed sedikit turun' },
 };
 
+let activeAiRecommendedPartIds = new Set();
+
 function runAdvisorAnalysis(inputText) {
     const scores = {};
     function add(id, pts) { scores[id] = (scores[id] || 0) + pts; }
 
-    if (/kencang|cepat|speed|balap|drift|drag|sirkuit|turbo|trek/i.test(inputText)) {
-        add('engine-v8', 3); add('engine-v6', 2); add('tabung-nos', 2);
-        add('spoiler-drag', 2); add('spoiler-carbon', 2); add('wheel-slick-racing', 3); add('exhaust-titanium', 2);
+    const text = (inputText || '').toLowerCase();
+
+    // Fast keyword matching
+    if (/kencang|cepat|speed|balap|drift|drag|sirkuit|turbo|trek|tol|ngebut/i.test(text)) {
+        add('engine-v8', 4); add('engine-v12', 3); add('engine-v6', 2); add('tabung-nos', 3);
+        add('spoiler-drag', 3); add('spoiler-carbon', 2); add('wheel-slick-racing', 3); add('exhaust-titanium', 2);
     }
-    if (/drift|jdm|jepang|japan|slide|oversteer/i.test(inputText)) {
-        add('wheel-drift-hard', 3); add('suspension-ceper', 3); add('engine-rotary', 3);
-        add('wheel-jdm-classic', 2); add('exhaust-straight', 2);
+    if (/drift|jdm|jepang|japan|slide|oversteer|ceper/i.test(text)) {
+        add('wheel-drift-hard', 4); add('suspension-ceper', 4); add('engine-rotary', 3);
+        add('wheel-jdm-classic', 3); add('exhaust-straight', 2); add('sticker-sakura', 2);
     }
-    if (/offroad|off-road|lumpur|gunung|tangguh|medan/i.test(inputText)) {
-        add('wheel-mt-mud', 3); add('wheel-at-offroad', 3); add('front-ram', 2);
+    if (/offroad|off-road|lumpur|gunung|tangguh|medan|becek|4x4|suv/i.test(text)) {
+        add('wheel-mt-mud', 4); add('wheel-at-offroad', 3); add('front-ram', 3); add('engine-diesel-v8', 3);
     }
-    if (/eco|listrik|elektrik|hijau|hemat|lingkungan|solar|hydrogen|ev/i.test(inputText)) {
-        add('engine-electric', 3); add('engine-hydrogen', 3); add('roof-solar', 3); add('engine-i4', 2);
+    if (/eco|listrik|elektrik|hijau|hemat|lingkungan|solar|hydrogen|ev|irit/i.test(text)) {
+        add('engine-electric', 4); add('engine-hydrogen', 4); add('roof-solar', 4); add('engine-i4', 3);
     }
-    if (/mewah|luxury|premium|elegan|prestis|bisnis|formal/i.test(inputText)) {
-        add('wheel-chrome-luxury', 3); add('engine-v12', 2); add('interior-seat-sparco', 2);
+    if (/mewah|luxury|premium|elegan|prestis|bisnis|formal|sultan|kaya/i.test(text)) {
+        add('wheel-chrome-luxury', 4); add('engine-v12', 3); add('engine-w16', 3); add('interior-seat-sparco', 2);
     }
-    if (/keren|gaya|flex|tampilan|estetik|visual|stiker|dekorasi/i.test(inputText)) {
-        add('neon-blue', 2); add('neon-pink', 2); add('sticker-flame', 2); add('sticker-carbon-hood', 2); add('spoiler-biplane', 2);
+    if (/keren|gaya|flex|tampilan|estetik|visual|stiker|dekorasi|modis|mencolok/i.test(text)) {
+        add('neon-blue', 3); add('neon-pink', 3); add('sticker-flame', 3); add('sticker-carbon-hood', 3); add('spoiler-biplane', 3);
     }
-    if (/aman|safety|keluarga|pelindung|crash/i.test(inputText)) {
-        add('interior-rollcage', 3); add('front-ram', 2);
+    if (/aman|safety|keluarga|pelindung|crash|kebal|kuat|baja/i.test(text)) {
+        add('interior-rollcage', 4); add('front-ram', 3); add('wheel-tank', 3);
     }
-    if (/murah|budget|hemat|ekonomis|terjangkau/i.test(inputText)) {
-        add('wheel-steelie', 2); add('engine-i4', 2);
+    if (/murah|budget|ekonomis|terjangkau|pas-pasan|merakyat/i.test(text)) {
+        add('wheel-steelie', 3); add('engine-i4', 3); add('spoiler-ducktail', 2); add('engine-two-stroke', 2);
     }
-    if (/muscle|mustang|v8|amerika|brutal|gahar/i.test(inputText)) {
-        add('engine-v8', 3); add('exhaust-straight', 2); add('sticker-racing-stripes', 2);
+    if (/muscle|mustang|v8|amerika|brutal|gahar|suara keras/i.test(text)) {
+        add('engine-v8', 4); add('exhaust-straight', 3); add('sticker-racing-stripes', 3);
     }
 
     const allParts = {};
     Object.values(PARTS_LIBRARY).forEach(arr => arr.forEach(p => { allParts[p.id] = p; }));
 
-    return Object.entries(scores)
+    const sorted = Object.entries(scores)
         .filter(([id, sc]) => sc > 0 && allParts[id])
         .sort((a, b) => b[1] - a[1])
-        .slice(0, 5)
+        .slice(0, 6)
         .map(([id, score]) => ({ part: allParts[id], score }));
+
+    // Store in global Set for highlighting inside any drawer tab
+    activeAiRecommendedPartIds.clear();
+    sorted.forEach(({ part }) => activeAiRecommendedPartIds.add(part.id));
+
+    return sorted;
 }
 
 function renderAdvisorResult(recs) {
@@ -3437,7 +3568,13 @@ function setupAdvisorEvents() {
         btnAsk.addEventListener('click', () => {
             const inp = document.getElementById('advisor-input');
             if (!inp || !inp.value.trim()) return;
-            renderAdvisorResult(runAdvisorAnalysis(inp.value));
+            const recs = runAdvisorAnalysis(inp.value);
+            renderAdvisorResult(recs);
+            // If in studio drawer, re-render current tab so neon glowing outlines appear
+            const activeTab = document.querySelector('.parts-tabs .tab-btn.active');
+            if (activeTab && partsDrawer) {
+                renderPartsDrawer(activeTab.dataset.tab);
+            }
         });
     }
     if (btnToggle && body) {

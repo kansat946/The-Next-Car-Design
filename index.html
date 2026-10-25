@@ -470,6 +470,16 @@
                                 <button class="color-swatch" style="background: linear-gradient(135deg, #0000ff, #00ffaa);" data-color="gradient-aurora" title="Aurora Blue-Green"></button>
                                 <button class="color-swatch" style="background: linear-gradient(135deg, #111111, #444444);" data-color="gradient-midnight" title="Midnight Carbon"></button>
                             </div>
+                            <!-- Custom Dual Gradient Maker -->
+                            <div class="custom-gradient-maker">
+                                <span class="custom-gradient-label"><i class="fa-solid fa-palette"></i> Gradasi Custom:</span>
+                                <input type="color" id="custom-grad-1" value="#ff0055" title="Warna Awal">
+                                <i class="fa-solid fa-arrow-right-long" style="font-size:0.7rem; color:var(--text-muted);"></i>
+                                <input type="color" id="custom-grad-2" value="#00ffcc" title="Warna Akhir">
+                                <button type="button" id="btn-apply-custom-grad" class="btn btn-outline btn-xs">
+                                    <i class="fa-solid fa-wand-magic-sparkles"></i> Pakai
+                                </button>
+                            </div>
                         </div>
                         
                         <div class="control-group">
@@ -626,6 +636,67 @@
                 </div>
             </div>
         </section>
+        
+        <!-- Chassis Purchase Preview Modal (Large Fullscreen-style Modal) -->
+        <div class="modal-overlay hidden" id="chassis-preview-modal">
+            <div class="modal-card chassis-preview-modal-card">
+                <div class="modal-header">
+                    <h3 id="chassis-preview-title"><i class="fa-solid fa-car-side"></i> Konfirmasi Pembelian Mobil</h3>
+                    <button class="btn-close-modal" id="btn-close-chassis-preview">&times;</button>
+                </div>
+                <div class="chassis-preview-body">
+                    <div class="chassis-preview-hero">
+                        <img id="chassis-preview-img" src="" alt="Foto Mobil" referrerpolicy="no-referrer" crossorigin="anonymous" />
+                        <div class="chassis-preview-badge-row">
+                            <span class="category-label" id="chassis-preview-cat">SPORTS</span>
+                            <span class="tag" id="chassis-preview-tag">Modern</span>
+                        </div>
+                    </div>
+                    <div class="chassis-preview-details">
+                        <h2 id="chassis-preview-name" class="chassis-preview-car-name">Nama Mobil</h2>
+                        <p id="chassis-preview-desc" class="chassis-preview-car-desc">Deskripsi mobil...</p>
+                        
+                        <div class="chassis-preview-stats-grid">
+                            <div class="chassis-stat-box">
+                                <span class="chassis-stat-lbl"><i class="fa-solid fa-gauge-high"></i> Top Speed</span>
+                                <span class="chassis-stat-val" id="chassis-preview-speed">220 km/h</span>
+                            </div>
+                            <div class="chassis-stat-box">
+                                <span class="chassis-stat-lbl"><i class="fa-solid fa-bolt"></i> 0-100 km/h</span>
+                                <span class="chassis-stat-val" id="chassis-preview-accel">5.2s</span>
+                            </div>
+                            <div class="chassis-stat-box">
+                                <span class="chassis-stat-lbl"><i class="fa-solid fa-leaf"></i> Eco</span>
+                                <span class="chassis-stat-val" id="chassis-preview-eco">Biasa</span>
+                            </div>
+                            <div class="chassis-stat-box">
+                                <span class="chassis-stat-lbl"><i class="fa-solid fa-crown"></i> Flex</span>
+                                <span class="chassis-stat-val" id="chassis-preview-flex">Tinggi</span>
+                            </div>
+                        </div>
+
+                        <div class="chassis-preview-price-box">
+                            <div class="chassis-price-left">
+                                <span class="chassis-price-sub">Harga Asli Real-Life:</span>
+                                <span class="chassis-price-num" id="chassis-preview-price">$0</span>
+                            </div>
+                            <div class="chassis-user-wallet">
+                                <span class="chassis-wallet-sub">Saldo Kas Kamu:</span>
+                                <span class="chassis-wallet-num" id="chassis-preview-wallet">$1,000,000,000</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="chassis-preview-footer">
+                    <button class="btn btn-outline" id="btn-cancel-chassis-preview">
+                        <i class="fa-solid fa-xmark"></i> Batal
+                    </button>
+                    <button class="btn btn-primary btn-glow" id="btn-confirm-buy-chassis">
+                        <i class="fa-solid fa-cart-shopping"></i> Beli Sasis Sekarang
+                    </button>
+                </div>
+            </div>
+        </div>
         
     </div>
     
