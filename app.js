@@ -3,10 +3,10 @@
 // ─────────────────────────────────────────────
 const CONFIG = {
     // Economy
-    STARTING_CASH:          50000,  // initial kas saat game baru / setelah bangkrut
-    BANKRUPTCY_THRESHOLD:   5000,   // kas minimum sebelum reset (tanpa aset)
-    SPECIAL_ORDER_BASE:     30000,  // reward spesial order: base + rank * SPECIAL_ORDER_PER_RANK
-    SPECIAL_ORDER_PER_RANK: 10000,
+    STARTING_CASH:          1000000000, // modal awal 1 miliar rupiah/dollar
+    BANKRUPTCY_THRESHOLD:   10000000,   // kas minimum sebelum reset talangan
+    SPECIAL_ORDER_BASE:     50000000,   // reward spesial order base
+    SPECIAL_ORDER_PER_RANK: 20000000,
 
     // Progression
     MAX_STARS:              10,     // bintang untuk naik rank
@@ -122,7 +122,7 @@ const RANKS = [
 
 // --- GAME STATE ---
 let gameState = {
-    cash: 50000,
+    cash: 1000000000,
     rank: 0, // index in RANKS
     stars: 0, // 0 - 10
     winStreak: 0,
@@ -180,7 +180,7 @@ const LANG = {
         label_username: 'Nama Pengguna (Username)',
         label_studioname: 'Nama Studio / Bengkel',
         btn_start: 'Mulai Bermain!',
-        bankruptcy_msg: 'Kebangkrutan! Modal Anda habis. Anda menerima bantuan talangan darurat sebesar $50,000 namun reputasi Anda dipotong (-2 Bintang).',
+        bankruptcy_msg: 'Kebangkrutan! Modal Anda habis. Anda menerima bantuan talangan darurat sebesar $100,000,000 namun reputasi Anda dipotong (-2 Bintang).',
         min_parts_msg: 'Mobil belum selesai dirancang! Pasang minimal 3 komponen di Studio Desain sebelum menjual.',
         workspace_full_msg: 'Workspace Penuh! Selesaikan atau ganti mobil di slot lain terlebih dahulu.',
     },
@@ -192,7 +192,7 @@ const LANG = {
         label_username: 'Username',
         label_studioname: 'Studio / Workshop Name',
         btn_start: 'Start Playing!',
-        bankruptcy_msg: 'Bankruptcy! Your funds ran out. You received an emergency bailout of $50,000 but lost 2 Reputation Stars.',
+        bankruptcy_msg: 'Bankruptcy! Your funds ran out. You received an emergency bailout of $100,000,000 but lost 2 Reputation Stars.',
         min_parts_msg: 'Car is not finished! Install at least 3 components in the Design Studio before selling.',
         workspace_full_msg: 'Workspace Full! Finish or replace a car in another slot first.',
     }
@@ -872,17 +872,33 @@ function init3DStudio() {
     scene.background = new THREE.Color(0x06080d);
     scene.fog = new THREE.FogExp2(0x06080d, 0.06);
 
+    // Dimensions based on container client size for full responsiveness
+    const w = container.clientWidth || 600;
+    const h = container.clientHeight || 300;
+
     // Camera
-    const camera = new THREE.PerspectiveCamera(40, 600 / 300, 0.1, 100);
+    const camera = new THREE.PerspectiveCamera(40, w / h, 0.1, 100);
     camera.position.set(5.5, 2.5, 7.0);
 
     // Renderer
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
-    renderer.setSize(600, 300);
+    renderer.setSize(w, h);
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     renderer.setPixelRatio(window.devicePixelRatio);
     container.appendChild(renderer.domElement);
+
+    // Responsive Canvas Resize Listener
+    window.addEventListener('resize', () => {
+        if (!studio3D.renderer || !studio3D.camera) return;
+        const newW = container.clientWidth;
+        const newH = container.clientHeight;
+        if (newW && newH) {
+            studio3D.camera.aspect = newW / newH;
+            studio3D.camera.updateProjectionMatrix();
+            studio3D.renderer.setSize(newW, newH);
+        }
+    });
 
     // HTML5 Drag and Drop component installer directly onto 3D stage
     container.addEventListener('dragover', (e) => {
@@ -1390,6 +1406,10 @@ function loadGameData() {
     if (saved) {
         try {
             gameState = JSON.parse(saved);
+            // Upgrade old starting cash balance if user had old 50k default
+            if (gameState.cash === 50000 || !gameState.cash || gameState.cash < 100000) {
+                gameState.cash = 1000000000;
+            }
             // Re-sync any missing structures just in case
             if (!gameState.winStreak) gameState.winStreak = 0;
             if (!gameState.loseStreak) gameState.loseStreak = 0;
@@ -1505,9 +1525,9 @@ function updatePauseButtonUI() {
 
 function checkBankruptcy() {
     const hasAssets = gameState.slots.some(s => s.occupied);
-    if (gameState.cash < 5000 && !hasAssets) {
+    if (gameState.cash < 10000000 && !hasAssets) {
         // Trigger Bankruptcy
-        gameState.cash = 50000;
+        gameState.cash = 100000000;
         
         // Stars penalty
         if (gameState.rank > 0) {
@@ -1525,7 +1545,7 @@ function checkBankruptcy() {
         gameState.loseStreak = 0;
         gameState.inPlacement = false;
         
-        alert("Kebangkrutan! Modal Anda habis. Anda menerima bantuan talangan darurat sebesar $50,000 namun reputasi Anda dipotong (-2 Bintang).");
+        alert("Kebangkrutan! Modal Anda habis. Anda menerima bantuan talangan darurat sebesar $100,000,000 namun reputasi Anda dipotong (-2 Bintang).");
         saveGameData();
         updateHUD();
     }
@@ -1798,7 +1818,7 @@ function renderCatalogGrid(catFilter = "all", varFilter = "all", searchStr = "")
         const photoUrl = (typeof CAR_PHOTOS !== 'undefined') && CAR_PHOTOS[car.name];
         const visualContent = photoUrl 
             ? `<div class="catalog-car-photo-wrap">
-                   <img class="catalog-car-photo" src="${photoUrl}" alt="${car.name}" loading="lazy" onerror="this.onerror=null; this.parentElement.innerHTML=\`${CHASSIS_SVG[car.baseChassis].replace(/`/g, '\\`')}\`;" />
+                   <img class="catalog-car-photo" src="${photoUrl}" alt="${car.name}" loading="lazy" referrerpolicy="no-referrer" crossorigin="anonymous" onerror="this.onerror=null; this.parentElement.innerHTML=\`${CHASSIS_SVG[car.baseChassis].replace(/`/g, '\\`')}\`;" />
                </div>`
             : `<div class="catalog-car-svg-wrap">
                    ${CHASSIS_SVG[car.baseChassis]}

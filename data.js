@@ -145,11 +145,174 @@ VEHICLE_CATEGORIES.forEach(cat => {
         sedan: 25000, suv: 40000, hatchback: 18000, sports: 80000, pickup: 35000
     };
 
+    // Real-world MSRP & Market valuation per car model
+    const REAL_CAR_PRICES = {
+        // Sedan
+        'Dacia Logan': 14000,
+        'Toyota Camry': 27000,
+        'Rolls-Royce Ghost': 350000,
+        'Toyota Crown (1955)': 65000,
+        // Hatchback
+        'Dacia Sandero': 12500,
+        'VW Golf': 29000,
+        'Mercedes-AMG A45S': 75000,
+        'VW Golf Gen 1 (1974)': 18000,
+        // Wagon
+        'Skoda Octavia Combi': 28000,
+        'VW Passat Variant': 42000,
+        'Audi RS6 Avant': 125000,
+        'Volvo Amazon Estate (1962)': 32000,
+        // MPV
+        'Suzuki Ertiga': 16000,
+        'Toyota Alphard': 75000,
+        'Mercedes V-Class AMG': 95000,
+        'VW Transporter T1 (1950)': 85000,
+        // SUV
+        'Dacia Duster': 22000,
+        'Toyota RAV4': 32000,
+        'Rolls-Royce Cullinan': 390000,
+        'Land Rover Defender (1948)': 95000,
+        // Crossover
+        'Kia Stonic': 19000,
+        'Honda CR-V': 31000,
+        'Porsche Cayenne': 85000,
+        'Toyota RAV4 Gen 1 (1994)': 12000,
+        // Off-Road
+        'Suzuki Jimny': 23000,
+        'Toyota Land Cruiser': 88000,
+        'Mercedes G63 AMG': 185000,
+        'Jeep Willys (1941)': 45000,
+        // Pickup
+        'Mitsubishi L200': 34000,
+        'Toyota Hilux': 36000,
+        'Ram 1500 TRX': 98000,
+        'Ford F-Series (1948)': 55000,
+        // Sports
+        'Toyota GR86': 30000,
+        'Ford Mustang': 33000,
+        'Ferrari SF90 Stradale': 525000,
+        'Chevrolet Corvette (1953)': 175000,
+        // Convertible
+        'Mazda MX-5 Miata': 29000,
+        'Porsche Boxster': 72000,
+        'McLaren 720S Spider': 315000,
+        'Morgan Plus Four (1950)': 80000,
+        // Supercar
+        'Lotus Emira': 95000,
+        'Ferrari Roma': 245000,
+        'Ferrari LaFerrari': 2800000,
+        'Lamborghini Miura (1966)': 2100000,
+        // Hypercar
+        'Aston Martin Valkyrie': 3200000,
+        'Bugatti Chiron': 3000000,
+        'Bugatti La Voiture Noire': 18000000,
+        'McLaren F1 (1992)': 20000000,
+        // Drift
+        'Nissan S13 Silvia': 22000,
+        'Nissan S15 Silvia': 38000,
+        'Lamborghini Gallardo Drift': 145000,
+        'Toyota AE86 Trueno (1983)': 42000,
+        // Muscle
+        'Dodge Challenger SXT': 34000,
+        'Ford Mustang GT': 46000,
+        'Shelby Mustang GT500KR': 135000,
+        'Ford Mustang (1964)': 68000,
+        // Van
+        'Renault Kangoo': 21000,
+        'Ford Transit': 44000,
+        'Mercedes Sprinter 4x4': 68000,
+        'VW Kombi T1 (1950)': 75000,
+        // EV
+        'Wuling Mini EV': 7500,
+        'Tesla Model Y': 44000,
+        'Rimac Nevera': 2200000,
+        'Nissan Leaf (2010)': 11000,
+        // Kei Car
+        'Suzuki Alto': 8500,
+        'Honda N-Box': 13000,
+        'Honda N-One RS': 16500,
+        'Subaru 360 (1958)': 25000,
+        // Limo
+        'Lincoln Town Car': 48000,
+        'Mercedes S-Class LWB': 120000,
+        'Rolls-Royce Phantom Extended': 540000,
+        'Cadillac Fleetwood (1934)': 110000,
+        // Campervan
+        'VW Caddy California': 36000,
+        'VW California T6': 78000,
+        'Mercedes Marco Polo Horizon': 85000,
+        // Military
+        'Armored Toyota LC': 160000,
+        'HMMWV (Humvee)': 120000,
+        'Rezvani Tank X': 295000,
+        'Jeep Willys MB (1941)': 48000,
+        // EV Niaga
+        'BYD T3': 28000,
+        'Rivian R1T': 74000,
+        'Tesla Cybertruck': 82000,
+        'El Camino Electric (Konsep)': 65000,
+        // Pickup Bensin
+        'Ford Maverick': 25000,
+        'Toyota Tacoma TRD': 44000,
+        'Ram 1500 Rebel': 59000,
+        'Chevrolet El Camino (1970)': 52000,
+        // Kolektor Langka
+        'Ferrari 250 GTO': 48000000,
+        'Aston Martin DB5': 1200000,
+        'Bugatti Type 57': 8500000,
+        'Mercedes 300SL (1954)': 1600000,
+        // Supercar EV
+        'Lucid Air Sapphire': 250000,
+        'Tesla Model S Plaid': 90000,
+        'Pininfarina Battista': 2500000,
+        'Rimac Nevera R': 2500000,
+        // Mercedes
+        'Mercedes 190E Evo II': 250000,
+        'Mercedes C63 AMG Black': 125000,
+        'Mercedes AMG GT Black': 335000,
+        'Mercedes 300SL Gullwing (1954)': 1700000,
+        // BMW
+        'BMW 2002 Turbo (1973)': 140000,
+        'BMW M3 E30 (1986)': 95000,
+        'BMW M5 CS (F90)': 145000,
+        'BMW i8 Roadster (Hybrid)': 165000,
+        // Subaru
+        'Subaru SVX (1992)': 18000,
+        'Subaru Forester STI': 32000,
+        'Subaru BRZ tS': 36000,
+        'Subaru Impreza WRX STI 22B': 225000,
+        // Toyota
+        'Toyota 2000GT (1967)': 1100000,
+        'Toyota GR Yaris': 42000,
+        'Toyota Supra MK4 (JZA80)': 115000,
+        'Toyota AE86 Trueno Apex': 45000,
+        // Honda
+        'Honda Civic Type R EK9': 35000,
+        'Honda Integra Type R DC2': 40000,
+        'Honda S2000 Ultimate': 55000,
+        'Honda NSX Type R (NA2)': 280000,
+        // Lamborghini
+        'Lambo Miura SV (1971)': 2600000,
+        'Lambo Countach LP5000': 650000,
+        'Lambo Revuelto (Hybrid)': 610000,
+        'Lambo Aventador SVJ': 580000,
+        // Ferrari
+        'Ferrari Dino 246 GT': 420000,
+        'Ferrari 458 Italia': 225000,
+        'Ferrari F40 (1987)': 2400000,
+        // Porsche
+        'Porsche 911 Carrera RS': 750000,
+        'Porsche 911 Turbo 930': 180000,
+        'Porsche 918 Spyder': 1700000,
+        'Porsche Carrera GT (2004)': 1400000
+    };
+
     const variants = ["Cheapest", "BestSeller", "MostExpensive", "Classic"];
     variants.forEach((v, index) => {
         const carName = names[cat.id][index];
         const meta = VARIANT_METADATA[v];
-        const finalPrice = Math.round(baseChassisPrice[cat.base] * meta.priceMult);
+        const basePrice = REAL_CAR_PRICES[carName] || Math.round(baseChassisPrice[cat.base] * meta.priceMult);
+        const finalPrice = basePrice;
         
         // Dynamic base stats
         const speed = Math.round((cat.base === "sports" ? 280 : cat.base === "suv" ? 170 : cat.base === "pickup" ? 160 : 180) * meta.statMult);
