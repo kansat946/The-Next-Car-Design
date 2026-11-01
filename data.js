@@ -55,7 +55,7 @@ const CHASSIS_SVG = {
     </svg>`
 };
 
-// 20 Categories x 4 Varian = 80 Cars Catalog Database
+// 32 Categories x 4 Variants = 128 Cars Catalog Database (32 Car Types, 8 Selected Brands)
 const VEHICLE_CATEGORIES = [
     { id: "sedan", name: "Sedan", base: "sedan" },
     { id: "hatchback", name: "Hatchback", base: "hatchback" },
@@ -100,7 +100,7 @@ const VARIANT_METADATA = {
     Classic: { label: "Paling Lama (Klasik)", suffix: "Classic", priceMult: 1.4, statMult: 0.9, colorClass: "tag-purple" }
 };
 
-// Generates 112 Cars Catalog
+// Generates 128 Cars Catalog
 const CARS_CATALOG = [];
 VEHICLE_CATEGORIES.forEach(cat => {
     // Basic names for generator

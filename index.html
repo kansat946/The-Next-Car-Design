@@ -135,6 +135,12 @@
                                 <i class="fa-solid fa-pause"></i> PAUSE
                             </button>
                         </div>
+                        <div class="hud-stat-box lang-box" id="hud-lang-box" style="cursor: pointer;" title="Ganti Bahasa / Switch Language">
+                            <span class="hud-label" id="lbl-lang-indicator">LANGUAGE</span>
+                            <button id="btn-toggle-lang" class="btn btn-outline btn-xs" style="padding: 2px 8px; font-weight: 700; border-color: rgba(255,255,255,0.2);">
+                                <span id="current-lang-flag">🇮🇩</span> <span id="current-lang-code">ID</span>
+                            </button>
+                        </div>
                     </div>
                 </div>
             </header>
@@ -291,7 +297,7 @@
         <div class="modal-overlay hidden" id="dealer-modal">
             <div class="modal-box dealer-modal-box">
                 <header class="modal-header">
-                    <h3>Dealer Katalog — 80 Sasis Mobil Gratis</h3>
+                    <h3 id="dealer-modal-title">Dealer Katalog — 128 Sasis Mobil</h3>
                     <button class="modal-close-btn" id="btn-close-dealer"><i class="fa-solid fa-xmark"></i></button>
                 </header>
                 
@@ -677,11 +683,11 @@
 
                         <div class="chassis-preview-price-box">
                             <div class="chassis-price-left">
-                                <span class="chassis-price-sub">Harga Asli Real-Life:</span>
+                                <span class="chassis-price-sub" id="lbl-chassis-preview-price-sub">Harga Sasis:</span>
                                 <span class="chassis-price-num" id="chassis-preview-price">$0</span>
                             </div>
                             <div class="chassis-user-wallet">
-                                <span class="chassis-wallet-sub">Saldo Kas Kamu:</span>
+                                <span class="chassis-wallet-sub" id="lbl-chassis-preview-wallet-sub">Saldo Kas Kamu:</span>
                                 <span class="chassis-wallet-num" id="chassis-preview-wallet">$1,000,000,000</span>
                             </div>
                         </div>

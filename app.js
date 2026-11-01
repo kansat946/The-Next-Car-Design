@@ -170,11 +170,71 @@ let marketEventTimer = null;
 let specialOrderTriggerTimer = null;
 let activeMarketEvent = null; // { type: 'trend'|'crash', catId: '...', label: '...' }
 
-// --- LANGUAGE SYSTEM ---
+// --- LANGUAGE & TRANSLATION SYSTEM ---
+const CATEGORY_NAMES_EN = {
+    sedan: "Sedan",
+    hatchback: "Hatchback",
+    wagon: "Station Wagon",
+    mpv: "MPV / Minivan",
+    suv: "SUV",
+    crossover: "Crossover (CUV)",
+    offroad: "Off-Road / 4x4",
+    pickup: "Pickup Truck",
+    sports: "Sports Car / Coupe",
+    convertible: "Convertible / Roadster",
+    supercar: "Supercar",
+    hypercar: "Hypercar",
+    drift: "Drift Car (JDM)",
+    muscle: "Muscle Car",
+    van: "Van / Cargo Van",
+    ev: "Electric Car (EV)",
+    kei: "Micro / Kei Car",
+    limo: "Limousine",
+    campervan: "Campervan",
+    military: "Armored / Military",
+    ev_niaga: "Commercial EV / EV Pickup",
+    pickup_bensin: "Premium Gas Pickup",
+    kolektor_langka: "Rare Collector Car",
+    supercar_ev: "Electric Supercar (EV)",
+    mercedes: "Mercedes-Benz Spec",
+    bmw: "BMW Motorsport",
+    subaru: "Subaru Performance",
+    toyota: "Toyota Legend",
+    honda: "Honda Type R",
+    lamborghini: "Lamborghini Bull",
+    ferrari: "Ferrari Maranello",
+    porsche: "Porsche Stuttgart"
+};
+
+const VARIANT_NAMES_EN = {
+    Cheapest: "Most Affordable",
+    BestSeller: "Best Seller",
+    MostExpensive: "Luxury Elite",
+    Classic: "Old-School Classic"
+};
+
+function getCategoryName(catId) {
+    if (currentLang === 'en' && CATEGORY_NAMES_EN[catId]) {
+        return CATEGORY_NAMES_EN[catId];
+    }
+    const cat = (typeof VEHICLE_CATEGORIES !== 'undefined') && VEHICLE_CATEGORIES.find(c => c.id === catId);
+    return cat ? cat.name : catId;
+}
+
+function getVariantLabel(variantKey) {
+    if (currentLang === 'en' && VARIANT_NAMES_EN[variantKey]) {
+        return VARIANT_NAMES_EN[variantKey];
+    }
+    const meta = (typeof VARIANT_METADATA !== 'undefined') && VARIANT_METADATA[variantKey];
+    return meta ? meta.label : variantKey;
+}
+
 const LANG = {
     id: {
         modalKas: 'MODAL KAS',
         winStreak: 'WIN STREAK',
+        gameSpeed: 'GAME SPEED',
+        language: 'BAHASA',
         intro_sub: 'Buat Akun Studio Anda',
         intro_account_title: 'Daftarkan Bengkel Anda',
         label_username: 'Nama Pengguna (Username)',
@@ -183,10 +243,87 @@ const LANG = {
         bankruptcy_msg: 'Kebangkrutan! Modal Anda habis. Anda menerima bantuan talangan darurat sebesar $100,000,000 namun reputasi Anda dipotong (-2 Bintang).',
         min_parts_msg: 'Mobil belum selesai dirancang! Pasang minimal 3 komponen di Studio Desain sebelum menjual.',
         workspace_full_msg: 'Workspace Penuh! Selesaikan atau ganti mobil di slot lain terlebih dahulu.',
+        not_enough_cash: 'Uang kas tidak cukup!',
+        confirm_replace_chassis: 'Mengubah sasis di slot aktif akan menghapus komponen terpasang. Investasi akan HANGUS! Yakin?',
+        dealer_title: 'Dealer Katalog — 128 Sasis Mobil',
+        filter_all: 'Semua Varian',
+        filter_cheapest: 'Paling Murah',
+        filter_bestseller: 'Paling Laris',
+        filter_mostexpensive: 'Paling Mahal',
+        filter_classic: 'Paling Lama (Klasik)',
+        dealer_search_ph: 'Cari sasis mobil... (misal: Camry, Hilux, Mustang)',
+        workspace_title: 'Workspace Desain (Maksimal 3 Slot)',
+        workspace_desc: 'Pilih slot untuk merancang sasis baru atau melanjutkan rancangan yang ada.',
+        slot_empty_title: 'Mulai Rancang Baru',
+        slot_btn_dealer: 'Buka Dealer Katalog',
+        slot_btn_design: 'Desain',
+        slot_btn_launch: 'Luncurkan',
+        slot_parts: 'Komponen',
+        slot_invest: 'Investasi',
+        challenge_title: 'MYTHIC PLACEMENT',
+        challenge_desc: 'Jual mobil kepada 7 buyer berturut-turut untuk membuka <strong>Rank Mythic Immortal</strong>!',
+        challenge_waiting: 'Menunggu transaksi pertama...',
+        advisor_title: 'AI Advisor',
+        advisor_sub: 'Ceritakan mobil impianmu',
+        advisor_ph: 'Contoh: mobil kencang untuk balap, gaya JDM, hemat, warna gelap...',
+        advisor_btn: 'Rekomendasikan Komponen',
+        special_order_badge: 'MISI MASUK',
+        special_order_title: 'Pesanan Khusus Masuk',
+        special_order_client: 'Klien',
+        special_order_timer: 'Sisa Waktu',
+        special_order_criteria: 'Kriteria',
+        special_order_reward: 'Reward',
+        special_order_btn: 'Rakit Mobil Ini',
+        tips_title: 'Info Rank & Bintang',
+        btn_reset: 'Hapus Data & Reset Game',
+        btn_hub: 'Hub',
+        btn_sell_car: 'Jual Mobil',
+        studio_cash: 'Kas',
+        canvas_alert: 'Klik komponen untuk memilihnya. Seret untuk memindahkan. Tahan kursor / klik kanan komponen untuk info.',
+        rot_horizontal: 'Horizontal',
+        rot_vertical: 'Vertikal',
+        rot_reset: 'Reset',
+        rot_interior_off: 'Interior: OFF',
+        rot_interior_on: 'Interior: ON',
+        color_paint_label: 'Pilihan Cat Body:',
+        custom_grad_label: 'Gradasi Custom:',
+        btn_apply_grad: 'Pakai',
+        editor_actions: 'Aksi Editor:',
+        btn_clear_canvas: 'Hapus Semua Item',
+        confirm_clear: 'Apakah kamu yakin ingin menghapus semua aksesoris tambahan di slot ini?',
+        spec_price_lbl: 'INVESTASI DESAIN',
+        analyst_title: 'ANALIS DESAIN:',
+        installed_parts_title: 'KOMPONEN TERPASANG:',
+        btn_del_part: 'Jual / Hapus Komponen',
+        preview_modal_title: 'Konfirmasi Pembelian Mobil',
+        preview_modal_buy: 'Beli Sasis Sekarang',
+        preview_modal_cancel: 'Batal',
+        preview_modal_price_sub: 'Harga Sasis:',
+        preview_modal_wallet_sub: 'Saldo Kas Kamu:',
+        tab_ai: 'AI Auto',
+        tab_wheels: 'Roda',
+        tab_spoilers: 'Spoiler',
+        tab_engines: 'Mesin',
+        tab_exhausts: 'Knalpot',
+        tab_neon: 'Neon',
+        tab_suspension: 'Ceper',
+        tab_roof: 'Atap',
+        tab_front: 'Depan',
+        tab_extras: 'Aksesoris',
+        tab_stickers: 'Stiker',
+        tab_interior: 'Interior',
+        term_accept: 'Terima',
+        term_counter: 'Tawar',
+        term_persuade: 'Rayu',
+        term_skip: 'Lewati',
+        term_prompt_ph: 'Ketik perintah (misal: /tawar 65000, /terima, /lewati)...',
+        showroom_title: 'SHOWROOM PRESTIS'
     },
     en: {
         modalKas: 'CASH FUNDS',
         winStreak: 'WIN STREAK',
+        gameSpeed: 'GAME SPEED',
+        language: 'LANGUAGE',
         intro_sub: 'Create Your Studio Account',
         intro_account_title: 'Register Your Workshop',
         label_username: 'Username',
@@ -195,37 +332,295 @@ const LANG = {
         bankruptcy_msg: 'Bankruptcy! Your funds ran out. You received an emergency bailout of $100,000,000 but lost 2 Reputation Stars.',
         min_parts_msg: 'Car is not finished! Install at least 3 components in the Design Studio before selling.',
         workspace_full_msg: 'Workspace Full! Finish or replace a car in another slot first.',
+        not_enough_cash: 'Not enough cash funds!',
+        confirm_replace_chassis: 'Changing the chassis in an active slot will clear all installed components. Investment will be LOST! Proceed?',
+        dealer_title: 'Dealer Catalog — 128 Car Chassis',
+        filter_all: 'All Variants',
+        filter_cheapest: 'Most Affordable',
+        filter_bestseller: 'Best Seller',
+        filter_mostexpensive: 'Luxury Elite',
+        filter_classic: 'Old-School Classic',
+        dealer_search_ph: 'Search car chassis... (e.g., Camry, Hilux, Mustang)',
+        workspace_title: 'Design Workspace (Up to 3 Slots)',
+        workspace_desc: 'Select a slot to build a new chassis or continue an existing project.',
+        slot_empty_title: 'Start New Project',
+        slot_btn_dealer: 'Open Dealer Catalog',
+        slot_btn_design: 'Design',
+        slot_btn_launch: 'Launch & Sell',
+        slot_parts: 'Parts',
+        slot_invest: 'Investment',
+        challenge_title: 'MYTHIC PLACEMENT',
+        challenge_desc: 'Sell cars to 7 consecutive buyers without walking out to unlock <strong>Mythic Immortal Rank</strong>!',
+        challenge_waiting: 'Awaiting first transaction...',
+        advisor_title: 'AI Advisor',
+        advisor_sub: 'Describe your dream build',
+        advisor_ph: 'Example: fast track racer, JDM drift, fuel eco, dark sleek theme...',
+        advisor_btn: 'Recommend Components',
+        special_order_badge: 'SPECIAL MISSION',
+        special_order_title: 'Special Client Order Inbound',
+        special_order_client: 'Client',
+        special_order_timer: 'Time Left',
+        special_order_criteria: 'Criteria',
+        special_order_reward: 'Reward',
+        special_order_btn: 'Build This Car',
+        tips_title: 'Rank & Reputation Info',
+        btn_reset: 'Wipe Data & Reset Game',
+        btn_hub: 'Hub',
+        btn_sell_car: 'Sell Car',
+        studio_cash: 'Cash',
+        canvas_alert: 'Click a part to select. Drag to move. Hover / right-click for component stats.',
+        rot_horizontal: 'Horizontal',
+        rot_vertical: 'Vertical',
+        rot_reset: 'Reset',
+        rot_interior_off: 'Interior: OFF',
+        rot_interior_on: 'Interior: ON',
+        color_paint_label: 'Body Paint Swatches:',
+        custom_grad_label: 'Custom Gradient:',
+        btn_apply_grad: 'Apply',
+        editor_actions: 'Editor Actions:',
+        btn_clear_canvas: 'Clear All Parts',
+        confirm_clear: 'Are you sure you want to remove all installed accessory parts in this slot?',
+        spec_price_lbl: 'DESIGN INVESTMENT',
+        analyst_title: 'DESIGN ANALYSIS:',
+        installed_parts_title: 'INSTALLED COMPONENTS:',
+        btn_del_part: 'Sell / Remove Part',
+        preview_modal_title: 'Confirm Car Chassis Purchase',
+        preview_modal_buy: 'Buy Chassis Now',
+        preview_modal_cancel: 'Cancel',
+        preview_modal_price_sub: 'Chassis Price:',
+        preview_modal_wallet_sub: 'Your Cash Balance:',
+        tab_ai: 'AI Auto',
+        tab_wheels: 'Wheels',
+        tab_spoilers: 'Spoilers',
+        tab_engines: 'Engines',
+        tab_exhausts: 'Exhaust',
+        tab_neon: 'Neon',
+        tab_suspension: 'Drop',
+        tab_roof: 'Roof',
+        tab_front: 'Front',
+        tab_extras: 'Extras',
+        tab_stickers: 'Stickers',
+        tab_interior: 'Interior',
+        term_accept: 'Accept',
+        term_counter: 'Counter',
+        term_persuade: 'Persuade',
+        term_skip: 'Skip',
+        term_prompt_ph: 'Type a command (e.g., /tawar 65000, /terima, /lewati)...',
+        showroom_title: 'PRESTIGE SHOWROOM'
     }
 };
 
 let currentLang = 'id';
 let accountData = null;
 
-function selectLanguage(lang) {
+function setLanguage(lang) {
     currentLang = lang;
-    // Update step 2 text
-    document.getElementById('intro-sub-account').innerText = LANG[lang].intro_sub;
-    document.getElementById('intro-account-title').innerHTML = `<i class="fa-solid fa-user-gear"></i> ${LANG[lang].intro_account_title}`;
-    document.getElementById('label-username').innerText = LANG[lang].label_username;
-    document.getElementById('label-studioname').innerText = LANG[lang].label_studioname;
-    document.getElementById('btn-start-label').innerText = LANG[lang].btn_start;
-    // Transition to step 2
+    if (accountData) {
+        accountData.lang = lang;
+        try { localStorage.setItem('car_lab_account', JSON.stringify(accountData)); } catch(e) {}
+    }
+    applyAllTranslations();
+}
+
+function applyAllTranslations() {
+    const t = LANG[currentLang] || LANG.id;
+
+    // HUD
+    const lblModalKas = document.getElementById('lbl-modal-kas');
+    const lblWinStreak = document.getElementById('lbl-win-streak');
+    const lblGameStatus = document.getElementById('lbl-game-status');
+    const lblLangIndicator = document.getElementById('lbl-lang-indicator');
+    const currentLangFlag = document.getElementById('current-lang-flag');
+    const currentLangCode = document.getElementById('current-lang-code');
+    if (lblModalKas) lblModalKas.innerText = t.modalKas;
+    if (lblWinStreak) lblWinStreak.innerText = t.winStreak;
+    if (lblGameStatus) lblGameStatus.innerText = t.gameSpeed;
+    if (lblLangIndicator) lblLangIndicator.innerText = t.language;
+    if (currentLangFlag) currentLangFlag.innerText = currentLang === 'id' ? '🇮🇩' : '🇬🇧';
+    if (currentLangCode) currentLangCode.innerText = currentLang.toUpperCase();
+
+    // Intro Screen
+    const introSub = document.getElementById('intro-sub-account');
+    const introTitle = document.getElementById('intro-account-title');
+    const lblUser = document.getElementById('label-username');
+    const lblStudio = document.getElementById('label-studioname');
+    const btnStart = document.getElementById('btn-start-label');
+    if (introSub) introSub.innerText = t.intro_sub;
+    if (introTitle) introTitle.innerHTML = `<i class="fa-solid fa-user-gear"></i> ${t.intro_account_title}`;
+    if (lblUser) lblUser.innerText = t.label_username;
+    if (lblStudio) lblStudio.innerText = t.label_studioname;
+    if (btnStart) btnStart.innerText = t.btn_start;
+
+    // Dashboard Workspace Area
+    const wsTitle = document.querySelector('.workspace-area .section-title h3');
+    const wsDesc = document.querySelector('.workspace-area .section-title .section-desc');
+    if (wsTitle) wsTitle.innerHTML = `<i class="fa-solid fa-industry"></i> ${t.workspace_title}`;
+    if (wsDesc) wsDesc.innerText = t.workspace_desc;
+
+    document.querySelectorAll('.slot-content-empty h4').forEach(el => el.innerText = t.slot_empty_title);
+    document.querySelectorAll('.btn-open-dealer').forEach(el => el.innerText = t.slot_btn_dealer);
+    document.querySelectorAll('.btn-edit-slot').forEach(el => el.innerHTML = `<i class="fa-solid fa-pen-ruler"></i> ${t.slot_btn_design}`);
+    document.querySelectorAll('.btn-sell-slot').forEach(el => el.innerHTML = `<i class="fa-solid fa-rocket"></i> ${t.slot_btn_launch}`);
+
+    // AI Advisor & Special Orders
+    const advTitle = document.querySelector('.ai-advisor-card .advisor-title');
+    const advSub = document.querySelector('.ai-advisor-card .advisor-sub');
+    const advInput = document.getElementById('advisor-input');
+    const btnAskAdv = document.getElementById('btn-ask-advisor');
+    if (advTitle) advTitle.innerText = t.advisor_title;
+    if (advSub) advSub.innerText = t.advisor_sub;
+    if (advInput) advInput.placeholder = t.advisor_ph;
+    if (btnAskAdv) btnAskAdv.innerHTML = `<i class="fa-solid fa-wand-magic-sparkles"></i> ${t.advisor_btn}`;
+
+    const soBadge = document.querySelector('.special-order-card .order-alert-badge');
+    const soTitle = document.querySelector('.special-order-card .order-title');
+    const btnAccept = document.getElementById('btn-accept-order');
+    if (soBadge) soBadge.innerHTML = `<i class="fa-solid fa-circle-exclamation"></i> ${t.special_order_badge}`;
+    if (soTitle) soTitle.innerText = t.special_order_title;
+    if (btnAccept) btnAccept.innerText = t.special_order_btn;
+
+    // Challenge Card & Stats Card
+    const chTitle = document.querySelector('.challenge-card .challenge-title');
+    const chDesc = document.querySelector('.challenge-card .challenge-desc');
+    const chStatus = document.getElementById('placement-status-text');
+    if (chTitle) chTitle.innerHTML = `<i class="fa-solid fa-trophy text-orange"></i> ${t.challenge_title}`;
+    if (chDesc) chDesc.innerHTML = t.challenge_desc;
+    if (chStatus && !gameState.inPlacement) chStatus.innerText = t.challenge_waiting;
+
+    const statsTitle = document.querySelector('.stats-summary-card h4');
+    const btnReset = document.getElementById('btn-reset-game');
+    if (statsTitle) statsTitle.innerText = t.tips_title;
+    if (btnReset) btnReset.innerText = t.btn_reset;
+
+    // Dealer Catalog Modal
+    const dealerTitle = document.getElementById('dealer-modal-title');
+    if (dealerTitle) dealerTitle.innerText = t.dealer_title;
+    const dealerSearchEl = document.getElementById('dealer-search');
+    if (dealerSearchEl) dealerSearchEl.placeholder = t.dealer_search_ph;
+
+    const filterAll = document.querySelector('.variant-filters button[data-filter="all"]');
+    const filterCheapest = document.querySelector('.variant-filters button[data-filter="Cheapest"] span');
+    const filterBestSeller = document.querySelector('.variant-filters button[data-filter="BestSeller"] span');
+    const filterMostExp = document.querySelector('.variant-filters button[data-filter="MostExpensive"] span');
+    const filterClassic = document.querySelector('.variant-filters button[data-filter="Classic"] span');
+    if (filterAll) filterAll.innerText = t.filter_all;
+    if (filterCheapest) filterCheapest.innerText = t.filter_cheapest;
+    if (filterBestSeller) filterBestSeller.innerText = t.filter_bestseller;
+    if (filterMostExp) filterMostExp.innerText = t.filter_mostexpensive;
+    if (filterClassic) filterClassic.innerText = t.filter_classic;
+
+    // Studio Screen
+    const btnBackHub = document.getElementById('btn-back-to-dashboard');
+    if (btnBackHub) btnBackHub.innerHTML = `<i class="fa-solid fa-arrow-left"></i> ${t.btn_hub}`;
+    const btnLaunchSell = document.getElementById('btn-launch-sell');
+    if (btnLaunchSell) btnLaunchSell.innerHTML = `<i class="fa-solid fa-rocket"></i> ${t.btn_sell_car}`;
+
+    const studioWalletInd = document.querySelector('.studio-wallet-indicator');
+    if (studioWalletInd) studioWalletInd.childNodes[0].nodeValue = `${t.studio_cash}: `;
+
+    const canvasAlert = document.querySelector('.canvas-alert');
+    if (canvasAlert) canvasAlert.innerHTML = `<i class="fa-solid fa-info-circle"></i> ${t.canvas_alert}`;
+
+    const rotLabels = document.querySelectorAll('.rotation-label');
+    if (rotLabels[0]) rotLabels[0].innerHTML = `<i class="fa-solid fa-arrows-left-right"></i> ${t.rot_horizontal}`;
+    if (rotLabels[1]) rotLabels[1].innerHTML = `<i class="fa-solid fa-arrows-up-down"></i> ${t.rot_vertical}`;
+    const rotResetBtn = document.getElementById('rot-reset');
+    if (rotResetBtn) rotResetBtn.innerHTML = `<i class="fa-solid fa-undo"></i> ${t.rot_reset}`;
+    const btnToggleInt = document.getElementById('btn-toggle-interior');
+    if (btnToggleInt) {
+        btnToggleInt.innerHTML = `<i class="fa-solid fa-couch"></i> ${viewInteriorActive ? t.rot_interior_on : t.rot_interior_off}`;
+    }
+
+    const controlLabels = document.querySelectorAll('.canvas-controls .control-label');
+    if (controlLabels[0]) controlLabels[0].innerText = t.color_paint_label;
+    if (controlLabels[1]) controlLabels[1].innerText = t.editor_actions;
+
+    const customGradLbl = document.querySelector('.custom-gradient-label');
+    if (customGradLbl) customGradLbl.innerHTML = `<i class="fa-solid fa-palette"></i> ${t.custom_grad_label}`;
+    const btnApplyGrad = document.getElementById('btn-apply-custom-grad');
+    if (btnApplyGrad) btnApplyGrad.innerHTML = `<i class="fa-solid fa-wand-magic-sparkles"></i> ${t.btn_apply_grad}`;
+
+    const btnClearCanvas = document.getElementById('btn-clear-canvas');
+    if (btnClearCanvas) btnClearCanvas.innerHTML = `<i class="fa-solid fa-trash-can"></i> ${t.btn_clear_canvas}`;
+
+    const specPriceLabel = document.querySelector('.price-display-container .price-label');
+    if (specPriceLabel) specPriceLabel.innerText = t.spec_price_lbl;
+    const analystHeading = document.querySelector('.review-box h4');
+    if (analystHeading) analystHeading.innerText = t.analyst_title;
+    const installedHeading = document.querySelector('#transform-panel h4');
+    if (installedHeading) installedHeading.innerText = t.installed_parts_title;
+    const btnDelPart = document.getElementById('transform-delete');
+    if (btnDelPart) btnDelPart.innerHTML = `<i class="fa-solid fa-trash"></i> ${t.btn_del_part}`;
+
+    // Chassis Preview Modal
+    const previewTitle = document.getElementById('chassis-preview-title');
+    if (previewTitle) previewTitle.innerHTML = `<i class="fa-solid fa-car-side"></i> ${t.preview_modal_title}`;
+    const btnCancelPreview = document.getElementById('btn-cancel-chassis-preview');
+    if (btnCancelPreview) btnCancelPreview.innerHTML = `<i class="fa-solid fa-xmark"></i> ${t.preview_modal_cancel}`;
+    const priceSub = document.getElementById('lbl-chassis-preview-price-sub');
+    if (priceSub) priceSub.innerText = t.preview_modal_price_sub;
+    const walletSub = document.getElementById('lbl-chassis-preview-wallet-sub');
+    if (walletSub) walletSub.innerText = t.preview_modal_wallet_sub;
+
+    // Terminal Screen
+    const showroomH2 = document.querySelector('.showroom-header h2');
+    if (showroomH2) showroomH2.innerText = t.showroom_title;
+    const btnTermAccept = document.getElementById('btn-term-accept');
+    const btnTermCounter = document.getElementById('btn-term-counter');
+    const btnTermPersuade = document.getElementById('btn-term-persuade');
+    const btnTermSkip = document.getElementById('btn-term-skip');
+    if (btnTermAccept) btnTermAccept.innerHTML = `<span class="term-key">[Enter]</span><i class="fa-solid fa-handshake"></i> ${t.term_accept}`;
+    if (btnTermCounter) btnTermCounter.innerHTML = `<span class="term-key">[T]</span><i class="fa-solid fa-calculator"></i> ${t.term_counter}`;
+    if (btnTermPersuade) btnTermPersuade.innerHTML = `<span class="term-key">[R]</span><i class="fa-solid fa-face-smile-wink"></i> ${t.term_persuade}`;
+    if (btnTermSkip) btnTermSkip.innerHTML = `<span class="term-key">[Esc]</span><i class="fa-solid fa-forward"></i> ${t.term_skip}`;
+
+    const termInput = document.getElementById('terminal-cli-input');
+    if (termInput) termInput.placeholder = t.term_prompt_ph;
+
+    // Sidebar Category Tabs in Studio
+    const tabSpans = document.querySelectorAll('.tabs-container .tab-btn');
+    tabSpans.forEach(btn => {
+        const tab = btn.dataset.tab;
+        const span = btn.querySelector('span');
+        if (!span) return;
+        if (tab === 'ai_rec') span.innerText = t.tab_ai;
+        else if (tab === 'wheels') span.innerText = t.tab_wheels;
+        else if (tab === 'spoilers') span.innerText = t.tab_spoilers;
+        else if (tab === 'engines') span.innerText = t.tab_engines;
+        else if (tab === 'exhausts') span.innerText = t.tab_exhausts;
+        else if (tab === 'neon') span.innerText = t.tab_neon;
+        else if (tab === 'suspension') span.innerText = t.tab_suspension;
+        else if (tab === 'roof') span.innerText = t.tab_roof;
+        else if (tab === 'front') span.innerText = t.tab_front;
+        else if (tab === 'extras') span.innerText = t.tab_extras;
+        else if (tab === 'stickers') span.innerText = t.tab_stickers;
+        else if (tab === 'interior') span.innerText = t.tab_interior;
+    });
+
+    // Re-render dynamic active parts or catalog
+    if (dealerModal && !dealerModal.classList.contains('hidden')) {
+        renderCategoryTabs();
+    }
+}
+
+function selectLanguage(lang) {
+    setLanguage(lang);
+    // Transition to step 2 in intro
     const step1 = document.getElementById('intro-step-lang');
     const step2 = document.getElementById('intro-step-account');
-    step1.style.opacity = '0';
-    step1.style.transform = 'translateY(-20px)';
-    setTimeout(() => {
-        step1.classList.add('hidden');
-        step2.classList.remove('hidden');
-        step2.style.animation = 'fadeInUp 0.5s ease both';
-    }, 300);
+    if (step1 && step2) {
+        step1.style.opacity = '0';
+        step1.style.transform = 'translateY(-20px)';
+        setTimeout(() => {
+            step1.classList.add('hidden');
+            step2.classList.remove('hidden');
+            step2.style.animation = 'fadeInUp 0.5s ease both';
+        }, 300);
+    }
 }
 
 function applyLangToHUD() {
-    const lblModalKas = document.getElementById('lbl-modal-kas');
-    const lblWinStreak = document.getElementById('lbl-win-streak');
-    if (lblModalKas) lblModalKas.innerText = LANG[currentLang].modalKas;
-    if (lblWinStreak) lblWinStreak.innerText = LANG[currentLang].winStreak;
+    applyAllTranslations();
 }
 
 function createAccount() {
@@ -1799,7 +2194,9 @@ function renderCategoryTabs() {
     // Add "Semua Jenis" link
     const allTab = document.createElement('button');
     allTab.className = 'category-tab-link active';
-    allTab.innerHTML = `<span>Semua Jenis</span><span class="badge">${CARS_CATALOG.length}</span>`;
+    allTab.dataset.cat = 'all';
+    const allText = currentLang === 'id' ? 'Semua Jenis' : 'All Types';
+    allTab.innerHTML = `<span>${allText}</span><span class="badge">${CARS_CATALOG.length}</span>`;
     allTab.addEventListener('click', () => {
         document.querySelectorAll('.category-tab-link').forEach(t => t.classList.remove('active'));
         allTab.classList.add('active');
@@ -1811,7 +2208,8 @@ function renderCategoryTabs() {
         const count = CARS_CATALOG.filter(c => c.category === cat.id).length;
         const tab = document.createElement('button');
         tab.className = 'category-tab-link';
-        tab.innerHTML = `<span>${cat.name}</span><span class="badge">${count}</span>`;
+        tab.dataset.cat = cat.id;
+        tab.innerHTML = `<span>${getCategoryName(cat.id)}</span><span class="badge">${count}</span>`;
         tab.addEventListener('click', () => {
             document.querySelectorAll('.category-tab-link').forEach(t => t.classList.remove('active'));
             tab.classList.add('active');
@@ -1856,12 +2254,11 @@ function renderCatalogGrid(catFilter = "all", varFilter = "all", searchStr = "")
         card.innerHTML = `
             ${visualContent}
             <div class="catalog-car-info">
-                <span class="category-label">${car.categoryName}</span>
-                <span class="tag ${car.colorClass}">${car.variantName}</span>
+                <span class="category-label">${getCategoryName(car.category)}</span>
+                <span class="tag ${car.colorClass}">${getVariantLabel(car.variant)}</span>
                 <h4>${car.name}</h4>
                 <p class="desc">${car.description}</p>
                 <div class="catalog-price-row">
-                    <span class="catalog-sasis-label">Harga Asli Real-Life</span>
                     <span class="catalog-inv-badge">💰 $${car.price.toLocaleString()}</span>
                 </div>
             </div>
@@ -1896,26 +2293,26 @@ function openChassisPurchasePreview(car) {
         imgEl.style.display = 'none';
     }
 
-    document.getElementById('chassis-preview-cat').innerText = car.categoryName.toUpperCase();
+    document.getElementById('chassis-preview-cat').innerText = getCategoryName(car.category).toUpperCase();
     const tagEl = document.getElementById('chassis-preview-tag');
-    tagEl.innerText = car.variantName;
+    tagEl.innerText = getVariantLabel(car.variant);
     tagEl.className = `tag ${car.colorClass}`;
 
     document.getElementById('chassis-preview-name').innerText = car.name;
     document.getElementById('chassis-preview-desc').innerText = car.description;
 
     // Chassis base specs
-    const baseDef = CHASSIS_DEFINITIONS[car.baseChassis] || { speed: 180, accel: 8.5, eco: 50, flex: 10 };
-    document.getElementById('chassis-preview-speed').innerText = `${baseDef.speed} km/h`;
-    document.getElementById('chassis-preview-accel').innerText = `${baseDef.accel.toFixed(1)}s`;
-    document.getElementById('chassis-preview-eco').innerText = baseDef.eco >= 70 ? 'Sangat Irit' : (baseDef.eco >= 40 ? 'Moderat' : 'Boros');
-    document.getElementById('chassis-preview-flex').innerText = baseDef.flex >= 40 ? 'Sultan / Mewah' : (baseDef.flex >= 20 ? 'Keren' : 'Standar');
+    const baseStats = car.stats || { speed: 180, accel: 8.5, eco: 50, flex: 10, defense: 40 };
+    document.getElementById('chassis-preview-speed').innerText = `${baseStats.speed} km/h`;
+    document.getElementById('chassis-preview-accel').innerText = `${baseStats.accel.toFixed(1)}s`;
+    document.getElementById('chassis-preview-eco').innerText = baseStats.eco >= 70 ? (currentLang === 'id' ? 'Sangat Irit' : 'Very Eco') : (baseStats.eco >= 40 ? (currentLang === 'id' ? 'Moderat' : 'Moderate') : (currentLang === 'id' ? 'Boros' : 'High Fuel'));
+    document.getElementById('chassis-preview-flex').innerText = baseStats.flex >= 40 ? (currentLang === 'id' ? 'Sultan / Mewah' : 'Luxury / Flex') : (baseStats.flex >= 20 ? (currentLang === 'id' ? 'Keren' : 'Cool') : (currentLang === 'id' ? 'Standar' : 'Standard'));
 
     document.getElementById('chassis-preview-price').innerText = `$${car.price.toLocaleString()}`;
     document.getElementById('chassis-preview-wallet').innerText = `$${gameState.cash.toLocaleString()}`;
 
     const btnConfirm = document.getElementById('btn-confirm-buy-chassis');
-    btnConfirm.innerHTML = `<i class="fa-solid fa-cart-shopping"></i> Beli Sasis Sekarang ($${car.price.toLocaleString()})`;
+    btnConfirm.innerHTML = `<i class="fa-solid fa-cart-shopping"></i> ${currentLang === 'id' ? 'Beli Sasis Sekarang' : 'Buy Chassis Now'} ($${car.price.toLocaleString()})`;
 
     modal.classList.remove('hidden');
 }
@@ -3080,11 +3477,7 @@ function setupGlobalEventListeners() {
         const activeTab = document.querySelector('.category-tab-link.active');
         const activeFilter = document.querySelector('.filter-btn.active');
         const searchVal = dealerSearch.value;
-        const catId = activeTab ? activeTab.parentElement.querySelector('button.active span').innerText : "all";
-        
-        // Find raw cat ID
-        const matchedCat = VEHICLE_CATEGORIES.find(c => c.name === catId);
-        const catIdFinal = matchedCat ? matchedCat.id : "all";
+        const catIdFinal = activeTab ? (activeTab.dataset.cat || "all") : "all";
         
         renderCatalogGrid(catIdFinal, activeFilter.dataset.filter, searchVal);
     });
@@ -3095,9 +3488,8 @@ function setupGlobalEventListeners() {
             filterBtns.forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
             
-            const activeTab = document.querySelector('.category-tab-link.active span').innerText;
-            const matchedCat = VEHICLE_CATEGORIES.find(c => c.name === activeTab);
-            const catIdFinal = matchedCat ? matchedCat.id : "all";
+            const activeTab = document.querySelector('.category-tab-link.active');
+            const catIdFinal = activeTab ? (activeTab.dataset.cat || "all") : "all";
             
             renderCatalogGrid(catIdFinal, btn.dataset.filter, dealerSearch.value);
         });
@@ -3304,6 +3696,15 @@ function setupGlobalEventListeners() {
             gameState.isPaused = !gameState.isPaused;
             updatePauseButtonUI();
             saveGameData();
+        });
+    }
+
+    // Toggle Language button in HUD
+    const btnToggleLang = document.getElementById('btn-toggle-lang');
+    if (btnToggleLang) {
+        btnToggleLang.addEventListener('click', () => {
+            const nextLang = currentLang === 'id' ? 'en' : 'id';
+            setLanguage(nextLang);
         });
     }
 
