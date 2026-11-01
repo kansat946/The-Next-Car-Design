@@ -118,7 +118,7 @@
                         </div>
                     </div>
 
-                    <!-- Grup Progress: Rank + Stars + Pause -->
+                    <!-- Grup Progress: Rank + Stars -->
                     <div class="hud-group-progress">
                         <div class="hud-stat-box rank-box" id="hud-rank-box">
                             <span class="hud-label" id="hud-rank-label">RANK: CHASSIS SCRUB</span>
@@ -128,18 +128,6 @@
                                 </div>
                                 <span class="reputation-percent" id="hud-reputation-percent">100%</span>
                             </div>
-                        </div>
-                        <div class="hud-stat-box pause-box" id="hud-pause-box">
-                            <span class="hud-label" id="lbl-game-status">GAME SPEED</span>
-                            <button id="btn-pause-game" class="btn btn-warning btn-xs btn-pause-hud">
-                                <i class="fa-solid fa-pause"></i> PAUSE
-                            </button>
-                        </div>
-                        <div class="hud-stat-box lang-box" id="hud-lang-box" style="cursor: pointer;" title="Ganti Bahasa / Switch Language">
-                            <span class="hud-label" id="lbl-lang-indicator">LANGUAGE</span>
-                            <button id="btn-toggle-lang" class="btn btn-outline btn-xs" style="padding: 2px 8px; font-weight: 700; border-color: rgba(255,255,255,0.2);">
-                                <span id="current-lang-flag">🇮🇩</span> <span id="current-lang-code">ID</span>
-                            </button>
                         </div>
                     </div>
                 </div>
@@ -700,6 +688,95 @@
                     <button class="btn btn-primary btn-glow" id="btn-confirm-buy-chassis">
                         <i class="fa-solid fa-cart-shopping"></i> Beli Sasis Sekarang
                     </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= PROFILE SETTINGS MODAL ================= -->
+        <div id="profile-settings-modal" class="modal-overlay hidden">
+            <div class="modal-content profile-settings-content">
+                <div class="modal-header">
+                    <h3 id="profile-modal-title"><i class="fa-solid fa-user-gear"></i> Pengaturan Profil Pengguna</h3>
+                    <button class="modal-close-btn" id="btn-close-profile-modal">&times;</button>
+                </div>
+                <div class="profile-settings-body">
+                    <!-- 1. Rubah Username -->
+                    <div class="profile-setting-item">
+                        <label class="setting-label" id="lbl-setting-username">
+                            <i class="fa-solid fa-signature"></i> Rubah Username
+                        </label>
+                        <div class="setting-input-row">
+                            <input type="text" id="setting-input-username" placeholder="Username baru..." maxlength="20">
+                            <button class="btn btn-primary btn-sm" id="btn-save-username">Simpan</button>
+                        </div>
+                    </div>
+
+                    <!-- 2. Rubah Nama Bengkel -->
+                    <div class="profile-setting-item">
+                        <label class="setting-label" id="lbl-setting-studioname">
+                            <i class="fa-solid fa-warehouse"></i> Rubah Nama Bengkel
+                        </label>
+                        <div class="setting-input-row">
+                            <input type="text" id="setting-input-studioname" placeholder="Nama bengkel baru..." maxlength="30">
+                            <button class="btn btn-primary btn-sm" id="btn-save-studioname">Simpan</button>
+                        </div>
+                    </div>
+
+                    <!-- 3. Rubah Foto Profil (akan dipikirkan lebih lanjut) -->
+                    <div class="profile-setting-item">
+                        <label class="setting-label" id="lbl-setting-avatar">
+                            <i class="fa-solid fa-image-portrait"></i> Rubah Foto Profil
+                        </label>
+                        <div class="setting-note" id="desc-setting-avatar">
+                            <span class="badge-soon">SEGERA HADIR</span> Fitur pemilihan avatar kustom akan tersedia pada pembaruan mendatang.
+                        </div>
+                    </div>
+
+                    <!-- 4. Ganti Bahasa (IDN / ENG) -->
+                    <div class="profile-setting-item">
+                        <label class="setting-label" id="lbl-setting-lang">
+                            <i class="fa-solid fa-language"></i> Ganti Bahasa (IDN / ENG)
+                        </label>
+                        <div class="setting-btn-group">
+                            <button class="btn btn-outline btn-sm lang-choice-btn" id="btn-choice-lang-id" data-lang="id">
+                                🇮🇩 Bahasa Indonesia (Rp)
+                            </button>
+                            <button class="btn btn-outline btn-sm lang-choice-btn" id="btn-choice-lang-en" data-lang="en">
+                                🇬🇧 English ($ USD)
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 5. Pause / Resume Game -->
+                    <div class="profile-setting-item">
+                        <label class="setting-label" id="lbl-setting-pause">
+                            <i class="fa-solid fa-clock"></i> Pause / Resume Game
+                        </label>
+                        <div class="setting-input-row">
+                            <span class="setting-status-badge" id="profile-pause-status">STATUS: NORMAL</span>
+                            <button class="btn btn-warning btn-sm" id="btn-profile-toggle-pause">
+                                <i class="fa-solid fa-pause"></i> PAUSE GAME
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 6. Misi Khusus (Tidak / Standar / Sering) -->
+                    <div class="profile-setting-item">
+                        <label class="setting-label" id="lbl-setting-mission">
+                            <i class="fa-solid fa-crosshairs"></i> Misi Khusus
+                        </label>
+                        <div class="mission-freq-options">
+                            <button class="btn btn-outline btn-sm mission-choice-btn" data-freq="none" id="btn-mission-none">
+                                <i class="fa-solid fa-ban"></i> <span class="opt-label">Tidak</span>
+                            </button>
+                            <button class="btn btn-outline btn-sm mission-choice-btn active" data-freq="standard" id="btn-mission-standard">
+                                <i class="fa-solid fa-sliders"></i> <span class="opt-label">Standar (Sistem)</span>
+                            </button>
+                            <button class="btn btn-outline btn-sm mission-choice-btn" data-freq="frequent" id="btn-mission-frequent">
+                                <i class="fa-solid fa-bolt"></i> <span class="opt-label">Sering</span>
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

@@ -3,10 +3,15 @@
 // ─────────────────────────────────────────────
 const CONFIG = {
     // Economy
-    STARTING_CASH:          1000000000, // modal awal 1 miliar rupiah/dollar
-    BANKRUPTCY_THRESHOLD:   10000000,   // kas minimum sebelum reset talangan
-    SPECIAL_ORDER_BASE:     50000000,   // reward spesial order base
-    SPECIAL_ORDER_PER_RANK: 20000000,
+    STARTING_CASH_USD:        1000000000,        // modal awal $1 miliar USD
+    STARTING_CASH_IDR:        20000000000000,    // modal awal 20 triliun Rupiah
+    BANKRUPTCY_THRESHOLD_USD: 10000000,
+    BANKRUPTCY_THRESHOLD_IDR: 200000000000,
+    BANKRUPTCY_BAILOUT_USD:   100000000,
+    BANKRUPTCY_BAILOUT_IDR:   2000000000000,
+    IDR_PER_USD:              20000,             // Kurs 1 USD = Rp 20.000
+    SPECIAL_ORDER_BASE:       50000000,
+    SPECIAL_ORDER_PER_RANK:   20000000,
 
     // Progression
     MAX_STARS:              10,     // bintang untuk naik rank
@@ -35,6 +40,34 @@ const CONFIG = {
     // Special Order trigger chance
     SPECIAL_ORDER_CHANCE:   0.35,   // probabilitas special order saat roll (0–1)
 };
+
+// ─── CURRENCY & CASH FORMATTER ───
+function getStartingCash(lang = (typeof currentLang !== 'undefined' ? currentLang : 'id')) {
+    return lang === 'id' ? CONFIG.STARTING_CASH_IDR : CONFIG.STARTING_CASH_USD;
+}
+
+function getBankruptcyThreshold(lang = (typeof currentLang !== 'undefined' ? currentLang : 'id')) {
+    return lang === 'id' ? CONFIG.BANKRUPTCY_THRESHOLD_IDR : CONFIG.BANKRUPTCY_THRESHOLD_USD;
+}
+
+function getBankruptcyBailout(lang = (typeof currentLang !== 'undefined' ? currentLang : 'id')) {
+    return lang === 'id' ? CONFIG.BANKRUPTCY_BAILOUT_IDR : CONFIG.BANKRUPTCY_BAILOUT_USD;
+}
+
+function formatCash(amount) {
+    const num = Number(amount) || 0;
+    const isId = (typeof currentLang !== 'undefined' && currentLang === 'id');
+    if (isId) {
+        // If amount is in USD scale (e.g. catalog car price or component price <= 1B and < 20T/1000)
+        const idrVal = (num <= 1000000000 && num < (CONFIG.STARTING_CASH_IDR / 1000)) ? Math.round(num * CONFIG.IDR_PER_USD) : Math.round(num);
+        return "Rp " + idrVal.toLocaleString("id-ID");
+    } else {
+        // USD scale
+        const usdVal = (num >= (CONFIG.STARTING_CASH_IDR / 2)) ? Math.round(num / CONFIG.IDR_PER_USD) : Math.round(num);
+        return "$" + usdVal.toLocaleString("en-US");
+    }
+}
+
 
 // 7 AI Buyers
 const AI_BUYERS = [
@@ -122,7 +155,7 @@ const RANKS = [
 
 // --- GAME STATE ---
 let gameState = {
-    cash: 1000000000,
+    cash: 20000000000000,
     rank: 0, // index in RANKS
     stars: 0, // 0 - 10
     winStreak: 0,
@@ -240,7 +273,7 @@ const LANG = {
         label_username: 'Nama Pengguna (Username)',
         label_studioname: 'Nama Studio / Bengkel',
         btn_start: 'Mulai Bermain!',
-        bankruptcy_msg: 'Kebangkrutan! Modal Anda habis. Anda menerima bantuan talangan darurat sebesar $100,000,000 namun reputasi Anda dipotong (-2 Bintang).',
+        bankruptcy_msg: 'Kebangkrutan! Modal Anda habis. Anda menerima bantuan talangan darurat sebesar Rp 2.000.000.000.000 namun reputasi Anda dipotong (-2 Bintang).',
         min_parts_msg: 'Mobil belum selesai dirancang! Pasang minimal 3 komponen di Studio Desain sebelum menjual.',
         workspace_full_msg: 'Workspace Penuh! Selesaikan atau ganti mobil di slot lain terlebih dahulu.',
         not_enough_cash: 'Uang kas tidak cukup!',
@@ -414,12 +447,25 @@ let currentLang = 'id';
 let accountData = null;
 
 function setLanguage(lang) {
+    const prevLang = currentLang;
     currentLang = lang;
     if (accountData) {
         accountData.lang = lang;
         try { localStorage.setItem('car_lab_account', JSON.stringify(accountData)); } catch(e) {}
     }
+    // Re-adjust baseline cash if unchanged from starting funds
+    if (prevLang !== lang) {
+        const prevBaseline = (prevLang === 'id') ? CONFIG.STARTING_CASH_IDR : CONFIG.STARTING_CASH_USD;
+        if (gameState.cash === prevBaseline) {
+            gameState.cash = getStartingCash(lang);
+            saveGameData();
+        }
+    }
     applyAllTranslations();
+    updateHUD();
+    renderDashboardSlots();
+    if (typeof updateProfileModalLangUI === 'function') updateProfileModalLangUI();
+    if (typeof updateProfileModalPauseUI === 'function') updateProfileModalPauseUI();
 }
 
 function applyAllTranslations() {
@@ -631,8 +677,11 @@ function createAccount() {
             alert(currentLang === 'id' ? 'Nama pengguna dan nama studio tidak boleh kosong!' : 'Username and studio name cannot be empty!');
             return;
         }
-        accountData = { username, studioName, lang: currentLang };
+        accountData = { username, studioName, lang: currentLang, missionFreq: 'standard' };
         localStorage.setItem('car_lab_account', JSON.stringify(accountData));
+        gameState.cash = getStartingCash(currentLang);
+        gameState.missionFrequency = 'standard';
+        saveGameData();
         startGame();
     } catch (err) {
         alert("Error in createAccount: " + err.stack);
@@ -1620,7 +1669,7 @@ function showTooltip(part, x, y) {
     if (!tooltip) return;
     tooltip.querySelector('.tooltip-name').innerText = part.name;
     tooltip.querySelector('.tooltip-desc').innerText = part.desc;
-    tooltip.querySelector('.tooltip-price').innerText = `💰 $${part.price.toLocaleString()}`;
+    tooltip.querySelector('.tooltip-price').innerText = `💰 {formatCash(part.price)}`;
 
     const statsEl = tooltip.querySelector('.tooltip-stats');
     statsEl.innerHTML = '';
@@ -1820,9 +1869,10 @@ function loadGameData() {
     if (saved) {
         try {
             gameState = JSON.parse(saved);
-            // Upgrade old starting cash balance if user had old 50k default
-            if (gameState.cash === 50000 || !gameState.cash || gameState.cash < 100000) {
-                gameState.cash = 1000000000;
+            // Upgrade old starting cash balance based on active language
+            const minExpected = (currentLang === 'id') ? CONFIG.STARTING_CASH_IDR / 10 : CONFIG.STARTING_CASH_USD / 10;
+            if (!gameState.cash || gameState.cash < minExpected) {
+                gameState.cash = getStartingCash();
             }
             // Re-sync any missing structures just in case
             if (!gameState.winStreak) gameState.winStreak = 0;
@@ -1838,7 +1888,7 @@ function loadGameData() {
 
 // HUD Rendering
 function updateHUD() {
-    hudCash.innerText = `$${gameState.cash.toLocaleString()}`;
+    hudCash.innerText = `${formatCash(gameState.cash)}`;
     const rankInfo = RANKS[gameState.rank];
     hudRankLabel.innerText = `RANK: ${rankInfo.name.toUpperCase()}`;
     
@@ -1939,9 +1989,10 @@ function updatePauseButtonUI() {
 
 function checkBankruptcy() {
     const hasAssets = gameState.slots.some(s => s.occupied);
-    if (gameState.cash < 10000000 && !hasAssets) {
+    const threshold = getBankruptcyThreshold();
+    if (gameState.cash < threshold && !hasAssets) {
         // Trigger Bankruptcy
-        gameState.cash = 100000000;
+        gameState.cash = getBankruptcyBailout();
         
         // Stars penalty
         if (gameState.rank > 0) {
@@ -1959,7 +2010,7 @@ function checkBankruptcy() {
         gameState.loseStreak = 0;
         gameState.inPlacement = false;
         
-        alert("Kebangkrutan! Modal Anda habis. Anda menerima bantuan talangan darurat sebesar $100,000,000 namun reputasi Anda dipotong (-2 Bintang).");
+        alert(currentLang === "id" ? `Kebangkrutan! Modal Anda habis. Anda menerima bantuan talangan darurat sebesar ${formatCash(getBankruptcyBailout())} namun reputasi Anda dipotong (-2 Bintang).` : `Bankruptcy! Your funds ran out. You received an emergency bailout of ${formatCash(getBankruptcyBailout())} but lost 2 Reputation Stars.`);
         saveGameData();
         updateHUD();
     }
@@ -1981,32 +2032,37 @@ function renderDashboardSlots() {
             const carModel = CARS_CATALOG.find(c => c.id === slot.car.carId);
             activeView.querySelector('.slot-car-name').innerText = carModel.name;
             activeView.querySelector('.slot-parts-count').innerText = slot.car.parts.length;
-            activeView.querySelector('.slot-invest').innerText = `$${slot.car.investment.toLocaleString()}`;
+            activeView.querySelector('.slot-invest').innerText = `${formatCash(slot.car.investment)}`;
             
-            // Preview
+            // Preview: Menggunakan foto asli mobil yang dipilih saat beli di katalog
             const previewWrap = activeView.querySelector('.slot-car-preview');
-            const svgContent = CHASSIS_SVG[carModel.baseChassis];
-            let gradCol1 = null, gradCol2 = null;
-            if (slot.car.color && slot.car.color.startsWith('custom-grad:')) {
-                const parts = slot.car.color.split(':');
-                gradCol1 = parts[1];
-                gradCol2 = parts[2];
-            } else if (slot.car.color && slot.car.color.startsWith('gradient-') && GRADIENT_PALETTES[slot.car.color]) {
-                const pal = GRADIENT_PALETTES[slot.car.color];
-                gradCol1 = pal.col1;
-                gradCol2 = pal.col2;
-            }
-
-            if (gradCol1 && gradCol2) {
-                const gradId = `slot-grad-${index}`;
-                const gradDef = `<defs><linearGradient id="${gradId}" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="${gradCol1}"/><stop offset="100%" stop-color="${gradCol2}"/></linearGradient></defs>`;
-                previewWrap.innerHTML = svgContent.replace('<svg ', `<svg >${gradDef}`);
-                const paintable = previewWrap.querySelectorAll('.car-paintable');
-                paintable.forEach(p => p.setAttribute('fill', `url(#${gradId})`));
+            const photoUrl = (typeof CAR_PHOTOS !== 'undefined') && CAR_PHOTOS[carModel.name];
+            if (photoUrl) {
+                previewWrap.innerHTML = `<img class="slot-car-photo-preview" src="${photoUrl}" alt="${carModel.name}" loading="lazy" referrerpolicy="no-referrer" crossorigin="anonymous" onerror="this.onerror=null; this.parentElement.innerHTML=\`${CHASSIS_SVG[carModel.baseChassis].replace(/`/g, '\\`')}\`;" />`;
             } else {
-                previewWrap.innerHTML = svgContent;
-                const paintable = previewWrap.querySelectorAll('.car-paintable');
-                paintable.forEach(p => p.setAttribute('fill', slot.car.color || '#ff0055'));
+                const svgContent = CHASSIS_SVG[carModel.baseChassis];
+                let gradCol1 = null, gradCol2 = null;
+                if (slot.car.color && slot.car.color.startsWith('custom-grad:')) {
+                    const parts = slot.car.color.split(':');
+                    gradCol1 = parts[1];
+                    gradCol2 = parts[2];
+                } else if (slot.car.color && slot.car.color.startsWith('gradient-') && GRADIENT_PALETTES[slot.car.color]) {
+                    const pal = GRADIENT_PALETTES[slot.car.color];
+                    gradCol1 = pal.col1;
+                    gradCol2 = pal.col2;
+                }
+
+                if (gradCol1 && gradCol2) {
+                    const gradId = `slot-grad-${index}`;
+                    const gradDef = `<defs><linearGradient id="${gradId}" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="${gradCol1}"/><stop offset="100%" stop-color="${gradCol2}"/></linearGradient></defs>`;
+                    previewWrap.innerHTML = svgContent.replace('<svg ', `<svg >${gradDef}`);
+                    const paintable = previewWrap.querySelectorAll('.car-paintable');
+                    paintable.forEach(p => p.setAttribute('fill', `url(#${gradId})`));
+                } else {
+                    previewWrap.innerHTML = svgContent;
+                    const paintable = previewWrap.querySelectorAll('.car-paintable');
+                    paintable.forEach(p => p.setAttribute('fill', slot.car.color || '#ff0055'));
+                }
             }
         } else {
             card.classList.add('empty');
@@ -2101,12 +2157,18 @@ function showSpecialOrderNotification() {
 }
 
 function startSpecialOrderTriggers() {
+    if (specialOrderTriggerTimer) clearInterval(specialOrderTriggerTimer);
+    const freq = (gameState.missionFrequency || (accountData && accountData.missionFreq) || 'standard');
+    if (freq === 'none') return; // User chose not to receive special missions
+    
     function rollSpecialOrder() {
         if (gameState.isPaused) return; // Skip if paused
         if (gameState.activeOrder) return; // Order is already active
+        const curFreq = (gameState.missionFrequency || (accountData && accountData.missionFreq) || 'standard');
+        if (curFreq === 'none') return;
         
-        // 25% chance to trigger an order if not in placement challenge
-        if (Math.random() < 0.35 && !gameState.inPlacement && gameState.rank >= 2) {
+        const chance = (curFreq === 'frequent') ? 0.75 : 0.35;
+        if (Math.random() < chance && !gameState.inPlacement && gameState.rank >= 2) {
             // Trigger new special order
             const randomBuyer = AI_BUYERS[Math.floor(Math.random() * AI_BUYERS.length)];
             const targetTypes = ["sedan", "suv", "hatchback", "pickup", "sports"];
@@ -2133,14 +2195,15 @@ function startSpecialOrderTriggers() {
         }
     }
     
-    specialOrderTriggerTimer = setInterval(rollSpecialOrder, 60000); // check every 60 seconds
+    const intervalMs = (freq === 'frequent') ? 30000 : 60000;
+    specialOrderTriggerTimer = setInterval(rollSpecialOrder, intervalMs);
 }
 
 function renderSpecialOrder() {
     if (gameState.activeOrder) {
         specialOrderCard.classList.remove('empty');
         orderBuyerName.innerText = gameState.activeOrder.buyerName;
-        orderRewardCash.innerText = `$${gameState.activeOrder.reward.toLocaleString()}`;
+        orderRewardCash.innerText = `${formatCash(gameState.activeOrder.reward)}`;
         
         const statLabelMap = { speed: "Top Speed (km/h)", eco: "Eco-Friendly", defense: "Crash Defense", flex: "Gaya Flex" };
         let reqText = `Rakit mobil tipe sasis dasar ${gameState.activeOrder.type.toUpperCase()}`;
@@ -2259,7 +2322,7 @@ function renderCatalogGrid(catFilter = "all", varFilter = "all", searchStr = "")
                 <h4>${car.name}</h4>
                 <p class="desc">${car.description}</p>
                 <div class="catalog-price-row">
-                    <span class="catalog-inv-badge">💰 $${car.price.toLocaleString()}</span>
+                    <span class="catalog-inv-badge">💰 {formatCash(car.price)}</span>
                 </div>
             </div>
         `;
@@ -2308,11 +2371,11 @@ function openChassisPurchasePreview(car) {
     document.getElementById('chassis-preview-eco').innerText = baseStats.eco >= 70 ? (currentLang === 'id' ? 'Sangat Irit' : 'Very Eco') : (baseStats.eco >= 40 ? (currentLang === 'id' ? 'Moderat' : 'Moderate') : (currentLang === 'id' ? 'Boros' : 'High Fuel'));
     document.getElementById('chassis-preview-flex').innerText = baseStats.flex >= 40 ? (currentLang === 'id' ? 'Sultan / Mewah' : 'Luxury / Flex') : (baseStats.flex >= 20 ? (currentLang === 'id' ? 'Keren' : 'Cool') : (currentLang === 'id' ? 'Standar' : 'Standard'));
 
-    document.getElementById('chassis-preview-price').innerText = `$${car.price.toLocaleString()}`;
-    document.getElementById('chassis-preview-wallet').innerText = `$${gameState.cash.toLocaleString()}`;
+    document.getElementById('chassis-preview-price').innerText = `${formatCash(car.price)}`;
+    document.getElementById('chassis-preview-wallet').innerText = `${formatCash(gameState.cash)}`;
 
     const btnConfirm = document.getElementById('btn-confirm-buy-chassis');
-    btnConfirm.innerHTML = `<i class="fa-solid fa-cart-shopping"></i> ${currentLang === 'id' ? 'Beli Sasis Sekarang' : 'Buy Chassis Now'} ($${car.price.toLocaleString()})`;
+    btnConfirm.innerHTML = `<i class="fa-solid fa-cart-shopping"></i> ${currentLang === 'id' ? 'Beli Sasis Sekarang' : 'Buy Chassis Now'} (${formatCash(car.price)})`;
 
     modal.classList.remove('hidden');
 }
@@ -2326,14 +2389,14 @@ function closeChassisPurchasePreview() {
 function selectChassisForActiveSlot(carCatalogItem) {
     // Check if player has enough cash
     if (gameState.cash < carCatalogItem.price) {
-        alert(`Uang kas tidak cukup! Kamu membutuhkan $${carCatalogItem.price.toLocaleString()}, saldo kamu saat ini $${gameState.cash.toLocaleString()}.`);
+        alert(`Uang kas tidak cukup! Kamu membutuhkan ${formatCash(carCatalogItem.price)}, saldo kamu saat ini ${formatCash(gameState.cash)}.`);
         return;
     }
 
     // Confirm logic if active slot has parts
     const currentSlot = gameState.slots[activeSlotIndex];
     if (currentSlot.occupied && currentSlot.car.parts.length > 0) {
-        const sure = confirm(`Mengubah sasis di slot aktif akan menghapus ${currentSlot.car.parts.length} komponen terpasang. Investasi sebesar $${currentSlot.car.investment.toLocaleString()} akan HANGUS! Yakin?`);
+        const sure = confirm(`Mengubah sasis di slot aktif akan menghapus ${currentSlot.car.parts.length} komponen terpasang. Investasi sebesar ${formatCash(currentSlot.car.investment)} akan HANGUS! Yakin?`);
         if (!sure) return;
     }
     
@@ -2382,7 +2445,7 @@ function openStudioEditor(slotIdx) {
     // Setup Header & DOM
     activeSlotName.innerText = `WORKSPACE SLOT ${slotIdx + 1}`;
     studioCarModelName.innerText = carModel.name;
-    studioCashVal.innerText = `$${gameState.cash.toLocaleString()}`;
+    studioCashVal.innerText = `${formatCash(gameState.cash)}`;
     
     // Swap screen
     document.getElementById('dashboard-screen').classList.remove('active');
@@ -2460,7 +2523,7 @@ function renderPartsDrawer(category) {
                             <span>${part.name}</span>
                             <span class="advisor-match-badge advisor-match-${score >= 5 ? 'high' : 'med'}">${score >= 5 ? 'Sangat Cocok' : 'Cocok'}</span>
                         </div>
-                        <div class="part-price">$${part.price.toLocaleString()}</div>
+                        <div class="part-price">${formatCash(part.price)}</div>
                         <div class="part-effect" style="color: var(--green);">✅ ${pc.pro}</div>
                         <div class="part-effect" style="color: var(--red);">⚠️ ${pc.con}</div>
                     </div>
@@ -2506,7 +2569,7 @@ function renderPartsDrawer(category) {
             <div class="part-icon-preview">${part.svg}</div>
             <div class="part-info">
                 <div class="part-name">${part.name}</div>
-                <div class="part-price">$${part.price.toLocaleString()}</div>
+                <div class="part-price">${formatCash(part.price)}</div>
                 <div class="part-effect">${part.desc}</div>
             </div>
         `;
@@ -2534,7 +2597,7 @@ function buyAndInstallPart(part) {
         return;
     }
     gameState.cash -= part.price;
-    studioCashVal.innerText = `$${gameState.cash.toLocaleString()}`;
+    studioCashVal.innerText = `${formatCash(gameState.cash)}`;
     saveGameData();
     updateHUD();
     addPartToCanvas(part);
@@ -2591,7 +2654,7 @@ function addPartToCanvas(partTemplate, x, y, scale, rotation = 0, flipped = fals
             const refund = Math.round(placedParts[existingIndex].price * 0.5);
             gameState.cash += refund;
             // Notify via studio cash update
-            studioCashVal.innerText = `$${gameState.cash.toLocaleString()}`;
+            studioCashVal.innerText = `${formatCash(gameState.cash)}`;
             placedParts.splice(existingIndex, 1);
         }
     }
@@ -2647,7 +2710,7 @@ function renderPlacedParts() {
 
                 item.innerHTML = `
                     <span>${part.name}</span>
-                    <span style="color: var(--accent); font-weight: bold;">$${part.price.toLocaleString()}</span>
+                    <span style="color: var(--accent); font-weight: bold;">${formatCash(part.price)}</span>
                 `;
 
                 item.addEventListener('click', () => {
@@ -2718,7 +2781,7 @@ function updateStats() {
     flex = Math.max(0, Math.min(100, flex));
     defense = Math.max(0, Math.min(100, defense));
     
-    specPrice.innerText = `$${totalInvest.toLocaleString()}`;
+    specPrice.innerText = `${formatCash(totalInvest)}`;
     statSpeed.innerText = `${speed} km/h`;
     statAccel.innerText = `${accel.toFixed(1)}s`;
     
@@ -2801,107 +2864,107 @@ const BUYER_KEYWORDS = {
 
 // Dialog generator helper for 7 AI Buyers
 function getBuyerDialogue(buyerId, dialogType, data = {}) {
-    const priceStr = data.price ? data.price.toLocaleString() : "";
-    const offerStr = data.offer ? data.offer.toLocaleString() : "";
-    const compromiseStr = data.compromise ? data.compromise.toLocaleString() : "";
+    const priceStr = data.price ? formatCash(data.price) : "";
+    const offerStr = data.offer ? formatCash(data.offer) : "";
+    const compromiseStr = data.compromise ? formatCash(data.compromise) : "";
 
     const carName = negoSession && negoSession.car ? CARS_CATALOG.find(c => c.id === negoSession.car.carId).name : "mobil ini";
     const carType = negoSession && negoSession.car ? negoSession.car.carId.split("_")[0] : "mobil";
     
     const intros = {
         tambang: [
-            `Halo bos! Gua liat sasis ${carName} lu ini kokoh banget. Di lokasi tambang batubara gua lagi butuh armada badak begini. Berani lepas di angka $${priceStr} gak?`,
-            `Wah, sasisnya keliatan tebel dan gak kaleng-kaleng nih! Buat hantam jalur berlumpur sama bebatuan tajam pas banget. Buka harga santai dulu, gimana kalau $${priceStr}?`,
-            `Mantap bener tongkrongannya! Jarang-jarang ada workshop bikin sasis sekuat ini. Gua serius minat, gua buka penawaran pertama $${priceStr}, deal gak?`
+            `Halo bos! Gua liat sasis ${carName} lu ini kokoh banget. Di lokasi tambang batubara gua lagi butuh armada badak begini. Berani lepas di angka ${priceStr} gak?`,
+            `Wah, sasisnya keliatan tebel dan gak kaleng-kaleng nih! Buat hantam jalur berlumpur sama bebatuan tajam pas banget. Buka harga santai dulu, gimana kalau ${priceStr}?`,
+            `Mantap bener tongkrongannya! Jarang-jarang ada workshop bikin sasis sekuat ini. Gua serius minat, gua buka penawaran pertama ${priceStr}, deal gak?`
         ],
         eksekutif: [
-            `Selamat siang rekan. Saya sedang mencari unit kendaraan representatif seperti ${carName} ini untuk operasional direksi. Saya ajukan tawaran pembuka sebesar $${priceStr}.`,
-            `Garis bodi mobil ini bersih, elegan, dan punya impresi prestisius. Sangat pantas terparkir di lobi kantor kami. Penawaran pertama dari pihak kami adalah $${priceStr}.`,
-            `Kesan pertama saya: berkelas dan efisien. Jika Anda bersedia melepasnya di angka $${priceStr}, kontrak pembelian bisa kita sepakati sekarang.`
+            `Selamat siang rekan. Saya sedang mencari unit kendaraan representatif seperti ${carName} ini untuk operasional direksi. Saya ajukan tawaran pembuka sebesar ${priceStr}.`,
+            `Garis bodi mobil ini bersih, elegan, dan punya impresi prestisius. Sangat pantas terparkir di lobi kantor kami. Penawaran pertama dari pihak kami adalah ${priceStr}.`,
+            `Kesan pertama saya: berkelas dan efisien. Jika Anda bersedia melepasnya di angka ${priceStr}, kontrak pembelian bisa kita sepakati sekarang.`
         ],
         sultan: [
-            `Woy bro! Asli ini mobil gokil parah! Tongkrongan ${carName} lu eye-catching banget, pas buat konten flexing malam minggu di PIK. Gua bayarin $${priceStr} langsung bungkus yuk!`,
-            `Gila sih, auranya dapet banget! Kalau gua bawa jalan pasti auto disorot kamera seantero kota. Gua buka penawaran pertama di $${priceStr}, kurang gak tuh bro?`,
-            `Nah ini dia yang gua cari-cari! Desainnya antimainstream dan berani beda. Gua gas $${priceStr} sekarang, transfer instan gak pake lama!`
+            `Woy bro! Asli ini mobil gokil parah! Tongkrongan ${carName} lu eye-catching banget, pas buat konten flexing malam minggu di PIK. Gua bayarin ${priceStr} langsung bungkus yuk!`,
+            `Gila sih, auranya dapet banget! Kalau gua bawa jalan pasti auto disorot kamera seantero kota. Gua buka penawaran pertama di ${priceStr}, kurang gak tuh bro?`,
+            `Nah ini dia yang gua cari-cari! Desainnya antimainstream dan berani beda. Gua gas ${priceStr} sekarang, transfer instan gak pake lama!`
         ],
         kolektor: [
-            `Permisi nak... Garis siluet ${carName} ini mengingatkan saya pada masa-masa kejayaan otomotif era dulu. Pengerjaannya rapi sekali. Boleh saya tawar awal $${priceStr}?`,
-            `Sungguh langka melihat perakit muda yang masih menaruh rasa hormat pada proporsi klasik seperti ini. Saya ingin memajangnya di museum pribadi saya di angka $${priceStr}.`,
-            `Karakter vintage-nya sangat kental dan berjiwa. Sebagai pembuka pembicaraan kita, bagaimana jika di harga $${priceStr}?`
+            `Permisi nak... Garis siluet ${carName} ini mengingatkan saya pada masa-masa kejayaan otomotif era dulu. Pengerjaannya rapi sekali. Boleh saya tawar awal ${priceStr}?`,
+            `Sungguh langka melihat perakit muda yang masih menaruh rasa hormat pada proporsi klasik seperti ini. Saya ingin memajangnya di museum pribadi saya di angka ${priceStr}.`,
+            `Karakter vintage-nya sangat kental dan berjiwa. Sebagai pembuka pembicaraan kita, bagaimana jika di harga ${priceStr}?`
         ],
         sirkus: [
-            `Hahaha mantap jiwa! Ini mobil beneran gokil dan nyentrik abis! Pas banget buat pawai karnaval keliling kota. Gua tebus $${priceStr} ya bro?`,
-            `Woooww, liat bentuknya aja penonton sirkus gua pasti langsung teriak heboh! Unik parah! Gua buka harga di $${priceStr}, gimana mas bro?`,
-            `Gak ada duanya di dunia! Mobil dengan visual se-eksentrik ini wajib masuk sirkus gua. Nih gua buka penawaran awal $${priceStr}!`
+            `Hahaha mantap jiwa! Ini mobil beneran gokil dan nyentrik abis! Pas banget buat pawai karnaval keliling kota. Gua tebus ${priceStr} ya bro?`,
+            `Woooww, liat bentuknya aja penonton sirkus gua pasti langsung teriak heboh! Unik parah! Gua buka harga di ${priceStr}, gimana mas bro?`,
+            `Gak ada duanya di dunia! Mobil dengan visual se-eksentrik ini wajib masuk sirkus gua. Nih gua buka penawaran awal ${priceStr}!`
         ],
         ibu: [
-            `Permisi mas... Saya lagi nyari mobil yang aman buat antar-jemput anak les sama belanja bulanan. ${carName} ini bagasinya lega gak ya? Saya tawar dulu ya mas $${priceStr}.`,
-            `Aduh modelnya manis ya, keliatan nyaman buat keluarga. Kalau harganya cocok saya mau ambil nih. Boleh ya dibuka di $${priceStr}?`,
-            `Keliatannya stabil dan gak rewel ya mas. Saya suka mobil yang ramah di kantong dan aman. Saya tawar pertama $${priceStr} ya mas ganteng.`
+            `Permisi mas... Saya lagi nyari mobil yang aman buat antar-jemput anak les sama belanja bulanan. ${carName} ini bagasinya lega gak ya? Saya tawar dulu ya mas ${priceStr}.`,
+            `Aduh modelnya manis ya, keliatan nyaman buat keluarga. Kalau harganya cocok saya mau ambil nih. Boleh ya dibuka di ${priceStr}?`,
+            `Keliatannya stabil dan gak rewel ya mas. Saya suka mobil yang ramah di kantong dan aman. Saya tawar pertama ${priceStr} ya mas ganteng.`
         ],
         pembalap: [
-            `Bro, setup sasis ${carName} lu tajem banget downforce-nya. Siap gua bawa track day ke Sentul nih! Buka harga balap dulu ya, $${priceStr} gua tebus.`,
-            `Gua perhatiin stance-nya udah center of gravity-nya mantep buat libas tikungan sirkuit. Gua serius mau turunin ke aspal, gua buka di $${priceStr} ya!`,
-            `Aura kompetisinya kerasa kenceng banget bro! Mesin sama setup suspensinya pas. Gimana kalau $${priceStr} langsung salaman di pit stop?`
+            `Bro, setup sasis ${carName} lu tajem banget downforce-nya. Siap gua bawa track day ke Sentul nih! Buka harga balap dulu ya, ${priceStr} gua tebus.`,
+            `Gua perhatiin stance-nya udah center of gravity-nya mantep buat libas tikungan sirkuit. Gua serius mau turunin ke aspal, gua buka di ${priceStr} ya!`,
+            `Aura kompetisinya kerasa kenceng banget bro! Mesin sama setup suspensinya pas. Gimana kalau ${priceStr} langsung salaman di pit stop?`
         ]
     };
 
     const successDialogues = {
         tambang: [
-            `Sip bos! Harga $${offerStr} masuk akal banget buat unit sebadak ini. Langsung gua angkut ke site tambang sekarang!`,
-            `Nah gitu dong, asik nego sama lu! Gua bayar lunas $${offerStr}, kunci langsung gua bawa ya.`
+            `Sip bos! Harga ${offerStr} masuk akal banget buat unit sebadak ini. Langsung gua angkut ke site tambang sekarang!`,
+            `Nah gitu dong, asik nego sama lu! Gua bayar lunas ${offerStr}, kunci langsung gua bawa ya.`
         ],
         eksekutif: [
-            `Angka $${offerStr} disetujui. Tim finance kami akan segera menerbitkan surat transfer pembayaran resmi hari ini. Terima kasih atas profesionalismenya.`,
-            `Sangat adil. Kesepakatan $${offerStr} memenuhi standar anggaran pengadaan kami. Senang berbisnis dengan Anda.`
+            `Angka ${offerStr} disetujui. Tim finance kami akan segera menerbitkan surat transfer pembayaran resmi hari ini. Terima kasih atas profesionalismenya.`,
+            `Sangat adil. Kesepakatan ${offerStr} memenuhi standar anggaran pengadaan kami. Senang berbisnis dengan Anda.`
         ],
         sultan: [
-            `Gassspoll bro! $${offerStr} langsung gua transfer detik ini juga! Kunci mobilnya sini, mau langsung gua bawa pamer keliling Senopati!`,
-            `Sip deal tanpa ribet! $${offerStr} mah receh buat karya sebagus ini bro. Gua mention garasi lu di Instagram gua ya!`
+            `Gassspoll bro! ${offerStr} langsung gua transfer detik ini juga! Kunci mobilnya sini, mau langsung gua bawa pamer keliling Senopati!`,
+            `Sip deal tanpa ribet! ${offerStr} mah receh buat karya sebagus ini bro. Gua mention garasi lu di Instagram gua ya!`
         ],
         kolektor: [
-            `Alhamdulillah nak... $${offerStr} adalah penghargaan yang sangat pantas untuk mahakarya seni ini. Mobil ini akan saya rawat sepenuh hati di garasi pribadi.`,
-            `Kesepakatan yang indah di harga $${offerStr}. Terima kasih sudah mau melepas permata klasik ini kepada saya.`
+            `Alhamdulillah nak... ${offerStr} adalah penghargaan yang sangat pantas untuk mahakarya seni ini. Mobil ini akan saya rawat sepenuh hati di garasi pribadi.`,
+            `Kesepakatan yang indah di harga ${offerStr}. Terima kasih sudah mau melepas permata klasik ini kepada saya.`
         ],
         sirkus: [
-            `Horeeee deal! Di harga $${offerStr} ini bakal jadi bintang panggung utama karnaval malam ini! Makasih banyak ya sobat kreatif!`,
-            `Asikkk bungkus bro! $${offerStr} siap gua bayar kontan. Penonton sirkus pasti histeris liat mobil ini!`
+            `Horeeee deal! Di harga ${offerStr} ini bakal jadi bintang panggung utama karnaval malam ini! Makasih banyak ya sobat kreatif!`,
+            `Asikkk bungkus bro! ${offerStr} siap gua bayar kontan. Penonton sirkus pasti histeris liat mobil ini!`
         ],
         ibu: [
-            `Alhamdulillah mas, harga $${offerStr} cocok sama tabungan suami saya. Makasih banyak ya mas, anak-anak pasti seneng banget!`,
-            `Wah terima kasih banyak ya mas udah mau kasih harga baik $${offerStr}. Semoga bengkel modifnya tambah berkah dan laris terus!`
+            `Alhamdulillah mas, harga ${offerStr} cocok sama tabungan suami saya. Makasih banyak ya mas, anak-anak pasti seneng banget!`,
+            `Wah terima kasih banyak ya mas udah mau kasih harga baik ${offerStr}. Semoga bengkel modifnya tambah berkah dan laris terus!`
         ],
         pembalap: [
-            `Gokil bro! Di angka $${offerStr} mobil ini sah jadi senjata baru gua di lintasan balap. Gua tes di sirkuit sore ini juga!`,
-            `Deal bro! $${offerStr} harga yang pantas buat karya tuner berkelas kayak lu. Sampai ketemu di podium juara!`
+            `Gokil bro! Di angka ${offerStr} mobil ini sah jadi senjata baru gua di lintasan balap. Gua tes di sirkuit sore ini juga!`,
+            `Deal bro! ${offerStr} harga yang pantas buat karya tuner berkelas kayak lu. Sampai ketemu di podium juara!`
         ]
     };
 
     const rayuSuksesDialogues = {
         tambang: [
-            `Wah bener juga lu bos! Masuk akal penjelasannya, besi sama bannya emang badak. Gua naikin penawaran gua jadi $${priceStr} dah!`,
-            `Hahaha pinter lu jelasin fungsi lapangannya! Gua demen orang ngerti alat berat. Gua tambahin deh jadi $${priceStr}!`
+            `Wah bener juga lu bos! Masuk akal penjelasannya, besi sama bannya emang badak. Gua naikin penawaran gua jadi ${priceStr} dah!`,
+            `Hahaha pinter lu jelasin fungsi lapangannya! Gua demen orang ngerti alat berat. Gua tambahin deh jadi ${priceStr}!`
         ],
         eksekutif: [
-            `Penjelasan Anda mengenai efisiensi dan standar kenyamanan interiornya sangat meyakinkan komite kami. Kami setuju menaikkan pagu menjadi $${priceStr}.`,
-            `Argumen yang sangat profesional dan berbasis data teknis. Saya setuju menaikkan alokasi anggaran ke $${priceStr}.`
+            `Penjelasan Anda mengenai efisiensi dan standar kenyamanan interiornya sangat meyakinkan komite kami. Kami setuju menaikkan pagu menjadi ${priceStr}.`,
+            `Argumen yang sangat profesional dan berbasis data teknis. Saya setuju menaikkan alokasi anggaran ke ${priceStr}.`
         ],
         sultan: [
-            `Anjayyy bener juga omongan lu bro! Detailnya makin diliat makin eye-catching parah. Oke gua naikin tawaran gua jadi $${priceStr}, puas kan lu?`,
-            `Wah gila sih, setelah lu sebut fitur itu gua makin gak sabar pamerin ke tongkrongan gua! Nih gua kasih $${priceStr}!`
+            `Anjayyy bener juga omongan lu bro! Detailnya makin diliat makin eye-catching parah. Oke gua naikin tawaran gua jadi ${priceStr}, puas kan lu?`,
+            `Wah gila sih, setelah lu sebut fitur itu gua makin gak sabar pamerin ke tongkrongan gua! Nih gua kasih ${priceStr}!`
         ],
         kolektor: [
-            `Pengetahuan Anda tentang orisinalitas dan filosofi komponennya sungguh menyentuh hati saya. Baiklah, saya naikkan penghargaan saya menjadi $${priceStr}.`,
-            `Tepat sekali nak... Jarang ada pemuda yang paham nilai historis seperti Anda. Saya hargai itu dengan menaikkan ke $${priceStr}.`
+            `Pengetahuan Anda tentang orisinalitas dan filosofi komponennya sungguh menyentuh hati saya. Baiklah, saya naikkan penghargaan saya menjadi ${priceStr}.`,
+            `Tepat sekali nak... Jarang ada pemuda yang paham nilai historis seperti Anda. Saya hargai itu dengan menaikkan ke ${priceStr}.`
         ],
         sirkus: [
-            `Wahahah bener banget! Part itu emang bikin aura mobilnya makin kocak dan spektakuler! Nih gua tambahin jadi $${priceStr}!`
+            `Wahahah bener banget! Part itu emang bikin aura mobilnya makin kocak dan spektakuler! Nih gua tambahin jadi ${priceStr}!`
         ],
         ibu: [
-            `Oh begitu ya mas? Bagus dong kalau fiturnya beneran bikin anak-anak aman dan nyaman di jalan. Ya udah deh mas, saya naikin jadi $${priceStr} ya.`
+            `Oh begitu ya mas? Bagus dong kalau fiturnya beneran bikin anak-anak aman dan nyaman di jalan. Ya udah deh mas, saya naikin jadi ${priceStr} ya.`
         ],
         pembalap: [
-            `Gua suka cara lu tuning part itu! Aerodinamika sama traksi grip-nya emang beneran ngaruh di tikungan tajam. Gua naikin jadi $${priceStr} bro!`
+            `Gua suka cara lu tuning part itu! Aerodinamika sama traksi grip-nya emang beneran ngaruh di tikungan tajam. Gua naikin jadi ${priceStr} bro!`
         ]
     };
 
@@ -2916,13 +2979,13 @@ function getBuyerDialogue(buyerId, dialogType, data = {}) {
     };
 
     const tawarTolakDialogues = {
-        tambang: `Waduh bos, $${offerStr} kemahalan! Anggaran operasional gua mentok di $${compromiseStr}. Gimana, mau ambil gak?`,
-        eksekutif: `Angka $${offerStr} melampaui otorisasi anggaran dewan direksi. Batas maksimal yang bisa kami setujui adalah $${compromiseStr}.`,
-        sultan: `Santuy bro, $${offerStr} mah ketinggian amat! Gua tau mobil keren tapi gua gak mau rugi bandar. Gua mentok di $${compromiseStr} ya!`,
-        kolektor: `Tawaran $${offerStr} agak terlalu berlebihan untuk kondisi saat ini nak. Batas apresiasi wajar saya ada di $${compromiseStr}.`,
-        sirkus: `Waduh bosku, tiket sirkus belum nutup kalau $${offerStr}! Kasih gua harga bersahabat di $${compromiseStr} dong!`,
-        ibu: `Aduh mas, $${offerStr} mah bisa diomelin suami saya di rumah. Kalau boleh $${compromiseStr} saya usahain deh mas ya.`,
-        pembalap: `Weits santai bro, $${offerStr} kemahalan buat modal balap gua. Budget tim gua mentok di $${compromiseStr}, deal?`
+        tambang: `Waduh bos, ${offerStr} kemahalan! Anggaran operasional gua mentok di ${compromiseStr}. Gimana, mau ambil gak?`,
+        eksekutif: `Angka ${offerStr} melampaui otorisasi anggaran dewan direksi. Batas maksimal yang bisa kami setujui adalah ${compromiseStr}.`,
+        sultan: `Santuy bro, ${offerStr} mah ketinggian amat! Gua tau mobil keren tapi gua gak mau rugi bandar. Gua mentok di ${compromiseStr} ya!`,
+        kolektor: `Tawaran ${offerStr} agak terlalu berlebihan untuk kondisi saat ini nak. Batas apresiasi wajar saya ada di ${compromiseStr}.`,
+        sirkus: `Waduh bosku, tiket sirkus belum nutup kalau ${offerStr}! Kasih gua harga bersahabat di ${compromiseStr} dong!`,
+        ibu: `Aduh mas, ${offerStr} mah bisa diomelin suami saya di rumah. Kalau boleh ${compromiseStr} saya usahain deh mas ya.`,
+        pembalap: `Weits santai bro, ${offerStr} kemahalan buat modal balap gua. Budget tim gua mentok di ${compromiseStr}, deal?`
     };
 
     const walkoutDialogues = {
@@ -2944,9 +3007,9 @@ function getBuyerDialogue(buyerId, dialogType, data = {}) {
         const list = successDialogues[buyerKey];
         return list[Math.floor(Math.random() * list.length)];
     } else if (dialogType === 'tawar_tolak') {
-        return tawarTolakDialogues[buyerKey] || `Tawaran $${offerStr} terlalu tinggi. Anggaran maksimal saya adalah $${compromiseStr}.`;
+        return tawarTolakDialogues[buyerKey] || `Tawaran ${offerStr} terlalu tinggi. Anggaran maksimal saya adalah ${compromiseStr}.`;
     } else if (dialogType === 'rayu_sukses') {
-        const list = rayuSuksesDialogues[buyerKey] || [`Poin yang Anda jelaskan masuk akal. Saya naikkan tawaran saya menjadi $${priceStr}.`];
+        const list = rayuSuksesDialogues[buyerKey] || [`Poin yang Anda jelaskan masuk akal. Saya naikkan tawaran saya menjadi ${priceStr}.`];
         return list[Math.floor(Math.random() * list.length)];
     } else if (dialogType === 'rayu_gagal') {
         return rayuGagalDialogues[buyerKey] || `Penjelasan Anda kurang relevan dengan kebutuhan prioritas saya.`;
@@ -3085,7 +3148,7 @@ function triggerLaunchNegotiation() {
     updateShowroom3DModel(carModel.baseChassis, slot.car.color, slot.car.parts);
     
     showroomCarTitle.innerText = carModel.name;
-    showroomCarSpecs.innerText = `Top Speed: ${speed} km/h | Accel: ${accel.toFixed(1)}s | Investasi: $${partPrices.toLocaleString()}`;
+    showroomCarSpecs.innerText = `Top Speed: ${speed} km/h | Accel: ${accel.toFixed(1)}s | Investasi: ${formatCash(partPrices)}`;
     
     // Initialize Retro Terminal Command
     terminalConsole.innerHTML = '';
@@ -3141,7 +3204,7 @@ function printBuyerIntro() {
     const introDialogue = getBuyerDialogue(info.id, 'intro', { price: negoSession.currentBid });
     logToTerminal(`${info.name}: "${introDialogue}"`, 'normal');
     logToTerminal(`Ketik perintah Anda di bawah:`, 'sys');
-    logToTerminal(`/terima        - Setujui penjualan senilai $${negoSession.currentBid.toLocaleString()}`, 'sys');
+    logToTerminal(`/terima        - Setujui penjualan senilai ${formatCash(negoSession.currentBid)}`, 'sys');
     logToTerminal(`/tawar [harga] - Ajukan tawar balik (contoh: /tawar ${Math.round(negoSession.currentBid * 1.25)})`, 'sys');
     logToTerminal(`/rayu [alasan] - Bujuk buyer dengan menyebutkan fitur mobil (contoh: /rayu mobil ini punya ban monster)`, 'sys');
     logToTerminal(`/lewati        - Batalkan nego & cari buyer lain (GRATIS)`, 'sys');
@@ -3195,8 +3258,8 @@ function executeAcceptDeal() {
     gameState.slots[activeSlotIndex] = { occupied: false, car: null };
     
     logToTerminal(`PENGIRIMAN DATA TRANSAKSI... BERHASIL!`, 'sys');
-    logToTerminal(`HARGA DEAL SEPAKAT: $${negoSession.currentBid.toLocaleString()}`, 'success');
-    logToTerminal(`Kas Studio (Total): $${gameState.cash.toLocaleString()}`, 'sys');
+    logToTerminal(`HARGA DEAL SEPAKAT: ${formatCash(negoSession.currentBid)}`, 'success');
+    logToTerminal(`Kas Studio (Total): ${formatCash(gameState.cash)}`, 'sys');
     
     if (negoSession.isSpecialOrder) {
         // Special order success: +1 star, cash reward is already included in bid price
@@ -3218,7 +3281,7 @@ function executeAcceptDeal() {
     } else {
         // Normal deal success
         if (profit > 0) {
-            logToTerminal(`Transaksi sukses! Profit bersih sebesar +$${profit.toLocaleString()}`, 'success');
+            logToTerminal(`Transaksi sukses! Profit bersih sebesar +${formatCash(profit)}`, 'success');
             
             // Placement mode
             if (gameState.inPlacement) {
@@ -3263,7 +3326,7 @@ function executeAcceptDeal() {
             }
         } else {
             // Successful sale but loss in components (Jual rugi)
-            logToTerminal(`Transaksi selesai namun rugi sebesar -$${Math.abs(profit).toLocaleString()}`, 'warn');
+            logToTerminal(`Transaksi selesai namun rugi sebesar -${formatCash(Math.abs(profit))}`, 'warn');
             applyFailurePenalty();
         }
     }
@@ -3300,7 +3363,7 @@ function executeCounterOffer(offer) {
     } else {
         // Rejection compromise without losing patience (no walkouts)
         const maxNego = Math.round(negoSession.initialBid * 1.50);
-        logToTerminal(`${negoSession.buyer.name}: "Tawaran Anda terlalu tinggi! Anggaran maksimal saya adalah $${maxNego.toLocaleString()}. Tolong ajukan penawaran di bawah itu."`, 'normal');
+        logToTerminal(`${negoSession.buyer.name}: "Tawaran Anda terlalu tinggi! Anggaran maksimal saya adalah ${formatCash(maxNego)}. Tolong ajukan penawaran di bawah itu."`, 'normal');
     }
 }
 
@@ -3458,7 +3521,161 @@ function exitNegotiationScreen() {
 
 // --- BUTTONS & EVENT LISTENERS SETUP ---
 
+
+// --- PROFILE SETTINGS MODAL SYSTEM ---
+function openProfileSettingsModal() {
+    const modal = document.getElementById("profile-settings-modal");
+    if (!modal) return;
+    
+    // Fill current values
+    const inUsername = document.getElementById("setting-input-username");
+    const inStudio = document.getElementById("setting-input-studioname");
+    if (inUsername && accountData) inUsername.value = accountData.username || "";
+    if (inStudio && accountData) inStudio.value = accountData.studioName || "";
+    
+    updateProfileModalPauseUI();
+    updateProfileModalLangUI();
+    updateProfileModalMissionUI();
+    
+    modal.classList.remove("hidden");
+}
+
+function closeProfileSettingsModal() {
+    const modal = document.getElementById("profile-settings-modal");
+    if (modal) modal.classList.add("hidden");
+}
+
+function updateProfileModalPauseUI() {
+    const statusEl = document.getElementById("profile-pause-status");
+    const btnPause = document.getElementById("btn-profile-toggle-pause");
+    if (!statusEl || !btnPause) return;
+    
+    if (gameState.isPaused) {
+        statusEl.innerHTML = currentLang === "id" ? `STATUS: <span style="color:var(--red);font-weight:bold;">DIJEDA (PAUSED)</span>` : `STATUS: <span style="color:var(--red);font-weight:bold;">PAUSED</span>`;
+        btnPause.innerHTML = currentLang === "id" ? `<i class="fa-solid fa-play"></i> LANJUTKAN (RESUME)` : `<i class="fa-solid fa-play"></i> RESUME GAME`;
+        btnPause.className = "btn btn-danger btn-sm";
+    } else {
+        statusEl.innerHTML = currentLang === "id" ? `STATUS: <span style="color:var(--green);font-weight:bold;">BERJALAN (NORMAL)</span>` : `STATUS: <span style="color:var(--green);font-weight:bold;">RUNNING (NORMAL)</span>`;
+        btnPause.innerHTML = currentLang === "id" ? `<i class="fa-solid fa-pause"></i> JEDA GAME (PAUSE)` : `<i class="fa-solid fa-pause"></i> PAUSE GAME`;
+        btnPause.className = "btn btn-warning btn-sm";
+    }
+}
+
+function updateProfileModalLangUI() {
+    document.querySelectorAll(".lang-choice-btn").forEach(btn => {
+        if (btn.dataset.lang === currentLang) {
+            btn.classList.add("active");
+        } else {
+            btn.classList.remove("active");
+        }
+    });
+}
+
+function updateProfileModalMissionUI() {
+    const curFreq = (gameState.missionFrequency || (accountData && accountData.missionFreq) || "standard");
+    document.querySelectorAll(".mission-choice-btn").forEach(btn => {
+        if (btn.dataset.freq === curFreq) {
+            btn.classList.add("active");
+        } else {
+            btn.classList.remove("active");
+        }
+    });
+}
+
+function setupProfileModalListeners() {
+    const hudAvatar = document.getElementById("hud-avatar");
+    if (hudAvatar) {
+        hudAvatar.style.cursor = "pointer";
+        hudAvatar.title = currentLang === "id" ? "Klik untuk Buka Pengaturan Profil" : "Click to Open Profile Settings";
+        hudAvatar.addEventListener("click", openProfileSettingsModal);
+    }
+    
+    const btnClose = document.getElementById("btn-close-profile-modal");
+    if (btnClose) {
+        btnClose.addEventListener("click", closeProfileSettingsModal);
+    }
+    
+    // 1. Save Username
+    const btnSaveUser = document.getElementById("btn-save-username");
+    if (btnSaveUser) {
+        btnSaveUser.addEventListener("click", () => {
+            const inUser = document.getElementById("setting-input-username");
+            const val = inUser ? inUser.value.trim() : "";
+            if (!val) {
+                alert(currentLang === "id" ? "Username tidak boleh kosong!" : "Username cannot be empty!");
+                return;
+            }
+            if (!accountData) accountData = {};
+            accountData.username = val;
+            localStorage.setItem("car_lab_account", JSON.stringify(accountData));
+            const avatar = document.getElementById("hud-avatar");
+            if (avatar) avatar.innerText = val.charAt(0).toUpperCase();
+            alert(currentLang === "id" ? "Username berhasil diperbarui!" : "Username updated successfully!");
+        });
+    }
+    
+    // 2. Save Studio Name
+    const btnSaveStudio = document.getElementById("btn-save-studioname");
+    if (btnSaveStudio) {
+        btnSaveStudio.addEventListener("click", () => {
+            const inStudio = document.getElementById("setting-input-studioname");
+            const val = inStudio ? inStudio.value.trim() : "";
+            if (!val) {
+                alert(currentLang === "id" ? "Nama bengkel tidak boleh kosong!" : "Workshop name cannot be empty!");
+                return;
+            }
+            if (!accountData) accountData = {};
+            accountData.studioName = val;
+            localStorage.setItem("car_lab_account", JSON.stringify(accountData));
+            const studioEl = document.getElementById("hud-studio-name");
+            if (studioEl) studioEl.innerText = val;
+            alert(currentLang === "id" ? "Nama bengkel berhasil diperbarui!" : "Workshop name updated successfully!");
+        });
+    }
+    
+    // 4. Lang choice buttons
+    document.querySelectorAll(".lang-choice-btn").forEach(btn => {
+        btn.addEventListener("click", () => {
+            const chosenLang = btn.dataset.lang;
+            if (chosenLang !== currentLang) {
+                setLanguage(chosenLang);
+            }
+        });
+    });
+    
+    // 5. Toggle Pause
+    const btnPause = document.getElementById("btn-profile-toggle-pause");
+    if (btnPause) {
+        btnPause.addEventListener("click", () => {
+            gameState.isPaused = !gameState.isPaused;
+            updatePauseButtonUI();
+            updateProfileModalPauseUI();
+            saveGameData();
+        });
+    }
+    
+    // 6. Mission frequency choices
+    document.querySelectorAll(".mission-choice-btn").forEach(btn => {
+        btn.addEventListener("click", () => {
+            const freq = btn.dataset.freq;
+            gameState.missionFrequency = freq;
+            if (accountData) {
+                accountData.missionFreq = freq;
+                localStorage.setItem("car_lab_account", JSON.stringify(accountData));
+            }
+            saveGameData();
+            updateProfileModalMissionUI();
+            startSpecialOrderTriggers();
+            const msg = currentLang === "id" 
+                ? `Pengaturan misi khusus diubah menjadi: ${freq === "none" ? "Tidak (Nonaktif)" : (freq === "frequent" ? "Sering" : "Standar (Sistem)")}` 
+                : `Special mission frequency set to: ${freq === "none" ? "None (Disabled)" : (freq === "frequent" ? "Frequent" : "Standard")}`;
+            alert(msg);
+        });
+    });
+}
+
 function setupGlobalEventListeners() {
+    setupProfileModalListeners();
     // Open catalog button in slots
     document.querySelectorAll('.btn-open-dealer').forEach((btn, index) => {
         btn.addEventListener('click', () => {
@@ -3635,8 +3852,8 @@ function setupGlobalEventListeners() {
             if (selectedPartIndex !== null) {
                 const refund = Math.round(placedParts[selectedPartIndex].price * 0.5);
                 gameState.cash += refund;
-                studioCashVal.innerText = `$${gameState.cash.toLocaleString()}`;
-                alert(`Komponen dihapus! Anda mendapatkan pengembalian kas 50% sebesar $${refund.toLocaleString()}.`);
+                studioCashVal.innerText = `${formatCash(gameState.cash)}`;
+                alert(`Komponen dihapus! Anda mendapatkan pengembalian kas 50% sebesar ${formatCash(refund)}.`);
                 
                 placedParts.splice(selectedPartIndex, 1);
                 selectPart(null);
@@ -3949,7 +4166,7 @@ function renderAdvisorResult(recs) {
                 <span>${part.name}</span>
                 <span class="advisor-match-badge advisor-match-${lvl}">${lbl}</span>
             </div>
-            <div class="advisor-rec-price">💰 $${part.price.toLocaleString()}</div>
+            <div class="advisor-rec-price">💰 {formatCash(part.price)}</div>
             <div class="advisor-rec-desc">${part.desc}</div>
             <div class="advisor-pro-con">
                 <div class="advisor-pro">✅ ${pc.pro}</div>
