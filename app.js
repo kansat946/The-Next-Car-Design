@@ -2059,7 +2059,7 @@ function renderDashboardSlots() {
                 if (gradCol1 && gradCol2) {
                     const gradId = `slot-grad-${index}`;
                     const gradDef = `<defs><linearGradient id="${gradId}" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="${gradCol1}"/><stop offset="100%" stop-color="${gradCol2}"/></linearGradient></defs>`;
-                    previewWrap.innerHTML = svgContent.replace('<svg ', `<svg >${gradDef}`);
+                    previewWrap.innerHTML = svgContent.replace(/<svg\s*([^>]*)>/i, `<svg $1>${gradDef}`);
                     const paintable = previewWrap.querySelectorAll('.car-paintable');
                     paintable.forEach(p => p.setAttribute('fill', `url(#${gradId})`));
                 } else {
