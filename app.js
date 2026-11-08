@@ -767,14 +767,18 @@ function createProceduralGradientTexture(gradKey) {
     canvas.width = 512;
     canvas.height = 512;
     const ctx = canvas.getContext('2d');
+    
+    // Diagonal linear gradient across canvas
     const grad = ctx.createLinearGradient(0, 0, 512, 512);
     grad.addColorStop(0, col1);
     grad.addColorStop(1, col2);
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, 512, 512);
+    
     const texture = new THREE.CanvasTexture(canvas);
-    texture.wrapS = THREE.RepeatWrapping;
-    texture.wrapT = THREE.RepeatWrapping;
+    texture.wrapS = THREE.ClampToEdgeWrapping;
+    texture.wrapT = THREE.ClampToEdgeWrapping;
+    texture.generateMipmaps = true;
     texture.needsUpdate = true;
     return texture;
 }
@@ -787,7 +791,7 @@ function create3DCarGroup(chassisType, colorHex, parts, wheelsArrayRef, smokePar
     if (wheelsArrayRef) wheelsArrayRef.length = 0;
     if (smokeParticlesArrayRef) smokeParticlesArrayRef.length = 0;
 
-    // Premium Realistic Car Paint Material (MeshPhysicalMaterial with Gradient & Sheen support)
+    // Premium Realistic Car Paint Material (MeshPhysicalMaterial with Gradient support)
     const isGradient = colorHex && (colorHex.startsWith('gradient-') || colorHex.startsWith('custom-grad:'));
     const pal = (isGradient && GRADIENT_PALETTES[colorHex]) ? GRADIENT_PALETTES[colorHex] : null;
     const gradTexture = isGradient ? createProceduralGradientTexture(colorHex) : null;
@@ -802,20 +806,20 @@ function create3DCarGroup(chassisType, colorHex, parts, wheelsArrayRef, smokePar
             baseColor = 0xff0055;
         }
     }
-    let sheenColorVal = pal ? pal.hex2 : (isGradient ? 0x00ffcc : null);
-    let sheenVal = isGradient ? 1.0 : 0.0;
+
+    // In Three.js r128, MeshPhysicalMaterial sheen MUST be a THREE.Color or null/undefined (NOT a Number 1.0)
+    // Setting a Number caused Three.js uniform3fv to copy undefined RGB values (NaN), breaking WebGL and turning mesh invisible!
+    const sheenColor = (isGradient && pal) ? new THREE.Color(pal.hex2) : (isGradient ? new THREE.Color(0x00ffcc) : null);
 
     const bodyMaterial = new THREE.MeshPhysicalMaterial({
         color: isGradient ? 0xffffff : new THREE.Color(baseColor),
         map: gradTexture || null,
-        metalness: isGradient ? 0.75 : 0.85,
-        roughness: isGradient ? 0.12 : 0.08,
+        metalness: isGradient ? 0.65 : 0.85,
+        roughness: isGradient ? 0.15 : 0.08,
         clearcoat: 1.0,
         clearcoatRoughness: 0.05,
         reflectivity: 1.0,
-        sheen: sheenVal,
-        sheenColor: sheenColorVal ? new THREE.Color(sheenColorVal) : undefined,
-        sheenRoughness: 0.15
+        sheen: sheenColor
     });
 
     // Dark Tinted Realistic Glass Material
