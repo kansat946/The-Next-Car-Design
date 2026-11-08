@@ -1673,19 +1673,25 @@ function showTooltip(part, x, y) {
     if (!tooltip) return;
     tooltip.querySelector('.tooltip-name').innerText = part.name;
     tooltip.querySelector('.tooltip-desc').innerText = part.desc;
-    tooltip.querySelector('.tooltip-price').innerText = `💰 {formatCash(part.price)}`;
+    tooltip.querySelector('.tooltip-price').innerText = `💰 ${formatCash(part.price)}`;
 
     const statsEl = tooltip.querySelector('.tooltip-stats');
     statsEl.innerHTML = '';
-    const statNames = { speed: '⚡ Speed', accel: '🏎 Accel', eco: '🌿 Eco', flex: '😎 Flex', defense: '🛡 Defense' };
+    const statNames = { 
+        speed: '⚡ Speed', 
+        accel: '🏎 Accel', 
+        eco: currentLang === 'id' ? '🌿 Ramah Lingkungan' : '🌿 Eco-Friendly', 
+        flex: currentLang === 'id' ? '😎 Flex' : '😎 Flex', 
+        defense: currentLang === 'id' ? '🛡 Ketahanan Tabrakan' : '🛡 Crash Defense' 
+    };
     Object.entries(part.effect).forEach(([key, val]) => {
         if (val === 0) return;
         const row = document.createElement('div');
         row.className = 'tooltip-stat-row';
         const prefix = val > 0 ? '+' : '';
         const cls = val > 0 ? 'positive' : val < 0 ? 'negative' : 'neutral';
-        const unit = key === 'speed' ? ' km/h' : key === 'accel' ? 's' : '';
-        row.innerHTML = `<span class="tooltip-stat-label">${statNames[key]}</span><span class="tooltip-stat-val ${cls}">${prefix}${val}${unit}</span>`;
+        const unit = key === 'speed' ? ' km/h' : (key === 'accel' ? 's' : '%');
+        row.innerHTML = `<span class="tooltip-stat-label">${statNames[key] || key}</span><span class="tooltip-stat-val ${cls}">${prefix}${val}${unit}</span>`;
         statsEl.appendChild(row);
     });
 
@@ -2372,8 +2378,33 @@ function openChassisPurchasePreview(car) {
     const baseStats = car.stats || { speed: 180, accel: 8.5, eco: 50, flex: 10, defense: 40 };
     document.getElementById('chassis-preview-speed').innerText = `${baseStats.speed} km/h`;
     document.getElementById('chassis-preview-accel').innerText = `${baseStats.accel.toFixed(1)}s`;
-    document.getElementById('chassis-preview-eco').innerText = baseStats.eco >= 70 ? (currentLang === 'id' ? 'Sangat Irit' : 'Very Eco') : (baseStats.eco >= 40 ? (currentLang === 'id' ? 'Moderat' : 'Moderate') : (currentLang === 'id' ? 'Boros' : 'High Fuel'));
-    document.getElementById('chassis-preview-flex').innerText = baseStats.flex >= 40 ? (currentLang === 'id' ? 'Sultan / Mewah' : 'Luxury / Flex') : (baseStats.flex >= 20 ? (currentLang === 'id' ? 'Keren' : 'Cool') : (currentLang === 'id' ? 'Standar' : 'Standard'));
+    
+    // Eco percentage & descriptor
+    let previewEcoText = "Polutif";
+    if (baseStats.eco > 80) previewEcoText = currentLang === 'id' ? 'Bebas Emisi (Hijau)' : 'Zero Emission';
+    else if (baseStats.eco > 50) previewEcoText = currentLang === 'id' ? 'Standar Jalan' : 'Street Standard';
+    else if (baseStats.eco > 25) previewEcoText = currentLang === 'id' ? 'Polutif' : 'Pollutive';
+    else previewEcoText = currentLang === 'id' ? 'Bencana Lingkungan ⚠️' : 'Heavy Emission ⚠️';
+    document.getElementById('chassis-preview-eco').innerText = `${baseStats.eco}% (${previewEcoText})`;
+
+    // Flex percentage & descriptor
+    let previewFlexText = "Biasa";
+    if (baseStats.flex > 80) previewFlexText = currentLang === 'id' ? 'Pamer Maksimal 😎' : 'Maximum Flex 😎';
+    else if (baseStats.flex > 50) previewFlexText = currentLang === 'id' ? 'Keren Gaul' : 'Very Cool';
+    else if (baseStats.flex > 20) previewFlexText = currentLang === 'id' ? 'Lumayan' : 'Decent';
+    else previewFlexText = currentLang === 'id' ? 'Biasa Saja' : 'Standard';
+    document.getElementById('chassis-preview-flex').innerText = `${baseStats.flex}% (${previewFlexText})`;
+
+    // Defense percentage & descriptor
+    const previewDefEl = document.getElementById('chassis-preview-defense');
+    if (previewDefEl) {
+        let previewDefText = "Standar";
+        if (baseStats.defense > 80) previewDefText = currentLang === 'id' ? 'Baja Lapis Militer 🛡️' : 'Military Grade 🛡️';
+        else if (baseStats.defense > 50) previewDefText = currentLang === 'id' ? 'Sangat Kokoh' : 'Very Solid';
+        else if (baseStats.defense > 30) previewDefText = currentLang === 'id' ? 'Standar Keamanan' : 'Standard Safety';
+        else previewDefText = currentLang === 'id' ? 'Rentan ⚠️' : 'Fragile ⚠️';
+        previewDefEl.innerText = `${baseStats.defense}% (${previewDefText})`;
+    }
 
     document.getElementById('chassis-preview-price').innerText = `${formatCash(car.price)}`;
     document.getElementById('chassis-preview-wallet').innerText = `${formatCash(gameState.cash)}`;
@@ -2790,22 +2821,25 @@ function updateStats() {
     statAccel.innerText = `${accel.toFixed(1)}s`;
     
     let ecoText = "Bencana Lingkungan ⚠️";
-    if (eco > 80) ecoText = "Bebas Emisi (Hijau)";
-    else if (eco > 50) ecoText = "Standar Jalan";
-    else if (eco > 25) ecoText = "Polutif";
-    statEco.innerText = ecoText;
+    if (eco > 80) ecoText = currentLang === 'id' ? "Bebas Emisi (Hijau)" : "Zero Emission";
+    else if (eco > 50) ecoText = currentLang === 'id' ? "Standar Jalan" : "Street Standard";
+    else if (eco > 25) ecoText = currentLang === 'id' ? "Polutif" : "Pollutive";
+    else ecoText = currentLang === 'id' ? "Bencana Lingkungan ⚠️" : "Heavy Pollution ⚠️";
+    statEco.innerText = `${eco}% (${ecoText})`;
     
     let flexText = "Biasa Saja";
-    if (flex > 80) flexText = "Pamer Maksimal 😎";
-    else if (flex > 50) flexText = "Keren Gaul";
-    else if (flex > 20) flexText = "Lumayan";
-    statFlex.innerText = flexText;
+    if (flex > 80) flexText = currentLang === 'id' ? "Pamer Maksimal 😎" : "Maximum Flex 😎";
+    else if (flex > 50) flexText = currentLang === 'id' ? "Keren Gaul" : "Very Cool";
+    else if (flex > 20) flexText = currentLang === 'id' ? "Lumayan" : "Decent";
+    else flexText = currentLang === 'id' ? "Biasa Saja" : "Standard";
+    statFlex.innerText = `${flex}% (${flexText})`;
     
     let defenseText = "Rentan";
-    if (defense > 80) defenseText = "Baja Lapis Militer 🛡️";
-    else if (defense > 50) defenseText = "Sangat Kokoh";
-    else if (defense > 30) defenseText = "Standar Keamanan";
-    statDefense.innerText = defenseText;
+    if (defense > 80) defenseText = currentLang === 'id' ? "Baja Lapis Militer 🛡️" : "Military Armor 🛡️";
+    else if (defense > 50) defenseText = currentLang === 'id' ? "Sangat Kokoh" : "Very Solid";
+    else if (defense > 30) defenseText = currentLang === 'id' ? "Standar Keamanan" : "Standard Safety";
+    else defenseText = currentLang === 'id' ? "Rentan ⚠️" : "Fragile ⚠️";
+    statDefense.innerText = `${defense}% (${defenseText})`;
     
     // Fill percent renders
     fillSpeed.style.width = `${Math.min(100, (speed / 500) * 100)}%`;
