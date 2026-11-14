@@ -726,13 +726,131 @@
                         </div>
                     </div>
 
-                    <!-- 3. Rubah Foto Profil (akan dipikirkan lebih lanjut) -->
+                    <!-- 3. Rubah Foto Profil (3D Avatar Generator & Upload) -->
                     <div class="profile-setting-item">
                         <label class="setting-label" id="lbl-setting-avatar">
                             <i class="fa-solid fa-image-portrait"></i> Rubah Foto Profil
                         </label>
-                        <div class="setting-note" id="desc-setting-avatar">
-                            <span class="badge-soon">SEGERA HADIR</span> Fitur pemilihan avatar kustom akan tersedia pada pembaruan mendatang.
+                        
+                        <!-- Avatar Preview Card with 3D Canvas / Uploaded Image -->
+                        <div class="avatar-customizer-card">
+                            <div class="avatar-preview-wrap">
+                                <div id="avatar-3d-stage" class="avatar-3d-canvas-wrap"></div>
+                                <img id="avatar-custom-img" class="avatar-uploaded-img hidden" alt="Uploaded Avatar" />
+                                <div class="avatar-style-badge" id="avatar-style-badge">
+                                    <span id="avatar-style-label">Gaya: Bos Tambang</span>
+                                </div>
+                            </div>
+
+                            <div class="avatar-controls-panel">
+                                <!-- Mode Selector: 3D Generator vs Unggah Foto -->
+                                <div class="avatar-mode-toggle">
+                                    <button type="button" class="btn btn-outline btn-xs avatar-mode-btn active" id="btn-avatar-mode-3d" data-mode="3d">
+                                        <i class="fa-solid fa-cube"></i> Avatar 3D
+                                    </button>
+                                    <button type="button" class="btn btn-outline btn-xs avatar-mode-btn" id="btn-avatar-mode-upload" data-mode="upload">
+                                        <i class="fa-solid fa-cloud-arrow-up"></i> Unggah Foto
+                                    </button>
+                                </div>
+
+                                <!-- 3D Generator Controls -->
+                                <div id="avatar-3d-controls-section" class="avatar-section-wrap">
+                                    <!-- Gender Selector -->
+                                    <div class="avatar-sub-group">
+                                        <span class="avatar-sub-title"><i class="fa-solid fa-venus-mars"></i> Pilihan Gender:</span>
+                                        <div class="avatar-gender-pills">
+                                            <button type="button" class="gender-pill-btn active" data-gender="male" id="btn-gender-male">
+                                                <i class="fa-solid fa-mars"></i> Cowok
+                                            </button>
+                                            <button type="button" class="gender-pill-btn" data-gender="female" id="btn-gender-female">
+                                                <i class="fa-solid fa-venus"></i> Cewek
+                                            </button>
+                                            <button type="button" class="gender-pill-btn" data-gender="nonbinary" id="btn-gender-nb">
+                                                <i class="fa-solid fa-genderless"></i> Di Antaranya
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <!-- Gaya / Style Selector (Urutan Persis Sesuai Permintaan) -->
+                                    <div class="avatar-sub-group">
+                                        <span class="avatar-sub-title"><i class="fa-solid fa-masks-theater"></i> Gaya / Style Karakter:</span>
+                                        <div class="avatar-styles-grid" id="avatar-styles-grid">
+                                            <!-- 1. Cewek Modis (Khusus Cewek) -->
+                                            <button type="button" class="avatar-style-card" data-style="cewek_modis" data-gender-req="female">
+                                                <div class="style-icon">👗</div>
+                                                <div class="style-name">Cewek Modis</div>
+                                                <div class="style-desc">Glamor, kacamata trendi & gaya modis elegan</div>
+                                            </button>
+
+                                            <!-- 2. Gaya Bos (Khusus Cowok) -->
+                                            <button type="button" class="avatar-style-card" data-style="gaya_bos" data-gender-req="male">
+                                                <div class="style-icon">🚬</div>
+                                                <div class="style-name">Gaya Bos</div>
+                                                <div class="style-desc">Keras kepala, topi fedora & cerutu bos tambang</div>
+                                            </button>
+
+                                            <!-- 3. Pembalap Liar (Khusus Cowok) -->
+                                            <button type="button" class="avatar-style-card" data-style="pembalap_liar" data-gender-req="male">
+                                                <div class="style-icon">🏁</div>
+                                                <div class="style-name">Pembalap Liar</div>
+                                                <div class="style-desc">Helm balap visor gelap, jaket kulit & aura trek</div>
+                                            </button>
+
+                                            <!-- 4. Orang Tua (Khusus Cowok) -->
+                                            <button type="button" class="avatar-style-card" data-style="orang_tua" data-gender-req="male">
+                                                <div class="style-icon">👴</div>
+                                                <div class="style-name">Orang Tua</div>
+                                                <div class="style-desc">Berpengalaman, bijaksana, rambut perak & lembut</div>
+                                            </button>
+
+                                            <!-- 5. Anak Magang (Bisa Semua Gender) -->
+                                            <button type="button" class="avatar-style-card" data-style="anak_magang" data-gender-req="all">
+                                                <div class="style-icon">🎓</div>
+                                                <div class="style-name">Anak Magang</div>
+                                                <div class="style-desc">Kacamata baca, lanyard ID card, polos & objektif</div>
+                                            </button>
+
+                                            <!-- 6. Ibu Komplek (Khusus Cewek) -->
+                                            <button type="button" class="avatar-style-card" data-style="ibu_komplek" data-gender-req="female">
+                                                <div class="style-icon">🛍️</div>
+                                                <div class="style-name">Ibu Komplek</div>
+                                                <div class="style-desc">Rol rambut khas, kacamata ibu-ibu & ramah heboh</div>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Unggah Foto Section -->
+                                <div id="avatar-upload-controls-section" class="avatar-section-wrap hidden">
+                                    <div class="upload-dropzone" id="avatar-dropzone">
+                                        <i class="fa-solid fa-cloud-arrow-up upload-icon"></i>
+                                        <span class="upload-title">Pilih / Seret Foto Dari Perangkat</span>
+                                        <span class="upload-hint">Format JPG, PNG, atau WebP (Maks 5MB)</span>
+                                        <input type="file" id="input-avatar-upload" accept="image/*" class="upload-input-hidden" />
+                                    </div>
+                                </div>
+
+                                <!-- Persentase Kemiripan Style dgn Prilaku Berjualan dgn Buyer -->
+                                <div class="avatar-behavior-card">
+                                    <div class="behavior-header">
+                                        <span class="behavior-title">
+                                            <i class="fa-solid fa-chart-pie"></i> Kemiripan Style & Prilaku Jual:
+                                        </span>
+                                        <span class="behavior-percentage" id="avatar-affinity-percent">88%</span>
+                                    </div>
+                                    <div class="behavior-progress-bar">
+                                        <div class="behavior-progress-fill" id="avatar-affinity-fill" style="width: 88%;"></div>
+                                    </div>
+                                    <div class="behavior-desc" id="avatar-behavior-desc">
+                                        Meningkatkan efektivitas negosiasi dan bujukan saat menghadapi buyer yang seirama dengan gayamu!
+                                    </div>
+                                </div>
+
+                                <!-- Simpan Tombol -->
+                                <button type="button" class="btn btn-primary btn-sm btn-block" id="btn-save-avatar">
+                                    <i class="fa-solid fa-check"></i> Pasang & Simpan Foto Profil
+                                </button>
+                            </div>
                         </div>
                     </div>
 
@@ -790,6 +908,6 @@
     <!-- Application Logic -->
     <script src="data.js?v=2"></script>
     <script src="car_photos.js?v=2"></script>
-    <script src="app.js?v=9"></script>
+    <script src="app.js?v=10"></script>
 </body>
 </html>

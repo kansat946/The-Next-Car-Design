@@ -695,7 +695,7 @@ function startGame() {
         const avatar = document.getElementById('hud-avatar');
         const studioEl = document.getElementById('hud-studio-name');
         if (avatar && accountData) {
-            avatar.innerText = accountData.username.charAt(0).toUpperCase();
+            syncHUDAvatarDisplay();
             studioEl.innerText = accountData.studioName;
         }
         // Switch screen
@@ -1970,6 +1970,9 @@ function updateHUD() {
         placementCard.classList.add('hidden');
     }
     
+    // Sync HUD Avatar
+    syncHUDAvatarDisplay();
+    
     // Bankruptcy check
     checkBankruptcy();
 }
@@ -3239,6 +3242,15 @@ function printBuyerIntro() {
         logToTerminal(`[MISI KHUSUS]: Buyer mencocokkan spesifikasi pesanan khusus!`, 'warn');
     }
     
+    // Style Affinity Info
+    const playerAv = getPlayerAvatarData();
+    const styleObj = AVATAR_STYLES.find(s => s.id === playerAv.style) || AVATAR_STYLES[1];
+    const affinityPct = calculateBuyerAffinity(info.id, playerAv.style);
+    logToTerminal(`[GAYA PENJUAL]: ${styleObj.name} | KEMIRIPAN BUYER: ${affinityPct}%`, 'sys');
+    if (affinityPct >= 85) {
+        logToTerminal(`[BONUS AURA]: Kemiripan tinggi! Buyer merasa satu frekuensi dengan kepribadian Anda.`, 'success');
+    }
+    
     const introDialogue = getBuyerDialogue(info.id, 'intro', { price: negoSession.currentBid });
     logToTerminal(`${info.name}: "${introDialogue}"`, 'normal');
     logToTerminal(`Ketik perintah Anda di bawah:`, 'sys');
@@ -3385,8 +3397,12 @@ function executeCounterOffer(offer) {
     // Evaluation math logic
     const margin = offer / negoSession.initialBid;
     
-    // Auto accept up to 1.50x of initialBid
-    const success = (margin <= 1.50);
+    // Auto accept up to dynamic threshold (1.50x + affinity buff)
+    const playerAv = getPlayerAvatarData();
+    const affinityPct = calculateBuyerAffinity(negoSession.buyer.id, playerAv.style);
+    const affinityMarginBonus = (affinityPct - 50) * 0.003; // e.g. 95% -> +13.5% margin
+    const allowedMargin = Math.max(1.30, 1.50 + affinityMarginBonus);
+    const success = (margin <= allowedMargin);
     
     if (success) {
         negoSession.currentBid = offer;
@@ -3400,7 +3416,7 @@ function executeCounterOffer(offer) {
         }, 1200);
     } else {
         // Rejection compromise without losing patience (no walkouts)
-        const maxNego = Math.round(negoSession.initialBid * 1.50);
+        const maxNego = Math.round(negoSession.initialBid * allowedMargin);
         logToTerminal(`${negoSession.buyer.name}: "Tawaran Anda terlalu tinggi! Anggaran maksimal saya adalah ${formatCash(maxNego)}. Tolong ajukan penawaran di bawah itu."`, 'normal');
     }
 }
@@ -3461,13 +3477,23 @@ function executePersuade(reason) {
         if (negoSession.car.parts.some(p => p.templateId === hate)) successChance -= 0.25;
     });
     
+    // Personality Style Affinity Buff
+    const playerAv = getPlayerAvatarData();
+    const affinityPct = calculateBuyerAffinity(negoSession.buyer.id, playerAv.style);
+    if (affinityPct >= 80) {
+        successChance += 0.15;
+    } else if (affinityPct <= 50) {
+        successChance -= 0.10;
+    }
+    
     successChance = Math.max(0.05, Math.min(0.95, successChance));
     const success = Math.random() < successChance;
     
     if (success) {
         negoSession.persuaded = true;
-        // Raise current bid by 12% as a bonus influence
-        const bonus = Math.round(negoSession.currentBid * 0.12);
+        // Raise current bid by 12% + affinity bonus (up to 5% extra)
+        const affinityBonusPct = (affinityPct >= 80) ? 0.05 : 0;
+        const bonus = Math.round(negoSession.currentBid * (0.12 + affinityBonusPct));
         negoSession.currentBid += bonus;
         
         const dialogue = getBuyerDialogue(negoSession.buyer.id, 'rayu_sukses', { price: negoSession.currentBid });
@@ -3574,6 +3600,7 @@ function openProfileSettingsModal() {
     updateProfileModalPauseUI();
     updateProfileModalLangUI();
     updateProfileModalMissionUI();
+    updateProfileModalAvatarUI();
     
     modal.classList.remove("hidden");
 }
@@ -3621,6 +3648,7 @@ function updateProfileModalMissionUI() {
 }
 
 function setupProfileModalListeners() {
+    setupAvatarEventListeners();
     const hudAvatar = document.getElementById("hud-avatar");
     if (hudAvatar) {
         hudAvatar.style.cursor = "pointer";
@@ -4248,4 +4276,702 @@ function setupAdvisorEvents() {
             if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); if (btnAsk) btnAsk.click(); }
         });
     }
+}
+
+
+// ==========================================
+// AVATAR SYSTEM (THREE.JS 3D & UPLOAD)
+// ==========================================
+
+const AVATAR_STYLES = [
+    {
+        id: "cewek_modis",
+        name: "Cewek Modis",
+        genderReq: "female",
+        icon: "👗",
+        desc: "Glamor, kacamata trendi & gaya modis elegan",
+        affinityTitle: "Aura Tren & Gaya Mewah",
+        affinityDesc: "Sangat disukai oleh Eksekutif Korporat (88%) dan Sultan Millennial (92%). Negosiasi produk estetis lebih persuasif!"
+    },
+    {
+        id: "gaya_bos",
+        name: "Gaya Bos",
+        genderReq: "male",
+        icon: "🚬",
+        desc: "Keras kepala, topi fedora & cerutu bos tambang",
+        affinityTitle: "Wibawa Tambang Berpengaruh",
+        affinityDesc: "Koneksi seirama dengan Bos Tambang (95%) dan Kolektor Tua (80%). Tawar balik lebih disegani!"
+    },
+    {
+        id: "pembalap_liar",
+        name: "Pembalap Liar",
+        genderReq: "male",
+        icon: "🏁",
+        desc: "Helm balap visor gelap, jaket kulit & aura trek",
+        affinityTitle: "Adrenalin Aspal Malam",
+        affinityDesc: "Kecocokan mutlak dengan Pembalap Liar (96%) dan Sultan Millennial (85%). Rayuan part balap & turbo sangat ampuh!"
+    },
+    {
+        id: "orang_tua",
+        name: "Orang Tua",
+        genderReq: "male",
+        icon: "👴",
+        desc: "Berpengalaman, bijaksana, rambut perak & lembut",
+        affinityTitle: "Kebijaksanaan & Integritas",
+        affinityDesc: "Sangat dihormati Kolektor Tua (96%), Ibu Komplek (85%), dan Eksekutif (82%). Kesabaran buyer meningkat!"
+    },
+    {
+        id: "anak_magang",
+        name: "Anak Magang",
+        genderReq: "all",
+        icon: "🎓",
+        desc: "Kacamata baca, lanyard ID card, polos & objektif",
+        affinityTitle: "Analisis Data & Kepolosan",
+        affinityDesc: "Diterima hangat oleh Eksekutif (88%), Ibu Komplek (85%), dan Sirkus Manager (80%). Buyer lebih toleran terhadap tawaran logis!"
+    },
+    {
+        id: "ibu_komplek",
+        name: "Ibu Komplek",
+        genderReq: "female",
+        icon: "🛍️",
+        desc: "Rol rambut khas, kacamata ibu-ibu & ramah heboh",
+        affinityTitle: "Keakraban & Keibuan Heboh",
+        affinityDesc: "Kecocokan luar biasa dengan sesama Ibu Komplek (98%) dan Sirkus Manager (82%). Diskon dan bonus paket belanja sangat memikat!"
+    }
+];
+
+const BUYER_AFFINITY_TABLE = {
+    "cewek_modis": {
+        "sultan": 92,
+        "eksekutif": 88,
+        "ibu": 75,
+        "sirkus": 70,
+        "pembalap": 65,
+        "kolektor": 60,
+        "tambang": 50
+    },
+    "gaya_bos": {
+        "tambang": 95,
+        "kolektor": 80,
+        "eksekutif": 78,
+        "sultan": 72,
+        "pembalap": 68,
+        "sirkus": 55,
+        "ibu": 45
+    },
+    "pembalap_liar": {
+        "pembalap": 96,
+        "sultan": 85,
+        "sirkus": 75,
+        "tambang": 65,
+        "kolektor": 55,
+        "eksekutif": 50,
+        "ibu": 40
+    },
+    "orang_tua": {
+        "kolektor": 96,
+        "ibu": 85,
+        "eksekutif": 82,
+        "tambang": 72,
+        "sirkus": 58,
+        "sultan": 55,
+        "pembalap": 50
+    },
+    "anak_magang": {
+        "eksekutif": 88,
+        "ibu": 85,
+        "sirkus": 80,
+        "kolektor": 75,
+        "pembalap": 70,
+        "sultan": 70,
+        "tambang": 65
+    },
+    "ibu_komplek": {
+        "ibu": 98,
+        "sirkus": 82,
+        "eksekutif": 70,
+        "kolektor": 68,
+        "tambang": 65,
+        "sultan": 60,
+        "pembalap": 45
+    }
+};
+
+let avatar3D = {
+    renderer: null,
+    scene: null,
+    camera: null,
+    meshGroup: null,
+    animationId: null
+};
+
+let avatarWorkingState = {
+    mode: "3d",
+    gender: "male",
+    style: "gaya_bos",
+    dataUrl: null
+};
+
+function getPlayerAvatarData() {
+    if (accountData && accountData.avatar) {
+        return accountData.avatar;
+    }
+    return {
+        mode: "3d",
+        gender: "male",
+        style: "gaya_bos",
+        dataUrl: null
+    };
+}
+
+function calculateBuyerAffinity(buyerId, playerStyle) {
+    const style = playerStyle || (accountData && accountData.avatar && accountData.avatar.style) || "gaya_bos";
+    const table = BUYER_AFFINITY_TABLE[style];
+    if (table && table[buyerId]) {
+        return table[buyerId];
+    }
+    return 70;
+}
+
+function initAvatar3D() {
+    const container = document.getElementById("avatar-3d-stage");
+    if (!container) return;
+    if (avatar3D.renderer) {
+        return;
+    }
+    
+    const width = 150;
+    const height = 150;
+    
+    avatar3D.scene = new THREE.Scene();
+    
+    avatar3D.camera = new THREE.PerspectiveCamera(40, width / height, 0.1, 100);
+    avatar3D.camera.position.set(0, 0.35, 4.0);
+    
+    avatar3D.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
+    avatar3D.renderer.setSize(width, height);
+    avatar3D.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    avatar3D.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    avatar3D.renderer.toneMappingExposure = 1.25;
+    container.innerHTML = "";
+    container.appendChild(avatar3D.renderer.domElement);
+    
+    const ambLight = new THREE.AmbientLight(0xffffff, 1.4);
+    avatar3D.scene.add(ambLight);
+    
+    const dirLight1 = new THREE.DirectionalLight(0xfff5e6, 2.0);
+    dirLight1.position.set(3, 4, 4);
+    avatar3D.scene.add(dirLight1);
+    
+    const dirLight2 = new THREE.DirectionalLight(0x00d2ff, 1.2);
+    dirLight2.position.set(-3, -1, -2);
+    avatar3D.scene.add(dirLight2);
+    
+    avatar3D.meshGroup = new THREE.Group();
+    avatar3D.scene.add(avatar3D.meshGroup);
+    
+    function animateAvatar() {
+        avatar3D.animationId = requestAnimationFrame(animateAvatar);
+        if (avatar3D.meshGroup) {
+            avatar3D.meshGroup.rotation.y += 0.012;
+        }
+        if (avatar3D.renderer && avatar3D.scene && avatar3D.camera) {
+            avatar3D.renderer.render(avatar3D.scene, avatar3D.camera);
+        }
+    }
+    animateAvatar();
+}
+
+function createAvatar3DMesh(gender, styleId) {
+    if (!avatar3D.meshGroup) return;
+    
+    while (avatar3D.meshGroup.children.length > 0) {
+        const obj = avatar3D.meshGroup.children[0];
+        avatar3D.meshGroup.remove(obj);
+        if (obj.geometry) obj.geometry.dispose();
+        if (obj.material) {
+            if (Array.isArray(obj.material)) obj.material.forEach(m => m.dispose());
+            else obj.material.dispose();
+        }
+    }
+    
+    const group = avatar3D.meshGroup;
+    group.rotation.set(0, 0, 0);
+    
+    let skinColor = 0xf5cda7;
+    if (gender === "female") skinColor = 0xffe0bd;
+    else if (gender === "nonbinary") skinColor = 0xf0c8a0;
+    if (styleId === "gaya_bos") skinColor = 0xd89b65;
+    else if (styleId === "pembalap_liar") skinColor = 0xf1c27d;
+    else if (styleId === "orang_tua") skinColor = 0xeac096;
+    
+    const skinMat = new THREE.MeshStandardMaterial({ color: skinColor, roughness: 0.55, metalness: 0.05 });
+    
+    const headGeo = new THREE.SphereGeometry(0.72, 32, 32);
+    headGeo.scale(1.0, 1.15, 0.95);
+    const headMesh = new THREE.Mesh(headGeo, skinMat);
+    headMesh.position.y = 0.35;
+    group.add(headMesh);
+    
+    const neckGeo = new THREE.CylinderGeometry(0.28, 0.32, 0.45, 24);
+    const neckMesh = new THREE.Mesh(neckGeo, skinMat);
+    neckMesh.position.y = -0.32;
+    group.add(neckMesh);
+    
+    let clothColor = 0x1f2430;
+    if (styleId === "cewek_modis") clothColor = 0xd63384;
+    else if (styleId === "gaya_bos") clothColor = 0x212529;
+    else if (styleId === "pembalap_liar") clothColor = 0xcc1122;
+    else if (styleId === "orang_tua") clothColor = 0x4a5568;
+    else if (styleId === "anak_magang") clothColor = 0x007bff;
+    else if (styleId === "ibu_komplek") clothColor = 0x20c997;
+    
+    const clothMat = new THREE.MeshStandardMaterial({ color: clothColor, roughness: 0.7, metalness: 0.1 });
+    const torsoGeo = new THREE.CylinderGeometry(0.55, 0.95, 0.75, 24);
+    const torsoMesh = new THREE.Mesh(torsoGeo, clothMat);
+    torsoMesh.position.y = -0.72;
+    group.add(torsoMesh);
+    
+    const eyeGeo = new THREE.SphereGeometry(0.08, 16, 16);
+    const eyeMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.2 });
+    const eyeL = new THREE.Mesh(eyeGeo, eyeMat);
+    eyeL.position.set(-0.25, 0.42, 0.65);
+    group.add(eyeL);
+    
+    const eyeR = new THREE.Mesh(eyeGeo, eyeMat);
+    eyeR.position.set(0.25, 0.42, 0.65);
+    group.add(eyeR);
+    
+    const smileGeo = new THREE.TorusGeometry(0.12, 0.025, 8, 16, Math.PI);
+    const smileMat = new THREE.MeshBasicMaterial({ color: 0x663322 });
+    const smileMesh = new THREE.Mesh(smileGeo, smileMat);
+    smileMesh.rotation.x = Math.PI;
+    smileMesh.position.set(0, 0.18, 0.67);
+    group.add(smileMesh);
+    
+    if (styleId === "cewek_modis") {
+        const hairGeo = new THREE.SphereGeometry(0.78, 24, 24);
+        hairGeo.scale(1.05, 1.15, 1.05);
+        const hairMat = new THREE.MeshStandardMaterial({ color: 0x3d2314, roughness: 0.6 });
+        const hairMesh = new THREE.Mesh(hairGeo, hairMat);
+        hairMesh.position.set(0, 0.45, -0.05);
+        group.add(hairMesh);
+        
+        const glassesFrameMat = new THREE.MeshStandardMaterial({ color: 0xd4af37, metalness: 0.8, roughness: 0.2 });
+        const glassMat = new THREE.MeshStandardMaterial({ color: 0x221122, roughness: 0.1, metalness: 0.4 });
+        
+        const rimGeo = new THREE.TorusGeometry(0.14, 0.025, 8, 20);
+        const rimL = new THREE.Mesh(rimGeo, glassesFrameMat);
+        rimL.position.set(-0.25, 0.42, 0.70);
+        group.add(rimL);
+        const lensL = new THREE.Mesh(new THREE.CircleGeometry(0.13, 16), glassMat);
+        lensL.position.set(-0.25, 0.42, 0.70);
+        group.add(lensL);
+        
+        const rimR = new THREE.Mesh(rimGeo, glassesFrameMat);
+        rimR.position.set(0.25, 0.42, 0.70);
+        group.add(rimR);
+        const lensR = new THREE.Mesh(new THREE.CircleGeometry(0.13, 16), glassMat);
+        lensR.position.set(0.25, 0.42, 0.70);
+        group.add(lensR);
+        
+        const earGeo = new THREE.TorusGeometry(0.08, 0.02, 8, 16);
+        const earL = new THREE.Mesh(earGeo, glassesFrameMat);
+        earL.position.set(-0.72, 0.25, 0.05);
+        earL.rotation.y = Math.PI / 2;
+        group.add(earL);
+        const earR = new THREE.Mesh(earGeo, glassesFrameMat);
+        earR.position.set(0.72, 0.25, 0.05);
+        earR.rotation.y = Math.PI / 2;
+        group.add(earR);
+        
+    } else if (styleId === "gaya_bos") {
+        const hatBrimGeo = new THREE.CylinderGeometry(1.2, 1.25, 0.05, 32);
+        const hatMat = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.8 });
+        const hatBrim = new THREE.Mesh(hatBrimGeo, hatMat);
+        hatBrim.position.set(0, 0.95, 0.05);
+        hatBrim.rotation.x = -0.12;
+        group.add(hatBrim);
+        
+        const hatCrownGeo = new THREE.CylinderGeometry(0.65, 0.75, 0.5, 32);
+        const hatCrown = new THREE.Mesh(hatCrownGeo, hatMat);
+        hatCrown.position.set(0, 1.2, 0.02);
+        hatCrown.rotation.x = -0.12;
+        group.add(hatCrown);
+        
+        const hatBandGeo = new THREE.CylinderGeometry(0.67, 0.69, 0.12, 32);
+        const hatBandMat = new THREE.MeshStandardMaterial({ color: 0xd4af37, roughness: 0.3, metalness: 0.6 });
+        const hatBand = new THREE.Mesh(hatBandGeo, hatBandMat);
+        hatBand.position.set(0, 1.05, 0.04);
+        hatBand.rotation.x = -0.12;
+        group.add(hatBand);
+        
+        const cigarGeo = new THREE.CylinderGeometry(0.035, 0.035, 0.35, 12);
+        const cigarMat = new THREE.MeshStandardMaterial({ color: 0x5c3317, roughness: 0.7 });
+        const cigarMesh = new THREE.Mesh(cigarGeo, cigarMat);
+        cigarMesh.position.set(0.18, 0.14, 0.78);
+        cigarMesh.rotation.set(Math.PI / 2, 0.3, -0.4);
+        group.add(cigarMesh);
+        
+        const tipGeo = new THREE.SphereGeometry(0.04, 8, 8);
+        const tipMat = new THREE.MeshBasicMaterial({ color: 0xff3300 });
+        const tipMesh = new THREE.Mesh(tipGeo, tipMat);
+        tipMesh.position.set(0.24, 0.12, 0.92);
+        group.add(tipMesh);
+        
+    } else if (styleId === "pembalap_liar") {
+        const helmetGeo = new THREE.SphereGeometry(0.82, 32, 32);
+        helmetGeo.scale(1.05, 1.15, 1.1);
+        const helmetMat = new THREE.MeshStandardMaterial({ color: 0xcc1122, roughness: 0.25, metalness: 0.3 });
+        const helmetMesh = new THREE.Mesh(helmetGeo, helmetMat);
+        helmetMesh.position.set(0, 0.38, 0);
+        group.add(helmetMesh);
+        
+        const visorGeo = new THREE.CylinderGeometry(0.65, 0.65, 0.28, 24, 1, false, -Math.PI / 2.5, Math.PI / 1.25);
+        const visorMat = new THREE.MeshStandardMaterial({ color: 0x050505, roughness: 0.1, metalness: 0.9 });
+        const visorMesh = new THREE.Mesh(visorGeo, visorMat);
+        visorMesh.position.set(0, 0.42, 0.32);
+        visorMesh.rotation.x = 0.05;
+        group.add(visorMesh);
+        
+        const stripeGeo = new THREE.CylinderGeometry(0.83, 0.83, 0.1, 32);
+        const stripeMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+        const stripeMesh = new THREE.Mesh(stripeGeo, stripeMat);
+        stripeMesh.position.set(0, 0.58, 0);
+        group.add(stripeMesh);
+        
+    } else if (styleId === "orang_tua") {
+        const hairGeo = new THREE.SphereGeometry(0.76, 24, 24);
+        hairGeo.scale(1.02, 1.12, 1.05);
+        const hairMat = new THREE.MeshStandardMaterial({ color: 0xcccccc, roughness: 0.8 });
+        const hairMesh = new THREE.Mesh(hairGeo, hairMat);
+        hairMesh.position.set(0, 0.48, -0.06);
+        group.add(hairMesh);
+        
+        const wireMat = new THREE.MeshStandardMaterial({ color: 0xc0c0c0, metalness: 0.9, roughness: 0.2 });
+        const glassRimGeo = new THREE.TorusGeometry(0.12, 0.015, 8, 20);
+        const glassL = new THREE.Mesh(glassRimGeo, wireMat);
+        glassL.position.set(-0.25, 0.38, 0.70);
+        group.add(glassL);
+        const glassR = new THREE.Mesh(glassRimGeo, wireMat);
+        glassR.position.set(0.25, 0.38, 0.70);
+        group.add(glassR);
+        
+        const stacheGeo = new THREE.CylinderGeometry(0.04, 0.06, 0.38, 12);
+        const stacheMat = new THREE.MeshStandardMaterial({ color: 0xbbbbbb, roughness: 0.9 });
+        const stacheMesh = new THREE.Mesh(stacheGeo, stacheMat);
+        stacheMesh.rotation.z = Math.PI / 2;
+        stacheMesh.position.set(0, 0.24, 0.68);
+        group.add(stacheMesh);
+        
+    } else if (styleId === "anak_magang") {
+        const hairGeo = new THREE.SphereGeometry(0.75, 24, 24);
+        hairGeo.scale(1.02, 1.12, 1.02);
+        const hairMat = new THREE.MeshStandardMaterial({ color: 0x2b1d0c, roughness: 0.7 });
+        const hairMesh = new THREE.Mesh(hairGeo, hairMat);
+        hairMesh.position.set(0, 0.46, -0.04);
+        group.add(hairMesh);
+        
+        const glassesFrameMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.3 });
+        const rimGeo = new THREE.TorusGeometry(0.15, 0.02, 8, 20);
+        const rimL = new THREE.Mesh(rimGeo, glassesFrameMat);
+        rimL.position.set(-0.25, 0.42, 0.70);
+        group.add(rimL);
+        const rimR = new THREE.Mesh(rimGeo, glassesFrameMat);
+        rimR.position.set(0.25, 0.42, 0.70);
+        group.add(rimR);
+        
+        const lanyardMat = new THREE.MeshBasicMaterial({ color: 0x007bff });
+        const strapGeo = new THREE.TorusGeometry(0.35, 0.02, 8, 20, Math.PI);
+        const strapMesh = new THREE.Mesh(strapGeo, lanyardMat);
+        strapMesh.position.set(0, -0.4, 0.45);
+        strapMesh.rotation.x = 0.5;
+        group.add(strapMesh);
+        
+        const badgeGeo = new THREE.BoxGeometry(0.18, 0.24, 0.02);
+        const badgeMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.4 });
+        const badgeMesh = new THREE.Mesh(badgeGeo, badgeMat);
+        badgeMesh.position.set(0, -0.68, 0.55);
+        group.add(badgeMesh);
+        
+    } else if (styleId === "ibu_komplek") {
+        const hairGeo = new THREE.SphereGeometry(0.79, 24, 24);
+        hairGeo.scale(1.06, 1.15, 1.05);
+        const hairMat = new THREE.MeshStandardMaterial({ color: 0x5a3825, roughness: 0.7 });
+        const hairMesh = new THREE.Mesh(hairGeo, hairMat);
+        hairMesh.position.set(0, 0.45, -0.05);
+        group.add(hairMesh);
+        
+        const rollerMat1 = new THREE.MeshStandardMaterial({ color: 0xff4081, roughness: 0.4 });
+        const rollerMat2 = new THREE.MeshStandardMaterial({ color: 0x00e5ff, roughness: 0.4 });
+        const rollerGeo = new THREE.CylinderGeometry(0.09, 0.09, 0.28, 16);
+        
+        const roller1 = new THREE.Mesh(rollerGeo, rollerMat1);
+        roller1.rotation.z = Math.PI / 2;
+        roller1.position.set(0, 1.15, 0.2);
+        group.add(roller1);
+        
+        const roller2 = new THREE.Mesh(rollerGeo, rollerMat2);
+        roller2.rotation.z = Math.PI / 2;
+        roller2.position.set(-0.35, 1.05, 0.1);
+        group.add(roller2);
+        
+        const roller3 = new THREE.Mesh(rollerGeo, rollerMat2);
+        roller3.rotation.z = Math.PI / 2;
+        roller3.position.set(0.35, 1.05, 0.1);
+        group.add(roller3);
+        
+        const catGlassesMat = new THREE.MeshStandardMaterial({ color: 0x9c27b0, roughness: 0.3 });
+        const catRimGeo = new THREE.TorusGeometry(0.14, 0.02, 8, 20);
+        const catL = new THREE.Mesh(catRimGeo, catGlassesMat);
+        catL.position.set(-0.25, 0.42, 0.70);
+        catL.rotation.z = 0.2;
+        group.add(catL);
+        const catR = new THREE.Mesh(catRimGeo, catGlassesMat);
+        catR.position.set(0.25, 0.42, 0.70);
+        catR.rotation.z = -0.2;
+        group.add(catR);
+    }
+}
+
+function updateAvatarAffinityUI(styleId) {
+    const styleObj = AVATAR_STYLES.find(s => s.id === styleId) || AVATAR_STYLES[1];
+    
+    const table = BUYER_AFFINITY_TABLE[styleId] || {};
+    const values = Object.values(table);
+    const avgAffinity = values.length ? Math.round(values.reduce((a, b) => a + b, 0) / values.length) : 75;
+    
+    const percentEl = document.getElementById("avatar-affinity-percent");
+    const fillEl = document.getElementById("avatar-affinity-fill");
+    const descEl = document.getElementById("avatar-behavior-desc");
+    const badgeLabel = document.getElementById("avatar-style-label");
+    
+    if (percentEl) percentEl.innerText = avgAffinity + "%";
+    if (fillEl) fillEl.style.width = avgAffinity + "%";
+    if (descEl) descEl.innerHTML = "<strong>" + styleObj.affinityTitle + "</strong>: " + styleObj.affinityDesc;
+    if (badgeLabel) badgeLabel.innerText = "Gaya: " + styleObj.name;
+}
+
+function syncHUDAvatarDisplay() {
+    const hudAvatar = document.getElementById("hud-avatar");
+    if (!hudAvatar) return;
+    
+    const avatar = getPlayerAvatarData();
+    hudAvatar.innerHTML = "";
+    
+    if (avatar.mode === "upload" && avatar.dataUrl) {
+        const img = document.createElement("img");
+        img.src = avatar.dataUrl;
+        img.alt = "Avatar";
+        img.style.width = "100%";
+        img.style.height = "100%";
+        img.style.borderRadius = "50%";
+        img.style.objectFit = "cover";
+        hudAvatar.appendChild(img);
+    } else {
+        if (avatar3D.renderer) {
+            try {
+                if (avatar3D.renderer && avatar3D.scene && avatar3D.camera) {
+                    avatar3D.renderer.render(avatar3D.scene, avatar3D.camera);
+                }
+                const dataUrl = avatar3D.renderer.domElement.toDataURL("image/png");
+                const img = document.createElement("img");
+                img.src = dataUrl;
+                img.alt = "3D Avatar";
+                img.style.width = "100%";
+                img.style.height = "100%";
+                img.style.borderRadius = "50%";
+                img.style.objectFit = "cover";
+                hudAvatar.appendChild(img);
+                return;
+            } catch (e) {
+                // fallback
+            }
+        }
+        const userInitial = (accountData && accountData.username) ? accountData.username.charAt(0).toUpperCase() : "U";
+        hudAvatar.innerText = userInitial;
+    }
+}
+
+function filterAvatarStylesByGender(gender) {
+    document.querySelectorAll(".avatar-style-card").forEach(card => {
+        const req = card.dataset.genderReq;
+        let isAllowed = false;
+        if (gender === "nonbinary" || req === "all") {
+            isAllowed = true;
+        } else if (req === gender) {
+            isAllowed = true;
+        }
+        
+        if (isAllowed) {
+            card.style.display = "flex";
+        } else {
+            card.style.display = "none";
+        }
+    });
+    
+    const activeCard = document.querySelector(".avatar-style-card.active");
+    if (activeCard && activeCard.style.display === "none") {
+        const firstVisible = Array.from(document.querySelectorAll(".avatar-style-card")).find(c => c.style.display !== "none");
+        if (firstVisible) {
+            selectAvatarStyle(firstVisible.dataset.style);
+        }
+    }
+}
+
+function selectAvatarStyle(styleId) {
+    avatarWorkingState.style = styleId;
+    document.querySelectorAll(".avatar-style-card").forEach(card => {
+        if (card.dataset.style === styleId) card.classList.add("active");
+        else card.classList.remove("active");
+    });
+    
+    if (avatarWorkingState.mode === "3d") {
+        createAvatar3DMesh(avatarWorkingState.gender, avatarWorkingState.style);
+    }
+    updateAvatarAffinityUI(styleId);
+}
+
+function setAvatarMode(mode) {
+    avatarWorkingState.mode = mode;
+    const btn3d = document.getElementById("btn-avatar-mode-3d");
+    const btnUpload = document.getElementById("btn-avatar-mode-upload");
+    const sec3d = document.getElementById("avatar-3d-controls-section");
+    const secUpload = document.getElementById("avatar-upload-controls-section");
+    const stage3d = document.getElementById("avatar-3d-stage");
+    const imgUpload = document.getElementById("avatar-custom-img");
+    
+    if (mode === "3d") {
+        if (btn3d) btn3d.classList.add("active");
+        if (btnUpload) btnUpload.classList.remove("active");
+        if (sec3d) sec3d.classList.remove("hidden");
+        if (secUpload) secUpload.classList.add("hidden");
+        if (stage3d) stage3d.classList.remove("hidden");
+        if (imgUpload) imgUpload.classList.add("hidden");
+        initAvatar3D();
+        createAvatar3DMesh(avatarWorkingState.gender, avatarWorkingState.style);
+    } else {
+        if (btnUpload) btnUpload.classList.add("active");
+        if (btn3d) btn3d.classList.remove("active");
+        if (secUpload) secUpload.classList.remove("hidden");
+        if (sec3d) sec3d.classList.add("hidden");
+        if (imgUpload) {
+            imgUpload.classList.remove("hidden");
+            if (avatarWorkingState.dataUrl) {
+                imgUpload.src = avatarWorkingState.dataUrl;
+            } else {
+                imgUpload.src = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='150' height='150' viewBox='0 0 150 150'><rect width='150' height='150' fill='%231a202c'/><text x='50%' y='50%' fill='%23888888' font-size='14' text-anchor='middle' dominant-baseline='middle'>Belum Ada Foto</text></svg>";
+            }
+        }
+        if (stage3d) stage3d.classList.add("hidden");
+    }
+}
+
+function updateProfileModalAvatarUI() {
+    const avatar = getPlayerAvatarData();
+    avatarWorkingState = { ...avatar };
+    
+    initAvatar3D();
+    
+    document.querySelectorAll(".gender-pill-btn").forEach(btn => {
+        if (btn.dataset.gender === avatarWorkingState.gender) btn.classList.add("active");
+        else btn.classList.remove("active");
+    });
+    filterAvatarStylesByGender(avatarWorkingState.gender);
+    
+    selectAvatarStyle(avatarWorkingState.style);
+    
+    setAvatarMode(avatarWorkingState.mode);
+}
+
+function setupAvatarEventListeners() {
+    const btn3d = document.getElementById("btn-avatar-mode-3d");
+    const btnUpload = document.getElementById("btn-avatar-mode-upload");
+    if (btn3d) btn3d.addEventListener("click", () => setAvatarMode("3d"));
+    if (btnUpload) btnUpload.addEventListener("click", () => setAvatarMode("upload"));
+    
+    document.querySelectorAll(".gender-pill-btn").forEach(btn => {
+        btn.addEventListener("click", () => {
+            const gender = btn.dataset.gender;
+            avatarWorkingState.gender = gender;
+            document.querySelectorAll(".gender-pill-btn").forEach(b => b.classList.remove("active"));
+            btn.classList.add("active");
+            filterAvatarStylesByGender(gender);
+            if (avatarWorkingState.mode === "3d") {
+                createAvatar3DMesh(avatarWorkingState.gender, avatarWorkingState.style);
+            }
+        });
+    });
+    
+    document.querySelectorAll(".avatar-style-card").forEach(card => {
+        card.addEventListener("click", () => {
+            const styleId = card.dataset.style;
+            selectAvatarStyle(styleId);
+        });
+    });
+    
+    const fileInput = document.getElementById("input-avatar-upload");
+    const dropzone = document.getElementById("avatar-dropzone");
+    if (dropzone && fileInput) {
+        dropzone.addEventListener("click", () => fileInput.click());
+        dropzone.addEventListener("dragover", (e) => {
+            e.preventDefault();
+            dropzone.style.borderColor = "var(--cyan)";
+        });
+        dropzone.addEventListener("dragleave", () => {
+            dropzone.style.borderColor = "var(--border-subtle)";
+        });
+        dropzone.addEventListener("drop", (e) => {
+            e.preventDefault();
+            dropzone.style.borderColor = "var(--border-subtle)";
+            if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+                handleAvatarFileUpload(e.dataTransfer.files[0]);
+            }
+        });
+        fileInput.addEventListener("change", (e) => {
+            if (e.target.files && e.target.files[0]) {
+                handleAvatarFileUpload(e.target.files[0]);
+            }
+        });
+    }
+    
+    const btnSaveAvatar = document.getElementById("btn-save-avatar");
+    if (btnSaveAvatar) {
+        btnSaveAvatar.addEventListener("click", () => {
+            if (!accountData) accountData = {};
+            accountData.avatar = {
+                mode: avatarWorkingState.mode,
+                gender: avatarWorkingState.gender,
+                style: avatarWorkingState.style,
+                dataUrl: avatarWorkingState.dataUrl
+            };
+            localStorage.setItem("car_lab_account", JSON.stringify(accountData));
+            syncHUDAvatarDisplay();
+            
+            const styleObj = AVATAR_STYLES.find(s => s.id === avatarWorkingState.style);
+            const styleName = styleObj ? styleObj.name : avatarWorkingState.style;
+            const successMsg = currentLang === "id"
+                ? `Foto profil berhasil diperbarui! Gaya: ${styleName} (${avatarWorkingState.mode === "3d" ? "Avatar 3D Procedural" : "Foto Unggahan"})`
+                : `Profile avatar updated! Style: ${styleName} (${avatarWorkingState.mode === "3d" ? "Procedural 3D" : "Uploaded Photo"})`;
+            alert(successMsg);
+        });
+    }
+}
+
+function handleAvatarFileUpload(file) {
+    if (!file.type.startsWith("image/")) {
+        alert(currentLang === "id" ? "Silakan unggah file gambar yang valid (JPG, PNG, WebP)!" : "Please upload a valid image file!");
+        return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+        alert(currentLang === "id" ? "Ukuran file maksimal adalah 5MB!" : "File size cannot exceed 5MB!");
+        return;
+    }
+    const reader = new FileReader();
+    reader.onload = function(evt) {
+        avatarWorkingState.dataUrl = evt.target.result;
+        avatarWorkingState.mode = "upload";
+        setAvatarMode("upload");
+    };
+    reader.readAsDataURL(file);
 }
