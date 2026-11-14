@@ -3361,6 +3361,16 @@ function executeAcceptDeal() {
             gameState.winStreak++;
             gameState.loseStreak = 0;
             
+            // Tambah penguasaan / kemiripan gaya karakter pemain tiap transaksi sukses
+            if (accountData && accountData.avatar) {
+                if (!accountData.avatar.styleMastery) accountData.avatar.styleMastery = {};
+                const curStyle = accountData.avatar.style || 'gaya_bos';
+                const curMastery = accountData.avatar.styleMastery[curStyle] || 0;
+                accountData.avatar.styleMastery[curStyle] = Math.min(100, curMastery + 20); // +20% per penjualan sukses hingga 100%
+                localStorage.setItem('car_lab_account', JSON.stringify(accountData));
+                logToTerminal(`[STYLE MASTERY]: Penjualan sukses meningkatkan kemahiran gaya ${curStyle} (+20%)!`, 'sys');
+            }
+            
             // Win streak bonus
             if (gameState.winStreak >= 3 && !gameState.inPlacement && gameState.rank < 6) {
                 gameState.stars = Math.min(10, gameState.stars + 3);
@@ -4414,23 +4424,32 @@ let avatarWorkingState = {
 
 function getPlayerAvatarData() {
     if (accountData && accountData.avatar) {
+        if (!accountData.avatar.styleMastery) accountData.avatar.styleMastery = {};
         return accountData.avatar;
     }
     return {
         mode: "3d",
         gender: "male",
         style: "gaya_bos",
-        dataUrl: null
+        dataUrl: null,
+        styleMastery: {}
     };
 }
 
 function calculateBuyerAffinity(buyerId, playerStyle) {
     const style = playerStyle || (accountData && accountData.avatar && accountData.avatar.style) || "gaya_bos";
-    const table = BUYER_AFFINITY_TABLE[style];
-    if (table && table[buyerId]) {
-        return table[buyerId];
+    const av = getPlayerAvatarData();
+    const mastery = (av.styleMastery && av.styleMastery[style] !== undefined) ? av.styleMastery[style] : 0;
+    
+    // Saat baru ganti style, persentase dimulai dari 0%
+    if (mastery === 0) {
+        return 0;
     }
-    return 70;
+    
+    const table = BUYER_AFFINITY_TABLE[style];
+    const maxPotential = (table && table[buyerId]) ? table[buyerId] : 70;
+    // Skala persentase efektif berdasarkan mastery (0% s/d maxPotential)
+    return Math.round((mastery / 100) * maxPotential);
 }
 
 function initAvatar3D() {
@@ -4498,257 +4517,346 @@ function createAvatar3DMesh(gender, styleId) {
     const group = avatar3D.meshGroup;
     group.rotation.set(0, 0, 0);
     
-    let skinColor = 0xf5cda7;
-    if (gender === "female") skinColor = 0xffe0bd;
-    else if (gender === "nonbinary") skinColor = 0xf0c8a0;
-    if (styleId === "gaya_bos") skinColor = 0xd89b65;
-    else if (styleId === "pembalap_liar") skinColor = 0xf1c27d;
-    else if (styleId === "orang_tua") skinColor = 0xeac096;
+    // Flat-shaded geometric low-poly/box palette
+    let skinColor = 0xf5caa0;
+    if (gender === "female") skinColor = 0xffe2c4;
+    if (styleId === "gaya_bos") skinColor = 0xd49b6a;
+    else if (styleId === "pembalap_liar") skinColor = 0xf2be7e;
+    else if (styleId === "orang_tua") skinColor = 0xebd0af;
     
-    const skinMat = new THREE.MeshStandardMaterial({ color: skinColor, roughness: 0.55, metalness: 0.05 });
+    const skinMat = new THREE.MeshStandardMaterial({ color: skinColor, roughness: 0.65, flatShading: true });
+    const darkSkinMat = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.5, flatShading: true });
     
-    const headGeo = new THREE.SphereGeometry(0.72, 32, 32);
-    headGeo.scale(1.0, 1.15, 0.95);
+    // --- KEPALA KOTAK / GEOMETRIC VOXEL BLOCKY HEAD ---
+    // Menggunakan BoxGeometry dengan bevel/flat shading presisi tinggi
+    const headGeo = new THREE.BoxGeometry(1.05, 1.15, 1.05);
     const headMesh = new THREE.Mesh(headGeo, skinMat);
-    headMesh.position.y = 0.35;
+    headMesh.position.set(0, 0.42, 0);
     group.add(headMesh);
     
-    const neckGeo = new THREE.CylinderGeometry(0.28, 0.32, 0.45, 24);
+    // Hidung Kotak (Stylized nose box)
+    const noseGeo = new THREE.BoxGeometry(0.18, 0.22, 0.18);
+    const noseMesh = new THREE.Mesh(noseGeo, skinMat);
+    noseMesh.position.set(0, 0.38, 0.58);
+    group.add(noseMesh);
+    
+    // Telinga Kotak (Left & Right)
+    const earGeo = new THREE.BoxGeometry(0.12, 0.28, 0.24);
+    const earL = new THREE.Mesh(earGeo, skinMat);
+    earL.position.set(-0.56, 0.42, 0);
+    group.add(earL);
+    const earR = new THREE.Mesh(earGeo, skinMat);
+    earR.position.set(0.56, 0.42, 0);
+    group.add(earR);
+    
+    // Leher Kotak
+    const neckGeo = new THREE.BoxGeometry(0.42, 0.38, 0.42);
     const neckMesh = new THREE.Mesh(neckGeo, skinMat);
-    neckMesh.position.y = -0.32;
+    neckMesh.position.set(0, -0.25, 0);
     group.add(neckMesh);
     
+    // Baju / Torso Kotak Geometris (Bust)
     let clothColor = 0x1f2430;
     if (styleId === "cewek_modis") clothColor = 0xd63384;
-    else if (styleId === "gaya_bos") clothColor = 0x212529;
-    else if (styleId === "pembalap_liar") clothColor = 0xcc1122;
+    else if (styleId === "gaya_bos") clothColor = 0x24292e;
+    else if (styleId === "pembalap_liar") clothColor = 0xd90429;
     else if (styleId === "orang_tua") clothColor = 0x4a5568;
-    else if (styleId === "anak_magang") clothColor = 0x007bff;
-    else if (styleId === "ibu_komplek") clothColor = 0x20c997;
+    else if (styleId === "anak_magang") clothColor = 0x0077b6;
+    else if (styleId === "ibu_komplek") clothColor = 0x06d6a0;
     
-    const clothMat = new THREE.MeshStandardMaterial({ color: clothColor, roughness: 0.7, metalness: 0.1 });
-    const torsoGeo = new THREE.CylinderGeometry(0.55, 0.95, 0.75, 24);
+    const clothMat = new THREE.MeshStandardMaterial({ color: clothColor, roughness: 0.7, flatShading: true });
+    const torsoGeo = new THREE.BoxGeometry(1.45, 0.82, 0.85);
     const torsoMesh = new THREE.Mesh(torsoGeo, clothMat);
-    torsoMesh.position.y = -0.72;
+    torsoMesh.position.set(0, -0.75, 0);
     group.add(torsoMesh);
     
-    const eyeGeo = new THREE.SphereGeometry(0.08, 16, 16);
-    const eyeMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.2 });
-    const eyeL = new THREE.Mesh(eyeGeo, eyeMat);
-    eyeL.position.set(-0.25, 0.42, 0.65);
+    // Kerah Kemeja / Jaket Kotak
+    const collarGeo = new THREE.BoxGeometry(0.55, 0.16, 0.48);
+    const collarMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.5, flatShading: true });
+    const collarMesh = new THREE.Mesh(collarGeo, collarMat);
+    collarMesh.position.set(0, -0.38, 0.05);
+    group.add(collarMesh);
+    
+    // Mata Kotak (Stylized Pixel Eyes)
+    const eyeGeo = new THREE.BoxGeometry(0.16, 0.16, 0.05);
+    const eyeWhiteGeo = new THREE.BoxGeometry(0.24, 0.20, 0.04);
+    const eyeWhiteMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.3, flatShading: true });
+    
+    // Left eye
+    const eyeWhL = new THREE.Mesh(eyeWhiteGeo, eyeWhiteMat);
+    eyeWhL.position.set(-0.25, 0.48, 0.53);
+    group.add(eyeWhL);
+    const eyeL = new THREE.Mesh(eyeGeo, darkSkinMat);
+    eyeL.position.set(-0.24, 0.48, 0.55);
     group.add(eyeL);
     
-    const eyeR = new THREE.Mesh(eyeGeo, eyeMat);
-    eyeR.position.set(0.25, 0.42, 0.65);
+    // Right eye
+    const eyeWhR = new THREE.Mesh(eyeWhiteGeo, eyeWhiteMat);
+    eyeWhR.position.set(0.25, 0.48, 0.53);
+    group.add(eyeWhR);
+    const eyeR = new THREE.Mesh(eyeGeo, darkSkinMat);
+    eyeR.position.set(0.24, 0.48, 0.55);
     group.add(eyeR);
     
-    const smileGeo = new THREE.TorusGeometry(0.12, 0.025, 8, 16, Math.PI);
-    const smileMat = new THREE.MeshBasicMaterial({ color: 0x663322 });
-    const smileMesh = new THREE.Mesh(smileGeo, smileMat);
-    smileMesh.rotation.x = Math.PI;
-    smileMesh.position.set(0, 0.18, 0.67);
-    group.add(smileMesh);
+    // Alis Kotak (Eyebrows)
+    const browGeo = new THREE.BoxGeometry(0.26, 0.08, 0.06);
+    const browMat = new THREE.MeshStandardMaterial({ color: 0x332211, roughness: 0.8, flatShading: true });
+    const browL = new THREE.Mesh(browGeo, browMat);
+    browL.position.set(-0.25, 0.65, 0.54);
+    group.add(browL);
+    const browR = new THREE.Mesh(browGeo, browMat);
+    browR.position.set(0.25, 0.65, 0.54);
+    group.add(browR);
     
+    // Mulut Kotak / Senyum
+    const mouthGeo = new THREE.BoxGeometry(0.26, 0.08, 0.05);
+    const mouthMat = new THREE.MeshStandardMaterial({ color: 0x8b3a3a, roughness: 0.6, flatShading: true });
+    const mouthMesh = new THREE.Mesh(mouthGeo, mouthMat);
+    mouthMesh.position.set(0, 0.18, 0.54);
+    group.add(mouthMesh);
+    
+    // ==========================================
+    // STYLIZED ACCESSORIES PER GAYA (KOTAK / BLOCKY)
+    // ==========================================
     if (styleId === "cewek_modis") {
-        const hairGeo = new THREE.SphereGeometry(0.78, 24, 24);
-        hairGeo.scale(1.05, 1.15, 1.05);
-        const hairMat = new THREE.MeshStandardMaterial({ color: 0x3d2314, roughness: 0.6 });
-        const hairMesh = new THREE.Mesh(hairGeo, hairMat);
-        hairMesh.position.set(0, 0.45, -0.05);
-        group.add(hairMesh);
+        // Rambut Bob Kotak Elegan
+        const hairMat = new THREE.MeshStandardMaterial({ color: 0x382216, roughness: 0.6, flatShading: true });
+        const topHairGeo = new THREE.BoxGeometry(1.18, 0.35, 1.18);
+        const topHair = new THREE.Mesh(topHairGeo, hairMat);
+        topHair.position.set(0, 1.05, 0);
+        group.add(topHair);
         
-        const glassesFrameMat = new THREE.MeshStandardMaterial({ color: 0xd4af37, metalness: 0.8, roughness: 0.2 });
-        const glassMat = new THREE.MeshStandardMaterial({ color: 0x221122, roughness: 0.1, metalness: 0.4 });
+        // Samping Kiri & Kanan (Bob flanks)
+        const sideHairGeo = new THREE.BoxGeometry(0.22, 0.85, 1.18);
+        const sideHairL = new THREE.Mesh(sideHairGeo, hairMat);
+        sideHairL.position.set(-0.55, 0.65, 0);
+        group.add(sideHairL);
+        const sideHairR = new THREE.Mesh(sideHairGeo, hairMat);
+        sideHairR.position.set(0.55, 0.65, 0);
+        group.add(sideHairR);
         
-        const rimGeo = new THREE.TorusGeometry(0.14, 0.025, 8, 20);
-        const rimL = new THREE.Mesh(rimGeo, glassesFrameMat);
-        rimL.position.set(-0.25, 0.42, 0.70);
-        group.add(rimL);
-        const lensL = new THREE.Mesh(new THREE.CircleGeometry(0.13, 16), glassMat);
-        lensL.position.set(-0.25, 0.42, 0.70);
-        group.add(lensL);
+        const backHairGeo = new THREE.BoxGeometry(1.18, 0.85, 0.22);
+        const backHair = new THREE.Mesh(backHairGeo, hairMat);
+        backHair.position.set(0, 0.65, -0.52);
+        group.add(backHair);
         
-        const rimR = new THREE.Mesh(rimGeo, glassesFrameMat);
-        rimR.position.set(0.25, 0.42, 0.70);
-        group.add(rimR);
-        const lensR = new THREE.Mesh(new THREE.CircleGeometry(0.13, 16), glassMat);
-        lensR.position.set(0.25, 0.42, 0.70);
-        group.add(lensR);
+        // Kacamata Trendi Kotak (Gold Aviator Blocky)
+        const frameMat = new THREE.MeshStandardMaterial({ color: 0xffd166, metalness: 0.8, roughness: 0.2, flatShading: true });
+        const tintedMat = new THREE.MeshStandardMaterial({ color: 0x221122, roughness: 0.1, flatShading: true });
         
-        const earGeo = new THREE.TorusGeometry(0.08, 0.02, 8, 16);
-        const earL = new THREE.Mesh(earGeo, glassesFrameMat);
-        earL.position.set(-0.72, 0.25, 0.05);
-        earL.rotation.y = Math.PI / 2;
-        group.add(earL);
-        const earR = new THREE.Mesh(earGeo, glassesFrameMat);
-        earR.position.set(0.72, 0.25, 0.05);
-        earR.rotation.y = Math.PI / 2;
-        group.add(earR);
+        const gFrameGeo = new THREE.BoxGeometry(0.85, 0.32, 0.08);
+        const gFrame = new THREE.Mesh(gFrameGeo, frameMat);
+        gFrame.position.set(0, 0.48, 0.58);
+        group.add(gFrame);
+        
+        const gLensL = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.24, 0.1), tintedMat);
+        gLensL.position.set(-0.22, 0.48, 0.58);
+        group.add(gLensL);
+        
+        const gLensR = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.24, 0.1), tintedMat);
+        gLensR.position.set(0.22, 0.48, 0.58);
+        group.add(gLensR);
+        
+        // Anting Emas Kotak
+        const earringGeo = new THREE.BoxGeometry(0.08, 0.16, 0.08);
+        const earringL = new THREE.Mesh(earringGeo, frameMat);
+        earringL.position.set(-0.62, 0.25, 0);
+        group.add(earringL);
+        const earringR = new THREE.Mesh(earringGeo, frameMat);
+        earringR.position.set(0.62, 0.25, 0);
+        group.add(earringR);
         
     } else if (styleId === "gaya_bos") {
-        const hatBrimGeo = new THREE.CylinderGeometry(1.2, 1.25, 0.05, 32);
-        const hatMat = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.8 });
-        const hatBrim = new THREE.Mesh(hatBrimGeo, hatMat);
-        hatBrim.position.set(0, 0.95, 0.05);
-        hatBrim.rotation.x = -0.12;
-        group.add(hatBrim);
+        // Topi Fedora Kotak Lebar
+        const fedoraMat = new THREE.MeshStandardMaterial({ color: 0x1f2421, roughness: 0.8, flatShading: true });
+        const goldBandMat = new THREE.MeshStandardMaterial({ color: 0xffb703, metalness: 0.7, roughness: 0.3, flatShading: true });
         
-        const hatCrownGeo = new THREE.CylinderGeometry(0.65, 0.75, 0.5, 32);
-        const hatCrown = new THREE.Mesh(hatCrownGeo, hatMat);
-        hatCrown.position.set(0, 1.2, 0.02);
-        hatCrown.rotation.x = -0.12;
-        group.add(hatCrown);
+        const brimGeo = new THREE.BoxGeometry(1.65, 0.08, 1.65);
+        const brim = new THREE.Mesh(brimGeo, fedoraMat);
+        brim.position.set(0, 1.02, 0.05);
+        brim.rotation.x = -0.08;
+        group.add(brim);
         
-        const hatBandGeo = new THREE.CylinderGeometry(0.67, 0.69, 0.12, 32);
-        const hatBandMat = new THREE.MeshStandardMaterial({ color: 0xd4af37, roughness: 0.3, metalness: 0.6 });
-        const hatBand = new THREE.Mesh(hatBandGeo, hatBandMat);
-        hatBand.position.set(0, 1.05, 0.04);
-        hatBand.rotation.x = -0.12;
-        group.add(hatBand);
+        const bandGeo = new THREE.BoxGeometry(1.12, 0.14, 1.12);
+        const band = new THREE.Mesh(bandGeo, goldBandMat);
+        band.position.set(0, 1.12, 0.05);
+        band.rotation.x = -0.08;
+        group.add(band);
         
-        const cigarGeo = new THREE.CylinderGeometry(0.035, 0.035, 0.35, 12);
-        const cigarMat = new THREE.MeshStandardMaterial({ color: 0x5c3317, roughness: 0.7 });
-        const cigarMesh = new THREE.Mesh(cigarGeo, cigarMat);
-        cigarMesh.position.set(0.18, 0.14, 0.78);
-        cigarMesh.rotation.set(Math.PI / 2, 0.3, -0.4);
-        group.add(cigarMesh);
+        const crownGeo = new THREE.BoxGeometry(1.10, 0.48, 1.10);
+        const crown = new THREE.Mesh(crownGeo, fedoraMat);
+        crown.position.set(0, 1.35, 0.05);
+        crown.rotation.x = -0.08;
+        group.add(crown);
         
-        const tipGeo = new THREE.SphereGeometry(0.04, 8, 8);
-        const tipMat = new THREE.MeshBasicMaterial({ color: 0xff3300 });
-        const tipMesh = new THREE.Mesh(tipGeo, tipMat);
-        tipMesh.position.set(0.24, 0.12, 0.92);
-        group.add(tipMesh);
+        // Cerutu Kotak di Mulut
+        const cigarMat = new THREE.MeshStandardMaterial({ color: 0x582f0e, roughness: 0.7, flatShading: true });
+        const ashMat = new THREE.MeshBasicMaterial({ color: 0xff3838 });
+        
+        const cigarGeo = new THREE.BoxGeometry(0.08, 0.08, 0.48);
+        const cigar = new THREE.Mesh(cigarGeo, cigarMat);
+        cigar.position.set(0.24, 0.16, 0.68);
+        cigar.rotation.set(0.12, 0.32, -0.15);
+        group.add(cigar);
+        
+        const emberGeo = new THREE.BoxGeometry(0.09, 0.09, 0.08);
+        const ember = new THREE.Mesh(emberGeo, ashMat);
+        ember.position.set(0.32, 0.14, 0.90);
+        group.add(ember);
         
     } else if (styleId === "pembalap_liar") {
-        const helmetGeo = new THREE.SphereGeometry(0.82, 32, 32);
-        helmetGeo.scale(1.05, 1.15, 1.1);
-        const helmetMat = new THREE.MeshStandardMaterial({ color: 0xcc1122, roughness: 0.25, metalness: 0.3 });
-        const helmetMesh = new THREE.Mesh(helmetGeo, helmetMat);
-        helmetMesh.position.set(0, 0.38, 0);
-        group.add(helmetMesh);
+        // Helm Balap Kotak Penuh (Racing Box Helmet)
+        const helmetMat = new THREE.MeshStandardMaterial({ color: 0xcc1122, roughness: 0.3, metalness: 0.3, flatShading: true });
+        const visorMat = new THREE.MeshStandardMaterial({ color: 0x0b090a, roughness: 0.1, metalness: 0.9, flatShading: true });
+        const whiteDecalMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.4, flatShading: true });
         
-        const visorGeo = new THREE.CylinderGeometry(0.65, 0.65, 0.28, 24, 1, false, -Math.PI / 2.5, Math.PI / 1.25);
-        const visorMat = new THREE.MeshStandardMaterial({ color: 0x050505, roughness: 0.1, metalness: 0.9 });
-        const visorMesh = new THREE.Mesh(visorGeo, visorMat);
-        visorMesh.position.set(0, 0.42, 0.32);
-        visorMesh.rotation.x = 0.05;
-        group.add(visorMesh);
+        // Cangkang helm luar kotak
+        const helmetGeo = new THREE.BoxGeometry(1.28, 1.35, 1.28);
+        const helmet = new THREE.Mesh(helmetGeo, helmetMat);
+        helmet.position.set(0, 0.46, 0);
+        group.add(helmet);
         
-        const stripeGeo = new THREE.CylinderGeometry(0.83, 0.83, 0.1, 32);
-        const stripeMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
-        const stripeMesh = new THREE.Mesh(stripeGeo, stripeMat);
-        stripeMesh.position.set(0, 0.58, 0);
-        group.add(stripeMesh);
+        // Visor kaca gelap kotak depan
+        const visorGeo = new THREE.BoxGeometry(0.98, 0.38, 0.15);
+        const visor = new THREE.Mesh(visorGeo, visorMat);
+        visor.position.set(0, 0.46, 0.62);
+        group.add(visor);
+        
+        // Strip balap putih vertikal
+        const stripeGeo = new THREE.BoxGeometry(0.22, 1.38, 1.32);
+        const stripe = new THREE.Mesh(stripeGeo, whiteDecalMat);
+        stripe.position.set(0, 0.46, 0);
+        group.add(stripe);
         
     } else if (styleId === "orang_tua") {
-        const hairGeo = new THREE.SphereGeometry(0.76, 24, 24);
-        hairGeo.scale(1.02, 1.12, 1.05);
-        const hairMat = new THREE.MeshStandardMaterial({ color: 0xcccccc, roughness: 0.8 });
-        const hairMesh = new THREE.Mesh(hairGeo, hairMat);
-        hairMesh.position.set(0, 0.48, -0.06);
-        group.add(hairMesh);
+        // Rambut Perak Kotak (Silver hair)
+        const hairMat = new THREE.MeshStandardMaterial({ color: 0xd3d3d3, roughness: 0.8, flatShading: true });
+        const topHairGeo = new THREE.BoxGeometry(1.15, 0.32, 1.15);
+        const topHair = new THREE.Mesh(topHairGeo, hairMat);
+        topHair.position.set(0, 1.05, -0.05);
+        group.add(topHair);
         
-        const wireMat = new THREE.MeshStandardMaterial({ color: 0xc0c0c0, metalness: 0.9, roughness: 0.2 });
-        const glassRimGeo = new THREE.TorusGeometry(0.12, 0.015, 8, 20);
-        const glassL = new THREE.Mesh(glassRimGeo, wireMat);
-        glassL.position.set(-0.25, 0.38, 0.70);
+        const sideHairGeo = new THREE.BoxGeometry(0.18, 0.65, 1.12);
+        const sideL = new THREE.Mesh(sideHairGeo, hairMat);
+        sideL.position.set(-0.54, 0.72, -0.05);
+        group.add(sideL);
+        const sideR = new THREE.Mesh(sideHairGeo, hairMat);
+        sideR.position.set(0.54, 0.72, -0.05);
+        group.add(sideR);
+        
+        // Kacamata Baca Kawat Perak Kotak
+        const wireMat = new THREE.MeshStandardMaterial({ color: 0xe0e1dd, metalness: 0.9, roughness: 0.2, flatShading: true });
+        const glassGeo = new THREE.BoxGeometry(0.28, 0.20, 0.06);
+        const glassL = new THREE.Mesh(glassGeo, wireMat);
+        glassL.position.set(-0.25, 0.42, 0.58);
         group.add(glassL);
-        const glassR = new THREE.Mesh(glassRimGeo, wireMat);
-        glassR.position.set(0.25, 0.38, 0.70);
+        const glassR = new THREE.Mesh(glassGeo, wireMat);
+        glassR.position.set(0.25, 0.42, 0.58);
         group.add(glassR);
+        const bridgeGeo = new THREE.BoxGeometry(0.22, 0.05, 0.06);
+        const bridge = new THREE.Mesh(bridgeGeo, wireMat);
+        bridge.position.set(0, 0.45, 0.58);
+        group.add(bridge);
         
-        const stacheGeo = new THREE.CylinderGeometry(0.04, 0.06, 0.38, 12);
-        const stacheMat = new THREE.MeshStandardMaterial({ color: 0xbbbbbb, roughness: 0.9 });
-        const stacheMesh = new THREE.Mesh(stacheGeo, stacheMat);
-        stacheMesh.rotation.z = Math.PI / 2;
-        stacheMesh.position.set(0, 0.24, 0.68);
-        group.add(stacheMesh);
+        // Kumis Tebal Perak Kotak
+        const stacheGeo = new THREE.BoxGeometry(0.58, 0.16, 0.12);
+        const stache = new THREE.Mesh(stacheGeo, hairMat);
+        stache.position.set(0, 0.25, 0.58);
+        group.add(stache);
         
     } else if (styleId === "anak_magang") {
-        const hairGeo = new THREE.SphereGeometry(0.75, 24, 24);
-        hairGeo.scale(1.02, 1.12, 1.02);
-        const hairMat = new THREE.MeshStandardMaterial({ color: 0x2b1d0c, roughness: 0.7 });
-        const hairMesh = new THREE.Mesh(hairGeo, hairMat);
-        hairMesh.position.set(0, 0.46, -0.04);
-        group.add(hairMesh);
+        // Rambut Rapi Belah Pinggir Kotak
+        const hairMat = new THREE.MeshStandardMaterial({ color: 0x2b1d0c, roughness: 0.8, flatShading: true });
+        const topHairGeo = new THREE.BoxGeometry(1.15, 0.28, 1.15);
+        const topHair = new THREE.Mesh(topHairGeo, hairMat);
+        topHair.position.set(0, 1.02, 0);
+        group.add(topHair);
         
-        const glassesFrameMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.3 });
-        const rimGeo = new THREE.TorusGeometry(0.15, 0.02, 8, 20);
-        const rimL = new THREE.Mesh(rimGeo, glassesFrameMat);
-        rimL.position.set(-0.25, 0.42, 0.70);
-        group.add(rimL);
-        const rimR = new THREE.Mesh(rimGeo, glassesFrameMat);
-        rimR.position.set(0.25, 0.42, 0.70);
-        group.add(rimR);
+        // Kacamata Nerd Bulat/Kotak Tebal Hitam
+        const nerdFrameMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.4, flatShading: true });
+        const nFrameL = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.28, 0.06), nerdFrameMat);
+        nFrameL.position.set(-0.25, 0.48, 0.58);
+        group.add(nFrameL);
+        const nFrameR = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.28, 0.06), nerdFrameMat);
+        nFrameR.position.set(0.25, 0.48, 0.58);
+        group.add(nFrameR);
+        const nBridge = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.06, 0.06), nerdFrameMat);
+        nBridge.position.set(0, 0.50, 0.58);
+        group.add(nBridge);
         
-        const lanyardMat = new THREE.MeshBasicMaterial({ color: 0x007bff });
-        const strapGeo = new THREE.TorusGeometry(0.35, 0.02, 8, 20, Math.PI);
-        const strapMesh = new THREE.Mesh(strapGeo, lanyardMat);
-        strapMesh.position.set(0, -0.4, 0.45);
-        strapMesh.rotation.x = 0.5;
-        group.add(strapMesh);
+        // Tali Lanyard Biru Kotak + ID Card
+        const lanyardMat = new THREE.MeshStandardMaterial({ color: 0x0077b6, roughness: 0.5, flatShading: true });
+        const strapL = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.55, 0.05), lanyardMat);
+        strapL.position.set(-0.20, -0.52, 0.46);
+        strapL.rotation.z = -0.15;
+        group.add(strapL);
+        const strapR = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.55, 0.05), lanyardMat);
+        strapR.position.set(0.20, -0.52, 0.46);
+        strapR.rotation.z = 0.15;
+        group.add(strapR);
         
-        const badgeGeo = new THREE.BoxGeometry(0.18, 0.24, 0.02);
-        const badgeMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.4 });
-        const badgeMesh = new THREE.Mesh(badgeGeo, badgeMat);
-        badgeMesh.position.set(0, -0.68, 0.55);
-        group.add(badgeMesh);
+        // Kartu Identitas / ID Card
+        const cardGeo = new THREE.BoxGeometry(0.26, 0.36, 0.04);
+        const cardMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.3, flatShading: true });
+        const cardMesh = new THREE.Mesh(cardGeo, cardMat);
+        cardMesh.position.set(0, -0.78, 0.48);
+        group.add(cardMesh);
         
     } else if (styleId === "ibu_komplek") {
-        const hairGeo = new THREE.SphereGeometry(0.79, 24, 24);
-        hairGeo.scale(1.06, 1.15, 1.05);
-        const hairMat = new THREE.MeshStandardMaterial({ color: 0x5a3825, roughness: 0.7 });
-        const hairMesh = new THREE.Mesh(hairGeo, hairMat);
-        hairMesh.position.set(0, 0.45, -0.05);
-        group.add(hairMesh);
+        // Rambut Cokelat Kotak
+        const hairMat = new THREE.MeshStandardMaterial({ color: 0x5a3825, roughness: 0.7, flatShading: true });
+        const topHairGeo = new THREE.BoxGeometry(1.20, 0.35, 1.20);
+        const topHair = new THREE.Mesh(topHairGeo, hairMat);
+        topHair.position.set(0, 1.05, 0);
+        group.add(topHair);
         
-        const rollerMat1 = new THREE.MeshStandardMaterial({ color: 0xff4081, roughness: 0.4 });
-        const rollerMat2 = new THREE.MeshStandardMaterial({ color: 0x00e5ff, roughness: 0.4 });
-        const rollerGeo = new THREE.CylinderGeometry(0.09, 0.09, 0.28, 16);
+        // 3 Rol Rambut Kotak Silinder Warna-Warni
+        const rollerMat1 = new THREE.MeshStandardMaterial({ color: 0xff006e, roughness: 0.4, flatShading: true });
+        const rollerMat2 = new THREE.MeshStandardMaterial({ color: 0x00f5d4, roughness: 0.4, flatShading: true });
+        const rollGeo = new THREE.BoxGeometry(0.26, 0.22, 0.42);
         
-        const roller1 = new THREE.Mesh(rollerGeo, rollerMat1);
-        roller1.rotation.z = Math.PI / 2;
-        roller1.position.set(0, 1.15, 0.2);
-        group.add(roller1);
+        const roll1 = new THREE.Mesh(rollGeo, rollerMat1);
+        roll1.position.set(0, 1.25, 0.15);
+        group.add(roll1);
+        const roll2 = new THREE.Mesh(rollGeo, rollerMat2);
+        roll2.position.set(-0.35, 1.20, 0.10);
+        group.add(roll2);
+        const roll3 = new THREE.Mesh(rollGeo, rollerMat2);
+        roll3.position.set(0.35, 1.20, 0.10);
+        group.add(roll3);
         
-        const roller2 = new THREE.Mesh(rollerGeo, rollerMat2);
-        roller2.rotation.z = Math.PI / 2;
-        roller2.position.set(-0.35, 1.05, 0.1);
-        group.add(roller2);
-        
-        const roller3 = new THREE.Mesh(rollerGeo, rollerMat2);
-        roller3.rotation.z = Math.PI / 2;
-        roller3.position.set(0.35, 1.05, 0.1);
-        group.add(roller3);
-        
-        const catGlassesMat = new THREE.MeshStandardMaterial({ color: 0x9c27b0, roughness: 0.3 });
-        const catRimGeo = new THREE.TorusGeometry(0.14, 0.02, 8, 20);
-        const catL = new THREE.Mesh(catRimGeo, catGlassesMat);
-        catL.position.set(-0.25, 0.42, 0.70);
-        catL.rotation.z = 0.2;
+        // Kacamata Retro Cat-Eye Kotak
+        const catMat = new THREE.MeshStandardMaterial({ color: 0x7209b7, roughness: 0.3, flatShading: true });
+        const catL = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.18, 0.06), catMat);
+        catL.position.set(-0.25, 0.48, 0.58);
+        catL.rotation.z = 0.18;
         group.add(catL);
-        const catR = new THREE.Mesh(catRimGeo, catGlassesMat);
-        catR.position.set(0.25, 0.42, 0.70);
-        catR.rotation.z = -0.2;
+        const catR = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.18, 0.06), catMat);
+        catR.position.set(0.25, 0.48, 0.58);
+        catR.rotation.z = -0.18;
         group.add(catR);
     }
 }
-
 function updateAvatarAffinityUI(styleId) {
     const styleObj = AVATAR_STYLES.find(s => s.id === styleId) || AVATAR_STYLES[1];
-    
-    const table = BUYER_AFFINITY_TABLE[styleId] || {};
-    const values = Object.values(table);
-    const avgAffinity = values.length ? Math.round(values.reduce((a, b) => a + b, 0) / values.length) : 75;
+    const av = getPlayerAvatarData();
+    const mastery = (av.styleMastery && av.styleMastery[styleId] !== undefined) ? av.styleMastery[styleId] : 0;
     
     const percentEl = document.getElementById("avatar-affinity-percent");
     const fillEl = document.getElementById("avatar-affinity-fill");
     const descEl = document.getElementById("avatar-behavior-desc");
     const badgeLabel = document.getElementById("avatar-style-label");
     
-    if (percentEl) percentEl.innerText = avgAffinity + "%";
-    if (fillEl) fillEl.style.width = avgAffinity + "%";
-    if (descEl) descEl.innerHTML = "<strong>" + styleObj.affinityTitle + "</strong>: " + styleObj.affinityDesc;
+    if (percentEl) percentEl.innerText = mastery + "%";
+    if (fillEl) fillEl.style.width = mastery + "%";
+    
+    if (descEl) {
+        if (mastery === 0) {
+            descEl.innerHTML = "<strong>Gaya Baru (0% Kemiripan)</strong>: Anda baru saja memilih gaya ini. Lakukan penjualan mobil ke buyer untuk melatih dan meningkatkan kemiripan gaya ini hingga 100%!";
+        } else {
+            descEl.innerHTML = "<strong>" + styleObj.affinityTitle + " (Tingkat Kemiripan: " + mastery + "%)</strong>: " + styleObj.affinityDesc;
+        }
+    }
     if (badgeLabel) badgeLabel.innerText = "Gaya: " + styleObj.name;
 }
 
@@ -4797,9 +4905,7 @@ function filterAvatarStylesByGender(gender) {
     document.querySelectorAll(".avatar-style-card").forEach(card => {
         const req = card.dataset.genderReq;
         let isAllowed = false;
-        if (gender === "nonbinary" || req === "all") {
-            isAllowed = true;
-        } else if (req === gender) {
+        if (req === "all" || req === gender) {
             isAllowed = true;
         }
         
@@ -4821,6 +4927,10 @@ function filterAvatarStylesByGender(gender) {
 
 function selectAvatarStyle(styleId) {
     avatarWorkingState.style = styleId;
+    if (!avatarWorkingState.styleMastery) avatarWorkingState.styleMastery = {};
+    if (avatarWorkingState.styleMastery[styleId] === undefined) {
+        avatarWorkingState.styleMastery[styleId] = 0; // Mulai dari 0% saat gaya baru dipilih!
+    }
     document.querySelectorAll(".avatar-style-card").forEach(card => {
         if (card.dataset.style === styleId) card.classList.add("active");
         else card.classList.remove("active");
@@ -4943,7 +5053,8 @@ function setupAvatarEventListeners() {
                 mode: avatarWorkingState.mode,
                 gender: avatarWorkingState.gender,
                 style: avatarWorkingState.style,
-                dataUrl: avatarWorkingState.dataUrl
+                dataUrl: avatarWorkingState.dataUrl,
+                styleMastery: avatarWorkingState.styleMastery || {}
             };
             localStorage.setItem("car_lab_account", JSON.stringify(accountData));
             syncHUDAvatarDisplay();
