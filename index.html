@@ -696,6 +696,71 @@
             </div>
         </div>
 
+        <!-- Part Purchase Preview Modal -->
+        <div class="modal-overlay hidden" id="part-preview-modal">
+            <div class="modal-card chassis-preview-modal-card part-preview-modal-card">
+                <div class="modal-header">
+                    <h3 id="part-preview-title"><i class="fa-solid fa-puzzle-piece"></i> Konfirmasi Pembelian Komponen</h3>
+                    <button class="btn-close-modal" id="btn-close-part-preview">&times;</button>
+                </div>
+                <div class="chassis-preview-body">
+                    <div class="chassis-preview-hero part-preview-hero">
+                        <div class="part-preview-svg-wrap" id="part-preview-svg"></div>
+                        <div class="chassis-preview-badge-row">
+                            <span class="category-label" id="part-preview-cat">KOMPONEN</span>
+                            <span class="tag tag-accent" id="part-preview-tag">Preview Aktif</span>
+                        </div>
+                    </div>
+                    <div class="chassis-preview-details">
+                        <h2 id="part-preview-name" class="chassis-preview-car-name">Nama Komponen</h2>
+                        <p id="part-preview-desc" class="chassis-preview-car-desc">Deskripsi komponen...</p>
+                        
+                        <div class="chassis-preview-stats-grid">
+                            <div class="chassis-stat-box">
+                                <span class="chassis-stat-lbl"><i class="fa-solid fa-gauge-high"></i> Top Speed</span>
+                                <span class="chassis-stat-val" id="part-preview-speed">--</span>
+                            </div>
+                            <div class="chassis-stat-box">
+                                <span class="chassis-stat-lbl"><i class="fa-solid fa-bolt"></i> 0-100 km/h</span>
+                                <span class="chassis-stat-val" id="part-preview-accel">--</span>
+                            </div>
+                            <div class="chassis-stat-box">
+                                <span class="chassis-stat-lbl"><i class="fa-solid fa-leaf"></i> Keramahan Lingkungan</span>
+                                <span class="chassis-stat-val" id="part-preview-eco">--</span>
+                            </div>
+                            <div class="chassis-stat-box">
+                                <span class="chassis-stat-lbl"><i class="fa-solid fa-crown"></i> Tingkat Keren (Flex)</span>
+                                <span class="chassis-stat-val" id="part-preview-flex">--</span>
+                            </div>
+                            <div class="chassis-stat-box" style="grid-column: 1 / -1;">
+                                <span class="chassis-stat-lbl"><i class="fa-solid fa-shield"></i> Kekuatan Tabrakan</span>
+                                <span class="chassis-stat-val" id="part-preview-defense">--</span>
+                            </div>
+                        </div>
+
+                        <div class="chassis-preview-price-box">
+                            <div class="chassis-price-left">
+                                <span class="chassis-price-sub" id="lbl-part-preview-price-sub">Harga Komponen:</span>
+                                <span class="chassis-price-num" id="part-preview-price">$0</span>
+                            </div>
+                            <div class="chassis-user-wallet">
+                                <span class="chassis-wallet-sub" id="lbl-part-preview-wallet-sub">Saldo Kas Kamu:</span>
+                                <span class="chassis-wallet-num" id="part-preview-wallet">$0</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="chassis-preview-footer">
+                    <button class="btn btn-outline" id="btn-cancel-part-preview">
+                        <i class="fa-solid fa-xmark"></i> Batal
+                    </button>
+                    <button class="btn btn-primary btn-glow" id="btn-confirm-buy-part">
+                        <i class="fa-solid fa-cart-shopping"></i> Beli Komponen Sekarang
+                    </button>
+                </div>
+            </div>
+        </div>
+
         <!-- ================= PROFILE SETTINGS MODAL ================= -->
         <div id="profile-settings-modal" class="modal-overlay hidden">
             <div class="modal-content profile-settings-content">
@@ -905,6 +970,6 @@
     <!-- Application Logic -->
     <script src="data.js?v=2"></script>
     <script src="car_photos.js?v=2"></script>
-    <script src="app.js?v=11"></script>
+    <script src="app.js?v=12"></script>
 </body>
 </html>

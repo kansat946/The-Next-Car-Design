@@ -333,6 +333,9 @@ const LANG = {
         preview_modal_cancel: 'Batal',
         preview_modal_price_sub: 'Harga Sasis:',
         preview_modal_wallet_sub: 'Saldo Kas Kamu:',
+        part_preview_modal_title: 'Konfirmasi Pembelian Komponen',
+        part_preview_modal_buy: 'Beli Komponen Sekarang',
+        part_preview_price_sub: 'Harga Komponen:',
         tab_ai: 'AI Auto',
         tab_wheels: 'Roda',
         tab_spoilers: 'Spoiler',
@@ -422,6 +425,9 @@ const LANG = {
         preview_modal_cancel: 'Cancel',
         preview_modal_price_sub: 'Chassis Price:',
         preview_modal_wallet_sub: 'Your Cash Balance:',
+        part_preview_modal_title: 'Confirm Component Purchase',
+        part_preview_modal_buy: 'Buy Component Now',
+        part_preview_price_sub: 'Component Price:',
         tab_ai: 'AI Auto',
         tab_wheels: 'Wheels',
         tab_spoilers: 'Spoilers',
@@ -607,6 +613,16 @@ function applyAllTranslations() {
     if (priceSub) priceSub.innerText = t.preview_modal_price_sub;
     const walletSub = document.getElementById('lbl-chassis-preview-wallet-sub');
     if (walletSub) walletSub.innerText = t.preview_modal_wallet_sub;
+
+    // Part Preview Modal
+    const partPreviewTitle = document.getElementById('part-preview-title');
+    if (partPreviewTitle) partPreviewTitle.innerHTML = `<i class="fa-solid fa-puzzle-piece"></i> ${t.part_preview_modal_title}`;
+    const btnCancelPartPreview = document.getElementById('btn-cancel-part-preview');
+    if (btnCancelPartPreview) btnCancelPartPreview.innerHTML = `<i class="fa-solid fa-xmark"></i> ${t.preview_modal_cancel}`;
+    const partPriceSub = document.getElementById('lbl-part-preview-price-sub');
+    if (partPriceSub) partPriceSub.innerText = t.part_preview_price_sub;
+    const partWalletSub = document.getElementById('lbl-part-preview-wallet-sub');
+    if (partWalletSub) partWalletSub.innerText = t.preview_modal_wallet_sub;
 
     // Terminal Screen
     const showroomH2 = document.querySelector('.showroom-header h2');
@@ -2051,7 +2067,15 @@ function renderDashboardSlots() {
             const previewWrap = activeView.querySelector('.slot-car-preview');
             const photoUrl = (typeof CAR_PHOTOS !== 'undefined') && CAR_PHOTOS[carModel.name];
             if (photoUrl) {
-                previewWrap.innerHTML = `<img class="slot-car-photo-preview" src="${photoUrl}" alt="${carModel.name}" loading="lazy" referrerpolicy="no-referrer" crossorigin="anonymous" onerror="this.onerror=null; this.parentElement.innerHTML=\`${CHASSIS_SVG[carModel.baseChassis].replace(/`/g, '\\`')}\`;" />`;
+                const fallbackSvg = CHASSIS_SVG[carModel.baseChassis] || '';
+                const img = document.createElement('img');
+                img.className = 'slot-car-photo-preview';
+                img.src = photoUrl;
+                img.alt = carModel.name;
+                img.loading = 'lazy';
+                img.onerror = function() { previewWrap.innerHTML = fallbackSvg; };
+                previewWrap.innerHTML = '';
+                previewWrap.appendChild(img);
             } else {
                 const svgContent = CHASSIS_SVG[carModel.baseChassis];
                 let gradCol1 = null, gradCol2 = null;
@@ -2321,7 +2345,7 @@ function renderCatalogGrid(catFilter = "all", varFilter = "all", searchStr = "")
         const photoUrl = (typeof CAR_PHOTOS !== 'undefined') && CAR_PHOTOS[car.name];
         const visualContent = photoUrl 
             ? `<div class="catalog-car-photo-wrap">
-                   <img class="catalog-car-photo" src="${photoUrl}" alt="${car.name}" loading="lazy" referrerpolicy="no-referrer" crossorigin="anonymous" onerror="this.onerror=null; this.parentElement.innerHTML=\`${CHASSIS_SVG[car.baseChassis].replace(/`/g, '\\`')}\`;" />
+                   <img class="catalog-car-photo" src="${photoUrl}" alt="${car.name}" loading="lazy" />
                </div>`
             : `<div class="catalog-car-svg-wrap">
                    ${CHASSIS_SVG[car.baseChassis]}
@@ -2571,7 +2595,7 @@ function renderPartsDrawer(category) {
                     e.dataTransfer.effectAllowed = 'copy';
                 });
                 card.addEventListener('click', () => {
-                    buyAndInstallPart(part);
+                    openPartPurchasePreview(part);
                 });
                 attachPartTooltip(card, part);
                 recsContainer.appendChild(card);
@@ -2619,7 +2643,7 @@ function renderPartsDrawer(category) {
         });
 
         card.addEventListener('click', () => {
-            buyAndInstallPart(part);
+            openPartPurchasePreview(part);
         });
 
         // Attach tooltip on hover/right-click
@@ -2627,6 +2651,160 @@ function renderPartsDrawer(category) {
         
         partsDrawer.appendChild(card);
     });
+}
+
+// Fullscreen-style Part Purchase Preview Modal
+let pendingPurchasePart = null;
+let previewOriginalParts = null;
+
+function openPartPurchasePreview(part) {
+    if (activeSlotIndex === null || !gameState.slots[activeSlotIndex] || !gameState.slots[activeSlotIndex].occupied) {
+        buyAndInstallPart(part);
+        return;
+    }
+
+    pendingPurchasePart = part;
+    const modal = document.getElementById('part-preview-modal');
+    if (!modal) {
+        buyAndInstallPart(part);
+        return;
+    }
+
+    // SVG icon display
+    const svgWrap = document.getElementById('part-preview-svg');
+    if (svgWrap) {
+        svgWrap.innerHTML = part.svg || '';
+    }
+
+    // Name & Desc
+    const nameEl = document.getElementById('part-preview-name');
+    if (nameEl) nameEl.innerText = part.name;
+    const descEl = document.getElementById('part-preview-desc');
+    if (descEl) descEl.innerText = part.desc;
+
+    // Prices
+    const priceEl = document.getElementById('part-preview-price');
+    if (priceEl) priceEl.innerText = formatCash(part.price);
+    const walletEl = document.getElementById('part-preview-wallet');
+    if (walletEl) walletEl.innerText = formatCash(gameState.cash);
+
+    const btnConfirm = document.getElementById('btn-confirm-buy-part');
+    if (btnConfirm) {
+        const t = LANG[currentLang] || LANG.id;
+        const buyText = t.part_preview_modal_buy || (currentLang === 'id' ? 'Beli Komponen Sekarang' : 'Buy Component Now');
+        btnConfirm.innerHTML = `<i class="fa-solid fa-cart-shopping"></i> ${buyText} (${formatCash(part.price)})`;
+    }
+
+    // Calculate baseline stats of current car without temporary preview
+    const slot = gameState.slots[activeSlotIndex];
+    const carModel = CARS_CATALOG.find(c => c.id === slot.car.carId);
+    let curSpeed = carModel.stats.speed;
+    let curAccel = carModel.stats.accel;
+    let curEco = carModel.stats.eco;
+    let curFlex = carModel.stats.flex;
+    let curDefense = carModel.stats.defense;
+
+    placedParts.forEach(p => {
+        curSpeed += p.effect.speed;
+        curAccel += p.effect.accel;
+        curEco += p.effect.eco;
+        curFlex += p.effect.flex;
+        curDefense += p.effect.defense;
+    });
+
+    // Check if new part replaces an existing part of the same prefix
+    let replacingPart = null;
+    let prefix = null;
+    if (part.id.startsWith('wheel-')) prefix = 'wheel-';
+    else if (part.id.startsWith('interior-seat-')) prefix = 'interior-seat-';
+    else if (part.id.startsWith('interior-wheel-')) prefix = 'interior-wheel-';
+    else if (part.id.startsWith('interior-rollcage')) prefix = 'interior-rollcage';
+    else if (part.id.startsWith('interior-led-')) prefix = 'interior-led-';
+    else if (part.id.startsWith('neon-')) prefix = 'neon-';
+    else if (part.id.startsWith('roof-')) prefix = 'roof-';
+    else if (part.id.startsWith('front-')) prefix = 'front-';
+    else if (part.id.startsWith('spoiler-')) prefix = 'spoiler-';
+
+    if (prefix) {
+        replacingPart = placedParts.find(p => p.templateId.startsWith(prefix));
+    }
+
+    let netSpeed = part.effect.speed - (replacingPart ? replacingPart.effect.speed : 0);
+    let netAccel = part.effect.accel - (replacingPart ? replacingPart.effect.accel : 0);
+    let netEco = part.effect.eco - (replacingPart ? replacingPart.effect.eco : 0);
+    let netFlex = part.effect.flex - (replacingPart ? replacingPart.effect.flex : 0);
+    let netDef = part.effect.defense - (replacingPart ? replacingPart.effect.defense : 0);
+
+    let predSpeed = Math.max(40, Math.min(650, curSpeed + netSpeed));
+    let predAccel = Math.max(0.6, Math.min(25.0, curAccel + netAccel));
+    let predEco = Math.max(0, Math.min(100, curEco + netEco));
+    let predFlex = Math.max(0, Math.min(100, curFlex + netFlex));
+    let predDef = Math.max(0, Math.min(100, curDefense + netDef));
+
+    function formatDiff(diffVal, isLowerBetter = false) {
+        if (diffVal === 0) return '<span class="part-stat-diff neutral">(+0)</span>';
+        const isGood = isLowerBetter ? diffVal < 0 : diffVal > 0;
+        const sign = diffVal > 0 ? `+${diffVal}` : `${diffVal}`;
+        const cls = isGood ? 'positive' : 'negative';
+        return `<span class="part-stat-diff ${cls}">(${sign})</span>`;
+    }
+
+    const speedEl = document.getElementById('part-preview-speed');
+    if (speedEl) speedEl.innerHTML = `${predSpeed} km/h ${formatDiff(netSpeed)}`;
+    const accelEl = document.getElementById('part-preview-accel');
+    if (accelEl) accelEl.innerHTML = `${predAccel.toFixed(1)}s ${formatDiff(Number(netAccel.toFixed(1)), true)}`;
+    const ecoEl = document.getElementById('part-preview-eco');
+    if (ecoEl) ecoEl.innerHTML = `${predEco}% ${formatDiff(netEco)}`;
+    const flexEl = document.getElementById('part-preview-flex');
+    if (flexEl) flexEl.innerHTML = `${predFlex}% ${formatDiff(netFlex)}`;
+    const defEl = document.getElementById('part-preview-defense');
+    if (defEl) defEl.innerHTML = `${predDef}% ${formatDiff(netDef)}`;
+
+    // Preview on 3D Car Model without committing save
+    if (previewOriginalParts === null) {
+        previewOriginalParts = JSON.parse(JSON.stringify(placedParts));
+    }
+
+    // Add temporary part clone to placedParts & re-render 3D car model
+    const tempPlaced = JSON.parse(JSON.stringify(placedParts));
+    if (prefix) {
+        const existIdx = tempPlaced.findIndex(p => p.templateId.startsWith(prefix));
+        if (existIdx !== -1) tempPlaced.splice(existIdx, 1);
+    }
+    const snap = getSnapPoint(part.id);
+    tempPlaced.push({
+        id: 'preview-temp-part',
+        templateId: part.id,
+        name: part.name,
+        price: part.price,
+        effect: part.effect,
+        svg: part.svg,
+        x: snap.x,
+        y: snap.y,
+        scale: snap.scale,
+        rotation: 0,
+        flipped: false
+    });
+
+    placedParts = tempPlaced;
+    updateStudio3DModel();
+    renderPlacedParts();
+
+    modal.classList.remove('hidden');
+}
+
+function closePartPurchasePreview(revertPreview = true) {
+    const modal = document.getElementById('part-preview-modal');
+    if (modal) modal.classList.add('hidden');
+    
+    if (revertPreview && previewOriginalParts !== null) {
+        placedParts = previewOriginalParts;
+        updateStudio3DModel();
+        renderPlacedParts();
+        updateStats();
+    }
+    previewOriginalParts = null;
+    pendingPurchasePart = null;
 }
 
 function buyAndInstallPart(part) {
@@ -3752,11 +3930,24 @@ function setupProfileModalListeners() {
 
 function setupGlobalEventListeners() {
     setupProfileModalListeners();
-    // Open catalog button in slots
+    // Open catalog button in slots & clicking the empty workspace slot dashed area
     document.querySelectorAll('.btn-open-dealer').forEach((btn, index) => {
-        btn.addEventListener('click', () => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
             activeSlotIndex = index;
             openDealerCatalog();
+        });
+    });
+
+    slotCards.forEach((card, index) => {
+        if (!card) return;
+        card.addEventListener('click', (e) => {
+            const slot = gameState.slots[index];
+            if (!slot || !slot.occupied) {
+                // Clicking anywhere inside dashed empty slot opens dealer catalog
+                activeSlotIndex = index;
+                openDealerCatalog();
+            }
         });
     });
     
@@ -4121,6 +4312,26 @@ function setupGlobalEventListeners() {
         btnConfirmBuy.addEventListener('click', () => {
             if (pendingPurchaseCar) {
                 selectChassisForActiveSlot(pendingPurchaseCar);
+            }
+        });
+    }
+
+    // Part Purchase Preview Modal Listeners
+    const btnClosePartPreview = document.getElementById('btn-close-part-preview');
+    if (btnClosePartPreview) {
+        btnClosePartPreview.addEventListener('click', () => closePartPurchasePreview(true));
+    }
+    const btnCancelPartPreview = document.getElementById('btn-cancel-part-preview');
+    if (btnCancelPartPreview) {
+        btnCancelPartPreview.addEventListener('click', () => closePartPurchasePreview(true));
+    }
+    const btnConfirmBuyPart = document.getElementById('btn-confirm-buy-part');
+    if (btnConfirmBuyPart) {
+        btnConfirmBuyPart.addEventListener('click', () => {
+            if (pendingPurchasePart) {
+                const partToBuy = pendingPurchasePart;
+                closePartPurchasePreview(false); // don't revert preview, we are buying it
+                buyAndInstallPart(partToBuy);
             }
         });
     }
