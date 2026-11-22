@@ -338,6 +338,9 @@
                     <div class="studio-wallet-indicator">
                         Kas: <span id="studio-cash-val" class="text-green">$1,000,000,000</span>
                     </div>
+                    <button id="btn-studio-test-drive" class="btn btn-warning btn-md">
+                        <i class="fa-solid fa-gauge-high"></i> Uji Coba Mobil
+                    </button>
                     <button id="btn-launch-sell" class="btn btn-primary btn-md btn-glow">
                         <i class="fa-solid fa-rocket"></i> Jual Mobil
                     </button>
@@ -761,6 +764,123 @@
             </div>
         </div>
 
+        <!-- ================= TEST DRIVE & CRASH SIMULATION MODAL ================= -->
+        <div class="modal-overlay hidden" id="testdrive-modal">
+            <div class="modal-card testdrive-modal-card">
+                <div class="modal-header testdrive-header">
+                    <div class="testdrive-header-title">
+                        <h3 id="testdrive-modal-title"><i class="fa-solid fa-flag-checkered"></i> Proving Ground: Uji Coba & Crash Test</h3>
+                        <span class="testdrive-car-label" id="testdrive-car-name">Mobil Uji Coba</span>
+                    </div>
+                    <div class="testdrive-header-actions">
+                        <button type="button" class="btn btn-sm btn-outline testdrive-autopilot-btn" id="btn-testdrive-autopilot">
+                            <i class="fa-solid fa-robot"></i> Autopilot: OFF
+                        </button>
+                        <button type="button" class="btn btn-sm btn-danger" id="btn-testdrive-reset">
+                            <i class="fa-solid fa-arrow-rotate-left"></i> Reset
+                        </button>
+                        <button class="btn-close-modal" id="btn-close-testdrive">&times;</button>
+                    </div>
+                </div>
+
+                <div class="testdrive-body">
+                    <!-- 3D Canvas Stage -->
+                    <div class="testdrive-stage-wrap" id="testdrive-stage-wrap">
+                        <div id="testdrive-3d-stage"></div>
+
+                        <!-- Telemetry Overlay Top -->
+                        <div class="testdrive-telemetry-hud">
+                            <div class="telemetry-speed-cluster">
+                                <div class="speed-digital">
+                                    <span id="td-speed-val">0</span>
+                                    <span class="speed-unit">KM/H</span>
+                                </div>
+                                <div class="speed-bar-wrap">
+                                    <div class="speed-bar-fill" id="td-speed-fill" style="width: 0%;"></div>
+                                </div>
+                            </div>
+                            <div class="telemetry-records">
+                                <div class="rec-item">
+                                    <span class="rec-lbl"><i class="fa-solid fa-bolt"></i> 0-100 km/h</span>
+                                    <span class="rec-val" id="td-accel-record">--</span>
+                                </div>
+                                <div class="rec-item">
+                                    <span class="rec-lbl"><i class="fa-solid fa-gauge-high"></i> Top Speed</span>
+                                    <span class="rec-val" id="td-topspeed-record">--</span>
+                                </div>
+                                <div class="rec-item">
+                                    <span class="rec-lbl"><i class="fa-solid fa-shield"></i> NCAP Safety</span>
+                                    <span class="rec-val rec-stars" id="td-crash-stars">⭐⭐⭐⭐⭐</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Track Status Banner / Impact Notification -->
+                        <div class="testdrive-status-banner hidden" id="td-status-banner">
+                            <span id="td-status-text">CRASH IMPACT TEST!</span>
+                        </div>
+
+                        <!-- Mobile On-Screen Touch Controls (HP / Touchscreen) -->
+                        <div class="testdrive-touch-controls" id="testdrive-touch-controls">
+                            <div class="touch-steering-group">
+                                <button type="button" class="touch-btn touch-btn-steer" id="btn-touch-steer-left">
+                                    <i class="fa-solid fa-chevron-left"></i>
+                                </button>
+                                <button type="button" class="touch-btn touch-btn-steer" id="btn-touch-steer-right">
+                                    <i class="fa-solid fa-chevron-right"></i>
+                                </button>
+                            </div>
+                            <div class="touch-pedal-group">
+                                <button type="button" class="touch-btn touch-btn-brake" id="btn-touch-brake">
+                                    <i class="fa-solid fa-stop"></i>
+                                    <span>REM</span>
+                                </button>
+                                <button type="button" class="touch-btn touch-btn-gas" id="btn-touch-gas">
+                                    <i class="fa-solid fa-forward-fast"></i>
+                                    <span>GAS</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="testdrive-keyboard-hint">
+                            <span><i class="fa-solid fa-keyboard"></i> PC: <strong>W/↑</strong> Gas • <strong>S/↓</strong> Rem • <strong>A/D</strong> Belok • <strong>R</strong> Reset</span>
+                        </div>
+                    </div>
+
+                    <!-- Safety Certificate & Performance Report Card -->
+                    <div class="testdrive-report-panel">
+                        <h4 class="report-title"><i class="fa-solid fa-clipboard-check"></i> Hasil Pengujian Resmi</h4>
+                        <div class="report-stats-grid">
+                            <div class="report-stat-card">
+                                <span class="report-stat-lbl">Akselerasi 0-100</span>
+                                <span class="report-stat-val text-cyan" id="td-report-accel">--</span>
+                                <span class="report-stat-sub" id="td-report-accel-target">Target: --</span>
+                            </div>
+                            <div class="report-stat-card">
+                                <span class="report-stat-lbl">Top Speed Tercapai</span>
+                                <span class="report-stat-val text-green" id="td-report-speed">--</span>
+                                <span class="report-stat-sub" id="td-report-speed-target">Max Potensial: --</span>
+                            </div>
+                            <div class="report-stat-card full-width">
+                                <span class="report-stat-lbl">Rating Keselamatan Uji Tabrak (NCAP)</span>
+                                <div class="report-stars-row" id="td-report-stars-row">
+                                    <span class="report-stars-display" id="td-report-stars">⭐⭐⭐⭐⭐</span>
+                                    <span class="report-cert-badge" id="td-report-cert-badge">SERTIFIKAT LULUS</span>
+                                </div>
+                                <p class="report-defense-desc" id="td-report-desc">
+                                    Lakukan uji tabrak dengan menabrak dinding rintangan di ujung lintasan untuk memvalidasi ketahanan benturan sasis.
+                                </p>
+                            </div>
+                        </div>
+                        <div class="testdrive-footer-tip">
+                            <i class="fa-solid fa-circle-info"></i>
+                            <span>Semua kerusakan tabrakan hanya terjadi di simulator pengujian. Mobil Anda tetap mulus 100% saat dijual ke buyer!</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- ================= PROFILE SETTINGS MODAL ================= -->
         <div id="profile-settings-modal" class="modal-overlay hidden">
             <div class="modal-content profile-settings-content">
@@ -970,6 +1090,6 @@
     <!-- Application Logic -->
     <script src="data.js?v=2"></script>
     <script src="car_photos.js?v=2"></script>
-    <script src="app.js?v=12"></script>
+    <script src="app.js?v=13"></script>
 </body>
 </html>

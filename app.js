@@ -311,6 +311,7 @@ const LANG = {
         btn_reset: 'Hapus Data & Reset Game',
         btn_hub: 'Hub',
         btn_sell_car: 'Jual Mobil',
+        btn_test_drive: 'Uji Coba Mobil',
         studio_cash: 'Kas',
         canvas_alert: 'Klik komponen untuk memilihnya. Seret untuk memindahkan. Tahan kursor / klik kanan komponen untuk info.',
         rot_horizontal: 'Horizontal',
@@ -403,6 +404,7 @@ const LANG = {
         btn_reset: 'Wipe Data & Reset Game',
         btn_hub: 'Hub',
         btn_sell_car: 'Sell Car',
+        btn_test_drive: 'Test Drive',
         studio_cash: 'Cash',
         canvas_alert: 'Click a part to select. Drag to move. Hover / right-click for component stats.',
         rot_horizontal: 'Horizontal',
@@ -566,6 +568,8 @@ function applyAllTranslations() {
     if (btnBackHub) btnBackHub.innerHTML = `<i class="fa-solid fa-arrow-left"></i> ${t.btn_hub}`;
     const btnLaunchSell = document.getElementById('btn-launch-sell');
     if (btnLaunchSell) btnLaunchSell.innerHTML = `<i class="fa-solid fa-rocket"></i> ${t.btn_sell_car}`;
+    const btnTestDrive = document.getElementById('btn-studio-test-drive');
+    if (btnTestDrive) btnTestDrive.innerHTML = `<i class="fa-solid fa-gauge-high"></i> ${t.btn_test_drive}`;
 
     const studioWalletInd = document.querySelector('.studio-wallet-indicator');
     if (studioWalletInd) studioWalletInd.childNodes[0].nodeValue = `${t.studio_cash}: `;
@@ -3929,6 +3933,7 @@ function setupProfileModalListeners() {
 }
 
 function setupGlobalEventListeners() {
+    setupTestDriveEventListeners();
     setupProfileModalListeners();
     // Open catalog button in slots & clicking the empty workspace slot dashed area
     document.querySelectorAll('.btn-open-dealer').forEach((btn, index) => {
@@ -5297,3 +5302,654 @@ function handleAvatarFileUpload(file) {
     };
     reader.readAsDataURL(file);
 }
+
+
+// ============================================================
+// TEST DRIVE & CRASH SIMULATION SYSTEM (THREE.JS 3D)
+// ============================================================
+
+let testDrive3D = {
+    renderer: null,
+    scene: null,
+    camera: null,
+    carGroup: null,
+    wheels: [],
+    animationId: null,
+    clock: new THREE.Clock(),
+    roadGroup: null,
+    barrierMesh: null,
+    particles: []
+};
+
+let testDriveState = {
+    active: false,
+    autopilot: false,
+    speed: 0, // current km/h
+    targetTopSpeed: 200,
+    targetAccelTime: 5.0, // seconds to 100
+    targetDefense: 50,
+    carX: 0,
+    carZ: 0,
+    carSteer: 0,
+    isCrashed: false,
+    crashImpactForce: 0,
+    crashStars: 5,
+    crashedPartDeltas: [],
+    startTime: 0,
+    hit100Time: null,
+    maxSpeedReached: 0,
+    inputs: {
+        gas: false,
+        brake: false,
+        left: false,
+        right: false
+    }
+};
+
+function calculateCurrentCarStats() {
+    if (activeSlotIndex === null || !gameState.slots[activeSlotIndex] || !gameState.slots[activeSlotIndex].occupied) {
+        return { speed: 200, accel: 6.0, eco: 50, flex: 20, defense: 50 };
+    }
+    const slot = gameState.slots[activeSlotIndex];
+    const carModel = CARS_CATALOG.find(c => c.id === slot.car.carId);
+    let speed = carModel.stats.speed;
+    let accel = carModel.stats.accel;
+    let eco = carModel.stats.eco;
+    let flex = carModel.stats.flex;
+    let defense = carModel.stats.defense;
+
+    placedParts.forEach(p => {
+        speed += p.effect.speed;
+        accel += p.effect.accel;
+        eco += p.effect.eco;
+        flex += p.effect.flex;
+        defense += p.effect.defense;
+    });
+
+    return {
+        speed: Math.max(40, Math.min(650, speed)),
+        accel: Math.max(0.6, Math.min(25.0, accel)),
+        eco: Math.max(0, Math.min(100, eco)),
+        flex: Math.max(0, Math.min(100, flex)),
+        defense: Math.max(0, Math.min(100, defense))
+    };
+}
+
+function initTestDriveScene() {
+    const container = document.getElementById('testdrive-3d-stage');
+    if (!container) return;
+
+    if (testDrive3D.renderer) {
+        cancelAnimationFrame(testDrive3D.animationId);
+        container.innerHTML = '';
+        testDrive3D.renderer.dispose();
+    }
+
+    const w = container.clientWidth || 800;
+    const h = container.clientHeight || 380;
+
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x060911);
+    scene.fog = new THREE.FogExp2(0x060911, 0.008);
+
+    const camera = new THREE.PerspectiveCamera(45, w / h, 0.1, 800);
+    camera.position.set(0, 3.8, 9.5);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(w, h);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    container.appendChild(renderer.domElement);
+
+    // Lighting
+    const amb = new THREE.AmbientLight(0xffffff, 1.2);
+    scene.add(amb);
+    const sun = new THREE.DirectionalLight(0xffffff, 1.8);
+    sun.position.set(15, 30, 20);
+    scene.add(sun);
+    const neonRim = new THREE.DirectionalLight(0x00ffcc, 1.0);
+    neonRim.position.set(-15, 10, -20);
+    scene.add(neonRim);
+
+    // Build Road & Proving Ground Environment
+    const roadGroup = new THREE.Group();
+    scene.add(roadGroup);
+
+    // Long Asphalt Track (Straight drag line 500m long, Z from +20 to -480)
+    const roadGeo = new THREE.PlaneGeometry(16, 600);
+    const roadMat = new THREE.MeshStandardMaterial({ color: 0x181a1f, roughness: 0.85 });
+    const roadMesh = new THREE.Mesh(roadGeo, roadMat);
+    roadMesh.rotation.x = -Math.PI / 2;
+    roadMesh.position.set(0, -0.01, -230);
+    roadGroup.add(roadMesh);
+
+    // Side curbs / Rumble strips
+    const curbGeo = new THREE.BoxGeometry(0.8, 0.2, 600);
+    const curbMatL = new THREE.MeshStandardMaterial({ color: 0xd90429, roughness: 0.6 });
+    const curbMatR = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.6 });
+    const curbL = new THREE.Mesh(curbGeo, curbMatL);
+    curbL.position.set(-8.4, 0.08, -230);
+    roadGroup.add(curbL);
+    const curbR = new THREE.Mesh(curbGeo, curbMatR);
+    curbR.position.set(8.4, 0.08, -230);
+    roadGroup.add(curbR);
+
+    // Dashed Center Markings
+    for (let z = 10; z > -450; z -= 14) {
+        const stripeGeo = new THREE.PlaneGeometry(0.35, 7);
+        const stripeMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+        const stripe = new THREE.Mesh(stripeGeo, stripeMat);
+        stripe.rotation.x = -Math.PI / 2;
+        stripe.position.set(0, 0.01, z);
+        roadGroup.add(stripe);
+    }
+
+    // Distance Markers along the track (0m, 100m, 250m, 400m)
+    const markerDistances = [
+        { z: 0, text: 'START' },
+        { z: -100, text: '100M' },
+        { z: -250, text: '250M' },
+        { z: -400, text: '400M' }
+    ];
+    markerDistances.forEach(m => {
+        const poleGeo = new THREE.BoxGeometry(0.3, 5, 0.3);
+        const poleMat = new THREE.MeshStandardMaterial({ color: 0x444444 });
+        const poleL = new THREE.Mesh(poleGeo, poleMat);
+        poleL.position.set(-9.5, 2.5, m.z);
+        roadGroup.add(poleL);
+        const poleR = new THREE.Mesh(poleGeo, poleMat);
+        poleR.position.set(9.5, 2.5, m.z);
+        roadGroup.add(poleR);
+
+        const bannerGeo = new THREE.BoxGeometry(19, 1.2, 0.2);
+        const bannerMat = new THREE.MeshStandardMaterial({ color: 0x00d2ff, roughness: 0.3 });
+        const banner = new THREE.Mesh(bannerGeo, bannerMat);
+        banner.position.set(0, 5, m.z);
+        roadGroup.add(banner);
+    });
+
+    // Safety Crash Barrier at Z = -450
+    const barrierGroup = new THREE.Group();
+    const wallGeo = new THREE.BoxGeometry(16, 4.5, 4);
+    const wallMat = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.6 });
+    const wallMesh = new THREE.Mesh(wallGeo, wallMat);
+    wallMesh.position.set(0, 2.25, -450);
+    barrierGroup.add(wallMesh);
+
+    // Yellow & Black Hazard Stripes on front face
+    for (let i = -7; i <= 7; i += 2) {
+        const stripeGeo = new THREE.BoxGeometry(1, 4.2, 0.1);
+        const stripeMat = new THREE.MeshBasicMaterial({ color: 0xffcc00 });
+        const stripe = new THREE.Mesh(stripeGeo, stripeMat);
+        stripe.position.set(i, 2.25, -447.9);
+        barrierGroup.add(stripe);
+    }
+    scene.add(barrierGroup);
+
+    testDrive3D.scene = scene;
+    testDrive3D.camera = camera;
+    testDrive3D.renderer = renderer;
+    testDrive3D.roadGroup = roadGroup;
+    testDrive3D.barrierMesh = barrierGroup;
+
+    // Window resize handler
+    window.addEventListener('resize', onTestDriveResize);
+
+    function onTestDriveResize() {
+        if (!testDriveState.active || !testDrive3D.renderer || !testDrive3D.camera) return;
+        const newW = container.clientWidth || 800;
+        const newH = container.clientHeight || 380;
+        testDrive3D.camera.aspect = newW / newH;
+        testDrive3D.camera.updateProjectionMatrix();
+        testDrive3D.renderer.setSize(newW, newH);
+    }
+}
+
+function spawnTestDriveCar() {
+    if (!testDrive3D.scene) return;
+    if (testDrive3D.carGroup) {
+        dispose3DObject(testDrive3D.carGroup);
+        testDrive3D.scene.remove(testDrive3D.carGroup);
+        testDrive3D.carGroup = null;
+    }
+
+    testDrive3D.wheels = [];
+    testDrive3D.particles = [];
+
+    // Build fresh cloned car
+    testDrive3D.carGroup = create3DCarGroup(
+        currentChassis,
+        carColor,
+        placedParts,
+        testDrive3D.wheels,
+        null,
+        null
+    );
+
+    // Set initial position at track start
+    testDrive3D.carGroup.position.set(0, 0, 0);
+    testDrive3D.carGroup.rotation.set(0, Math.PI, 0); // Face forward towards -Z (barrier at -450)
+    testDrive3D.scene.add(testDrive3D.carGroup);
+}
+
+function openTestDriveModal() {
+    const modal = document.getElementById('testdrive-modal');
+    if (!modal) return;
+
+    const stats = calculateCurrentCarStats();
+    testDriveState.targetTopSpeed = stats.speed;
+    testDriveState.targetAccelTime = stats.accel;
+    testDriveState.targetDefense = stats.defense;
+
+    // Set Car Title
+    const slot = gameState.slots[activeSlotIndex];
+    const carModel = (slot && slot.car) ? CARS_CATALOG.find(c => c.id === slot.car.carId) : null;
+    const carNameEl = document.getElementById('testdrive-car-name');
+    if (carNameEl) carNameEl.innerText = carModel ? carModel.name.toUpperCase() : 'PROTOTYPE VEHICLE';
+
+    // Set Targets in Report
+    const targetAccelEl = document.getElementById('td-report-accel-target');
+    if (targetAccelEl) targetAccelEl.innerText = `Target Desain: ${stats.accel.toFixed(1)}s`;
+    const targetSpeedEl = document.getElementById('td-report-speed-target');
+    if (targetSpeedEl) targetSpeedEl.innerText = `Max Potensial: ${stats.speed} km/h`;
+
+    // Reset records & inputs
+    resetTestDriveRun();
+
+    modal.classList.remove('hidden');
+    testDriveState.active = true;
+
+    // Initialize 3D scene & car
+    initTestDriveScene();
+    spawnTestDriveCar();
+
+    testDrive3D.clock.start();
+    animateTestDrive();
+}
+
+function closeTestDriveModal() {
+    testDriveState.active = false;
+    cancelAnimationFrame(testDrive3D.animationId);
+
+    const modal = document.getElementById('testdrive-modal');
+    if (modal) modal.classList.add('hidden');
+
+    // Clean up temporary crash deformations and restore studio 3D model
+    updateStudio3DModel();
+}
+
+function resetTestDriveRun() {
+    testDriveState.speed = 0;
+    testDriveState.carX = 0;
+    testDriveState.carZ = 0;
+    testDriveState.carSteer = 0;
+    testDriveState.isCrashed = false;
+    testDriveState.crashImpactForce = 0;
+    testDriveState.hit100Time = null;
+    testDriveState.maxSpeedReached = 0;
+    testDriveState.startTime = null;
+
+    testDriveState.inputs.gas = false;
+    testDriveState.inputs.brake = false;
+    testDriveState.inputs.left = false;
+    testDriveState.inputs.right = false;
+
+    // Reset UI HUD
+    const speedVal = document.getElementById('td-speed-val');
+    if (speedVal) speedVal.innerText = '0';
+    const speedFill = document.getElementById('td-speed-fill');
+    if (speedFill) speedFill.style.width = '0%';
+    const banner = document.getElementById('td-status-banner');
+    if (banner) banner.classList.add('hidden');
+
+    const accelRec = document.getElementById('td-accel-record');
+    if (accelRec) accelRec.innerText = '--';
+    const topRec = document.getElementById('td-topspeed-record');
+    if (topRec) topRec.innerText = '--';
+
+    const reportAccel = document.getElementById('td-report-accel');
+    if (reportAccel) reportAccel.innerText = '--';
+    const reportSpeed = document.getElementById('td-report-speed');
+    if (reportSpeed) reportSpeed.innerText = '--';
+
+    const starsEl = document.getElementById('td-crash-stars');
+    const reportStars = document.getElementById('td-report-stars');
+    const initialStars = getNCAPStarsText(testDriveState.targetDefense);
+    if (starsEl) starsEl.innerText = initialStars;
+    if (reportStars) reportStars.innerText = initialStars;
+
+    const certBadge = document.getElementById('td-report-cert-badge');
+    if (certBadge) {
+        certBadge.innerText = 'STANDAR PABRIK';
+        certBadge.style.color = 'var(--text-muted)';
+        certBadge.style.borderColor = 'var(--border-color)';
+    }
+
+    const descEl = document.getElementById('td-report-desc');
+    if (descEl) {
+        descEl.innerText = currentLang === 'id'
+            ? 'Lakukan uji coba melaju dan tabrak dinding rintangan di ujung lintasan untuk menguji ketahanan bodi!'
+            : 'Drive down the strip and impact the barrier at the end to validate chassis crash resistance!';
+    }
+
+    // Reset 3D Car position
+    if (testDrive3D.carGroup) {
+        testDrive3D.carGroup.position.set(0, 0, 0);
+        testDrive3D.carGroup.rotation.set(0, Math.PI, 0);
+        testDrive3D.carGroup.scale.set(1, 1, 1);
+    }
+}
+
+function getNCAPStarsText(defenseVal) {
+    let stars = 5;
+    if (defenseVal >= 80) stars = 5;
+    else if (defenseVal >= 60) stars = 4;
+    else if (defenseVal >= 40) stars = 3;
+    else if (defenseVal >= 20) stars = 2;
+    else stars = 1;
+
+    let str = '';
+    for (let i = 0; i < 5; i++) {
+        str += i < stars ? '⭐' : '☆';
+    }
+    return str;
+}
+
+function triggerCrashImpact(impactSpeed) {
+    if (testDriveState.isCrashed) return;
+    testDriveState.isCrashed = true;
+    testDriveState.speed = 0;
+    testDriveState.crashImpactForce = impactSpeed;
+
+    const defense = testDriveState.targetDefense; // 0 to 100
+    // Higher defense = less damage, higher stars
+    let stars = 1;
+    if (defense >= 80) stars = 5;
+    else if (defense >= 60) stars = 4;
+    else if (defense >= 40) stars = 3;
+    else if (defense >= 20) stars = 2;
+    else stars = 1;
+    testDriveState.crashStars = stars;
+
+    // Visual camera shake and car crumple effect in simulation
+    if (testDrive3D.carGroup) {
+        // Squish front along Z-axis slightly based on impact
+        const crumpleRatio = Math.max(0.65, 1.0 - (impactSpeed / 700) * (1.1 - defense / 100));
+        testDrive3D.carGroup.scale.z = crumpleRatio;
+        testDrive3D.carGroup.position.y = 0.25;
+        testDrive3D.carGroup.rotation.z = (Math.random() - 0.5) * 0.15;
+    }
+
+    // Update banner & UI
+    const banner = document.getElementById('td-status-banner');
+    const bannerText = document.getElementById('td-status-text');
+    if (banner && bannerText) {
+        bannerText.innerHTML = `⚠️ CRASH TEST IMPACT! (${Math.round(impactSpeed)} KM/H)`;
+        banner.classList.remove('hidden');
+    }
+
+    const starsStr = getNCAPStarsText(defense);
+    const hudStars = document.getElementById('td-crash-stars');
+    if (hudStars) hudStars.innerText = starsStr;
+
+    const reportStars = document.getElementById('td-report-stars');
+    if (reportStars) reportStars.innerText = starsStr;
+
+    const certBadge = document.getElementById('td-report-cert-badge');
+    if (certBadge) {
+        if (stars >= 4) {
+            certBadge.innerText = 'SERTIFIKAT LULUS (AMAN)';
+            certBadge.style.color = 'var(--green)';
+            certBadge.style.borderColor = 'var(--green)';
+        } else if (stars === 3) {
+            certBadge.innerText = 'SERTIFIKAT LULUS (STANDAR)';
+            certBadge.style.color = '#ffaa00';
+            certBadge.style.borderColor = '#ffaa00';
+        } else {
+            certBadge.innerText = 'RENTAN KERUSAKAN';
+            certBadge.style.color = 'var(--red)';
+            certBadge.style.borderColor = 'var(--red)';
+        }
+    }
+
+    const descEl = document.getElementById('td-report-desc');
+    if (descEl) {
+        descEl.innerText = currentLang === 'id'
+            ? `Mobil menabrak dinding pada kecepatan ${Math.round(impactSpeed)} km/h. Struktur sasis menyerap benturan dengan skor pertahanan ${defense}%. (Mobil akan otomatis mulus 100% saat Anda kembali ke studio / menjualnya).`
+            : `Vehicle struck barrier at ${Math.round(impactSpeed)} km/h. Chassis absorbed energy with defense score of ${defense}%. (Vehicle will be 100% pristine upon returning to studio / selling).`;
+    }
+}
+
+function updateTestDrivePhysics(dt) {
+    if (!testDriveState.active) return;
+
+    if (testDriveState.isCrashed) {
+        testDriveState.speed = 0;
+        return;
+    }
+
+    // Auto-pilot behavior
+    if (testDriveState.autopilot) {
+        // Accelerate hard until approaching crash barrier (at Z = -450)
+        if (testDriveState.carZ > -440) {
+            testDriveState.inputs.gas = true;
+            testDriveState.inputs.brake = false;
+        }
+        // Center the car on track
+        if (testDriveState.carX > 0.3) {
+            testDriveState.inputs.left = true;
+            testDriveState.inputs.right = false;
+        } else if (testDriveState.carX < -0.3) {
+            testDriveState.inputs.right = true;
+            testDriveState.inputs.left = false;
+        } else {
+            testDriveState.inputs.left = false;
+            testDriveState.inputs.right = false;
+        }
+    }
+
+    // Determine target acceleration rate
+    // 0 to 100 km/h in targetAccelTime seconds
+    // Rate in km/h per second = 100 / targetAccelTime
+    const accelRate = 100 / Math.max(1.0, testDriveState.targetAccelTime);
+    const brakeRate = 180; // km/h per sec
+    const naturalDrag = 25; // km/h per sec
+
+    // Input processing
+    if (testDriveState.inputs.gas) {
+        if (!testDriveState.startTime && testDriveState.speed < 5) {
+            testDriveState.startTime = performance.now();
+        }
+        testDriveState.speed = Math.min(testDriveState.targetTopSpeed, testDriveState.speed + accelRate * dt);
+    } else if (testDriveState.inputs.brake) {
+        testDriveState.speed = Math.max(0, testDriveState.speed - brakeRate * dt);
+    } else {
+        testDriveState.speed = Math.max(0, testDriveState.speed - naturalDrag * dt);
+    }
+
+    // Track 0-100 km/h time record
+    if (testDriveState.startTime && !testDriveState.hit100Time && testDriveState.speed >= 100) {
+        testDriveState.hit100Time = ((performance.now() - testDriveState.startTime) / 1000).toFixed(2);
+        const hudAccel = document.getElementById('td-accel-record');
+        if (hudAccel) hudAccel.innerText = `${testDriveState.hit100Time}s`;
+        const repAccel = document.getElementById('td-report-accel');
+        if (repAccel) repAccel.innerText = `${testDriveState.hit100Time}s`;
+    }
+
+    // Track maximum speed reached
+    if (testDriveState.speed > testDriveState.maxSpeedReached) {
+        testDriveState.maxSpeedReached = Math.round(testDriveState.speed);
+        const hudTop = document.getElementById('td-topspeed-record');
+        if (hudTop) hudTop.innerText = `${testDriveState.maxSpeedReached} km/h`;
+        const repTop = document.getElementById('td-report-speed');
+        if (repTop) repTop.innerText = `${testDriveState.maxSpeedReached} km/h`;
+    }
+
+    // Steering physics
+    const steerSpeed = (testDriveState.speed > 5) ? 4.5 * dt : 0;
+    if (testDriveState.inputs.left) {
+        testDriveState.carX = Math.max(-7.2, testDriveState.carX - steerSpeed);
+        testDriveState.carSteer = Math.max(-0.25, testDriveState.carSteer - 2.0 * dt);
+    } else if (testDriveState.inputs.right) {
+        testDriveState.carX = Math.min(7.2, testDriveState.carX + steerSpeed);
+        testDriveState.carSteer = Math.min(0.25, testDriveState.carSteer + 2.0 * dt);
+    } else {
+        testDriveState.carSteer *= 0.85;
+    }
+
+    // Move forward along -Z axis
+    // speed (km/h) to m/s = speed / 3.6
+    const forwardMps = (testDriveState.speed / 3.6);
+    testDriveState.carZ -= forwardMps * dt;
+
+    // Collision Check with Barrier at Z = -447
+    if (testDriveState.carZ <= -446) {
+        testDriveState.carZ = -446;
+        triggerCrashImpact(testDriveState.speed);
+    }
+
+    // Update 3D mesh position
+    if (testDrive3D.carGroup) {
+        testDrive3D.carGroup.position.x = testDriveState.carX;
+        testDrive3D.carGroup.position.z = testDriveState.carZ;
+        testDrive3D.carGroup.rotation.y = Math.PI - testDriveState.carSteer;
+
+        // Spin wheels based on distance traveled
+        if (testDrive3D.wheels && testDrive3D.wheels.length > 0) {
+            const wheelRot = (forwardMps * dt) / 0.35;
+            testDrive3D.wheels.forEach(w => {
+                if (w) w.rotation.x -= wheelRot;
+            });
+        }
+    }
+
+    // Camera follow car smoothly
+    if (testDrive3D.camera && testDrive3D.carGroup) {
+        testDrive3D.camera.position.x = testDriveState.carX * 0.7;
+        testDrive3D.camera.position.z = testDriveState.carZ + 9.5;
+        testDrive3D.camera.lookAt(testDriveState.carX * 0.3, 1.2, testDriveState.carZ - 8);
+    }
+
+    // Update Telemetry HUD numbers
+    const speedVal = document.getElementById('td-speed-val');
+    if (speedVal) speedVal.innerText = Math.round(testDriveState.speed);
+    const speedFill = document.getElementById('td-speed-fill');
+    if (speedFill) {
+        const pct = Math.min(100, (testDriveState.speed / Math.max(120, testDriveState.targetTopSpeed)) * 100);
+        speedFill.style.width = `${pct}%`;
+    }
+}
+
+function animateTestDrive() {
+    if (!testDriveState.active) return;
+    testDrive3D.animationId = requestAnimationFrame(animateTestDrive);
+
+    const dt = Math.min(0.1, testDrive3D.clock.getDelta());
+    updateTestDrivePhysics(dt);
+
+    if (testDrive3D.renderer && testDrive3D.scene && testDrive3D.camera) {
+        testDrive3D.renderer.render(testDrive3D.scene, testDrive3D.camera);
+    }
+}
+
+function setupTestDriveEventListeners() {
+    // Studio Test Drive launch button
+    const btnTestDrive = document.getElementById('btn-studio-test-drive');
+    if (btnTestDrive) {
+        btnTestDrive.addEventListener('click', () => {
+            if (placedParts.length < 1) {
+                alert(currentLang === 'id' ? 'Pasang komponen terlebih dahulu di studio sebelum uji coba!' : 'Please install car parts before testing!');
+                return;
+            }
+            openTestDriveModal();
+        });
+    }
+
+    // Close button
+    const btnClose = document.getElementById('btn-close-testdrive');
+    if (btnClose) {
+        btnClose.addEventListener('click', closeTestDriveModal);
+    }
+
+    // Reset button
+    const btnReset = document.getElementById('btn-testdrive-reset');
+    if (btnReset) {
+        btnReset.addEventListener('click', resetTestDriveRun);
+    }
+
+    // Autopilot Toggle Button
+    const btnAutopilot = document.getElementById('btn-testdrive-autopilot');
+    if (btnAutopilot) {
+        btnAutopilot.addEventListener('click', () => {
+            testDriveState.autopilot = !testDriveState.autopilot;
+            if (testDriveState.autopilot) {
+                btnAutopilot.classList.add('active');
+                btnAutopilot.innerHTML = `<i class="fa-solid fa-robot"></i> Autopilot: ON`;
+            } else {
+                btnAutopilot.classList.remove('active');
+                btnAutopilot.innerHTML = `<i class="fa-solid fa-robot"></i> Autopilot: OFF`;
+            }
+        });
+    }
+
+    // Keyboard controls (PC)
+    window.addEventListener('keydown', (e) => {
+        if (!testDriveState.active) return;
+        const key = e.key.toLowerCase();
+        if (key === 'w' || key === 'arrowup') {
+            testDriveState.inputs.gas = true;
+        } else if (key === 's' || key === 'arrowdown') {
+            testDriveState.inputs.brake = true;
+        } else if (key === 'a' || key === 'arrowleft') {
+            testDriveState.inputs.left = true;
+        } else if (key === 'd' || key === 'arrowright') {
+            testDriveState.inputs.right = true;
+        } else if (key === 'r') {
+            resetTestDriveRun();
+        } else if (key === 'escape') {
+            closeTestDriveModal();
+        }
+    });
+
+    window.addEventListener('keyup', (e) => {
+        if (!testDriveState.active) return;
+        const key = e.key.toLowerCase();
+        if (key === 'w' || key === 'arrowup') {
+            testDriveState.inputs.gas = false;
+        } else if (key === 's' || key === 'arrowdown') {
+            testDriveState.inputs.brake = false;
+        } else if (key === 'a' || key === 'arrowleft') {
+            testDriveState.inputs.left = false;
+        } else if (key === 'd' || key === 'arrowright') {
+            testDriveState.inputs.right = false;
+        }
+    });
+
+    // Touchscreen Controls (Mobile / HP)
+    const btnGas = document.getElementById('btn-touch-gas');
+    const btnBrake = document.getElementById('btn-touch-brake');
+    const btnSteerL = document.getElementById('btn-touch-steer-left');
+    const btnSteerR = document.getElementById('btn-touch-steer-right');
+
+    function bindTouchButton(btn, inputProp) {
+        if (!btn) return;
+        const setPress = (val) => {
+            testDriveState.inputs[inputProp] = val;
+            if (val) btn.classList.add('active');
+            else btn.classList.remove('active');
+        };
+
+        btn.addEventListener('touchstart', (e) => { e.preventDefault(); setPress(true); }, { passive: false });
+        btn.addEventListener('touchend', (e) => { e.preventDefault(); setPress(false); }, { passive: false });
+        btn.addEventListener('touchcancel', (e) => { e.preventDefault(); setPress(false); }, { passive: false });
+
+        btn.addEventListener('mousedown', () => setPress(true));
+        btn.addEventListener('mouseup', () => setPress(false));
+        btn.addEventListener('mouseleave', () => setPress(false));
+    }
+
+    bindTouchButton(btnGas, 'gas');
+    bindTouchButton(btnBrake, 'brake');
+    bindTouchButton(btnSteerL, 'left');
+    bindTouchButton(btnSteerR, 'right');
+}
+
