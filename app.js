@@ -880,6 +880,27 @@ function create3DCarGroup(chassisType, colorHex, parts, wheelsArrayRef, smokePar
         metalness: 0.2
     });
 
+    // Black Matte Material
+    const blackMaterial = new THREE.MeshStandardMaterial({
+        color: 0x151515,
+        roughness: 0.85,
+        metalness: 0.1
+    });
+
+    // Gold Trim Material
+    const goldMaterial = new THREE.MeshStandardMaterial({
+        color: 0xd4af37,
+        metalness: 0.95,
+        roughness: 0.15
+    });
+
+    // Titanium Burnt Blue Material
+    const burntTitaniumMaterial = new THREE.MeshStandardMaterial({
+        color: 0x0088ff,
+        metalness: 0.9,
+        roughness: 0.15
+    });
+
     // Chrome Trim
     const chromeMaterial = new THREE.MeshStandardMaterial({
         color: 0xffffff,
@@ -887,8 +908,19 @@ function create3DCarGroup(chassisType, colorHex, parts, wheelsArrayRef, smokePar
         roughness: 0.05
     });
 
-    let isLowered = parts.some(p => p.templateId === "suspension-ceper");
-    let yOffset = isLowered ? -0.16 : 0.0;
+    // 0. SUSPENSION TUNING HEIGHT & OFFSET
+    let isCeper = parts.some(p => p.templateId === "suspension-ceper");
+    let isAirSuspension = parts.some(p => p.templateId === "suspension-air");
+    let isLiftkit = parts.some(p => p.templateId === "suspension-liftkit");
+
+    let yOffset = 0.0;
+    if (isCeper) {
+        yOffset = -0.16; // Lowered aggressive stance
+    } else if (isAirSuspension) {
+        yOffset = -0.12; // Slammed luxury air suspension
+    } else if (isLiftkit) {
+        yOffset = +0.20; // High ground clearance offroad stance
+    }
 
     // 1. CAR BODY SHAPES (Procedural Detailed)
     let bodyLower, cabin;
@@ -992,47 +1024,81 @@ function create3DCarGroup(chassisType, colorHex, parts, wheelsArrayRef, smokePar
 
     group.add(exhaustUnder, driveShaft, fuelTank, enginePan);
 
-    // 2. STICKER DECALS (3D Mesh Layering)
+    // 2. STICKER DECALS (3D Mesh Layering with realistic car body alignment)
     if (hasCarbonHood && bodyLower) {
-        // Kap depan hitam bermaterial karbon
-        const hoodCarbon = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.02, 1.5), carbonMaterial);
-        hoodCarbon.position.set(1.4, 0.66 + yOffset, 0);
+        // Kap depan hitam bermaterial serat karbon 5D dengan texture grid
+        const hoodCarbon = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.02, 1.55), carbonMaterial);
+        let hoodY = chassisType === 'suv' ? 0.95 : chassisType === 'sports' ? 0.52 : chassisType === 'pickup' ? 0.78 : 0.67;
+        hoodCarbon.position.set(1.35, hoodY + yOffset, 0);
         group.add(hoodCarbon);
     }
     if (hasRacingStripes) {
-        // Dua garis balap putih di kap mesin & atap
-        const stripe1 = new THREE.Mesh(new THREE.BoxGeometry(4.2, 0.015, 0.12), new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.1 }));
-        stripe1.position.set(0, 0.66 + yOffset, 0.15);
-        const stripe2 = new THREE.Mesh(new THREE.BoxGeometry(4.2, 0.015, 0.12), new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.1 }));
-        stripe2.position.set(0, 0.66 + yOffset, -0.15);
+        // Dua garis balap putih di kap mesin, atap, dan bagasi belakang
+        const stripeMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.1 });
+        let hoodLen = chassisType === 'suv' ? 4.1 : chassisType === 'hatchback' ? 3.8 : 4.4;
+        let stripeY = chassisType === 'suv' ? 0.94 : chassisType === 'sports' ? 0.51 : 0.67;
+        const stripe1 = new THREE.Mesh(new THREE.BoxGeometry(hoodLen, 0.02, 0.14), stripeMat);
+        stripe1.position.set(0, stripeY + yOffset, 0.16);
+        const stripe2 = new THREE.Mesh(new THREE.BoxGeometry(hoodLen, 0.02, 0.14), stripeMat);
+        stripe2.position.set(0, stripeY + yOffset, -0.16);
         group.add(stripe1, stripe2);
     }
     if (hasFlameDecal) {
-        // Decal api di samping pintu kiri & kanan
-        const flameMat = new THREE.MeshBasicMaterial({ color: 0xff3c00, transparent: true, opacity: 0.9 });
-        const flameL = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.22, 0.02), flameMat);
-        flameL.position.set(-0.2, 0.48 + yOffset, 0.91);
-        flameL.rotation.y = Math.PI / 180 * 2;
-        const flameR = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.22, 0.02), flameMat);
-        flameR.position.set(-0.2, 0.48 + yOffset, -0.91);
-        flameR.rotation.y = -Math.PI / 180 * 2;
-        group.add(flameL, flameR);
+        // Decal api di samping pintu kiri & kanan (Gradasi api merah ke emas)
+        const flameMatRed = new THREE.MeshBasicMaterial({ color: 0xff2200, transparent: true, opacity: 0.95 });
+        const flameMatGold = new THREE.MeshBasicMaterial({ color: 0xffaa00, transparent: true, opacity: 0.95 });
+        const zSide = chassisType === 'suv' ? 0.94 : 0.92;
+        let sideY = chassisType === 'suv' ? 0.65 : 0.48;
+
+        const flameL1 = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.22, 0.02), flameMatRed);
+        flameL1.position.set(-0.2, sideY + yOffset, zSide);
+        const flameL2 = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.12, 0.022), flameMatGold);
+        flameL2.position.set(-0.1, sideY - 0.03 + yOffset, zSide + 0.002);
+
+        const flameR1 = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.22, 0.02), flameMatRed);
+        flameR1.position.set(-0.2, sideY + yOffset, -zSide);
+        const flameR2 = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.12, 0.022), flameMatGold);
+        flameR2.position.set(-0.1, sideY - 0.03 + yOffset, -zSide - 0.002);
+
+        group.add(flameL1, flameL2, flameR1, flameR2);
     }
     if (hasSakuraDecal) {
-        const sakuraMat = new THREE.MeshBasicMaterial({ color: 0xffa3be, transparent: true, opacity: 0.85 });
-        const sakuraL = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.25, 0.02), sakuraMat);
-        sakuraL.position.set(0.1, 0.48 + yOffset, 0.91);
-        const sakuraR = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.25, 0.02), sakuraMat);
-        sakuraR.position.set(0.1, 0.48 + yOffset, -0.91);
-        group.add(sakuraL, sakuraR);
+        // Grafis bunga sakura mekar di kedua sisi bodi
+        const sakuraMatPink = new THREE.MeshBasicMaterial({ color: 0xffa3be, transparent: true, opacity: 0.9 });
+        const sakuraMatWhite = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.85 });
+        const zSide = chassisType === 'suv' ? 0.94 : 0.92;
+        let sideY = chassisType === 'suv' ? 0.65 : 0.48;
+
+        const sakuraL = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.28, 0.02), sakuraMatPink);
+        sakuraL.position.set(0.1, sideY + yOffset, zSide);
+        const petlL = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.14, 0.022), sakuraMatWhite);
+        petlL.position.set(0.5, sideY + 0.08 + yOffset, zSide + 0.002);
+
+        const sakuraR = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.28, 0.02), sakuraMatPink);
+        sakuraR.position.set(0.1, sideY + yOffset, -zSide);
+        const petlR = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.14, 0.022), sakuraMatWhite);
+        petlR.position.set(0.5, sideY + 0.08 + yOffset, -zSide - 0.002);
+
+        group.add(sakuraL, petlL, sakuraR, petlR);
     }
     if (hasSponsorDecals) {
-        const sponsorMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.9 });
-        const sponsorL = new THREE.Mesh(new THREE.BoxGeometry(1.0, 0.08, 0.02), sponsorMat);
-        sponsorL.position.set(-0.3, 0.25 + yOffset, 0.91);
-        const sponsorR = new THREE.Mesh(new THREE.BoxGeometry(1.0, 0.08, 0.02), sponsorMat);
-        sponsorR.position.set(-0.3, 0.25 + yOffset, -0.91);
-        group.add(sponsorL, sponsorR);
+        // Paket stiker sponsor balap motorsport profesional
+        const sponsorMat = new THREE.MeshBasicMaterial({ color: 0xf5f5f5, transparent: true, opacity: 0.95 });
+        const sponsorMatCyan = new THREE.MeshBasicMaterial({ color: 0x00ffcc, transparent: true, opacity: 0.95 });
+        const zSide = chassisType === 'suv' ? 0.94 : 0.92;
+        let sideY = chassisType === 'suv' ? 0.45 : 0.30;
+
+        const spL1 = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.10, 0.02), sponsorMat);
+        spL1.position.set(-0.3, sideY + yOffset, zSide);
+        const spL2 = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.06, 0.022), sponsorMatCyan);
+        spL2.position.set(0.5, sideY + yOffset, zSide + 0.002);
+
+        const spR1 = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.10, 0.02), sponsorMat);
+        spR1.position.set(-0.3, sideY + yOffset, -zSide);
+        const spR2 = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.06, 0.022), sponsorMatCyan);
+        spR2.position.set(0.5, sideY + yOffset, -zSide - 0.002);
+
+        group.add(spL1, spL2, spR1, spR2);
     }
 
     // 3. INTERIOR DETAILS
@@ -1176,7 +1242,7 @@ function create3DCarGroup(chassisType, colorHex, parts, wheelsArrayRef, smokePar
         }
         wGroup.add(rimGroup);
 
-        // Brake Caliper (Tidak berputar dengan roda)
+        // Brake Caliper & Disc
         const brakeCaliperGroup = new THREE.Group();
         const disk = new THREE.Mesh(new THREE.CylinderGeometry(wRadius * 0.45, wRadius * 0.45, 0.06, 12), chromeMaterial);
         disk.rotateX(Math.PI / 2);
@@ -1185,6 +1251,19 @@ function create3DCarGroup(chassisType, colorHex, parts, wheelsArrayRef, smokePar
         brakeCaliperGroup.add(disk, caliper);
         brakeCaliperGroup.position.set(x, wRadius - 0.1, z * 0.9);
         group.add(brakeCaliperGroup);
+
+        // Suspensi Coilover Spring & Damper Visual
+        const strutGroup = new THREE.Group();
+        const springMat = isCeper ? new THREE.MeshStandardMaterial({ color: 0xff3300, metalness: 0.8, roughness: 0.2 }) :
+                          isAirSuspension ? new THREE.MeshStandardMaterial({ color: 0x00ffff, metalness: 0.9, roughness: 0.1 }) :
+                          isLiftkit ? new THREE.MeshStandardMaterial({ color: 0xffaa00, metalness: 0.8, roughness: 0.3 }) :
+                          new THREE.MeshStandardMaterial({ color: 0x555555, metalness: 0.7, roughness: 0.4 });
+        
+        const shockPiston = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.45 + Math.abs(yOffset)), chromeMaterial);
+        const shockSpring = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.35 + Math.abs(yOffset), 12, 1, true), springMat);
+        strutGroup.add(shockPiston, shockSpring);
+        strutGroup.position.set(x, wRadius + 0.12 + yOffset * 0.5, z * 0.78);
+        group.add(strutGroup);
 
         wGroup.position.set(x, wRadius - 0.1, z);
         
@@ -1211,7 +1290,7 @@ function create3DCarGroup(chassisType, colorHex, parts, wheelsArrayRef, smokePar
 
     // 6. DYNAMIC EXTRAS / PARTS
     parts.forEach(part => {
-        if (part.templateId.startsWith('wheel-') || part.templateId === "suspension-ceper" || part.templateId.startsWith('sticker-')) return;
+        if (part.templateId.startsWith('wheel-') || part.templateId.startsWith('suspension-') || part.templateId.startsWith('sticker-')) return;
 
         const partMeshGroup = new THREE.Group();
 
@@ -1291,10 +1370,50 @@ function create3DCarGroup(chassisType, colorHex, parts, wheelsArrayRef, smokePar
         }
         
         else if (part.templateId.includes('exhaust-')) {
-            const tip = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.45), chromeMaterial);
-            tip.rotation.z = Math.PI / 2;
-            partMeshGroup.add(tip);
-            partMeshGroup.position.set(-2.18, 0.22 + yOffset, 0.55);
+            const exhaustGroup = new THREE.Group();
+            let exhaustZ = 0.55;
+            let exhaustTipMat = chromeMaterial;
+            let tipRadius = 0.08;
+            let tipLength = 0.45;
+
+            if (part.templateId === 'exhaust-straight') {
+                // Straight pipe: raw steel, single angled large bore pipe
+                tipRadius = 0.095;
+                const straightPipe = new THREE.Mesh(new THREE.CylinderGeometry(tipRadius, tipRadius, 0.55, 16), chromeMaterial);
+                straightPipe.rotation.z = Math.PI / 2 + 0.12; // Slight upward raw drift tilt
+                straightPipe.rotation.y = -0.08;
+                exhaustGroup.add(straightPipe);
+            } else if (part.templateId === 'exhaust-dual-sport') {
+                // Dual exit cat-back: two chrome tips side-by-side
+                const tipL = new THREE.Mesh(new THREE.CylinderGeometry(0.065, 0.065, 0.45, 16), chromeMaterial);
+                tipL.rotation.z = Math.PI / 2;
+                tipL.position.set(0, 0, 0.10);
+                const tipR = new THREE.Mesh(new THREE.CylinderGeometry(0.065, 0.065, 0.45, 16), chromeMaterial);
+                tipR.rotation.z = Math.PI / 2;
+                tipR.position.set(0, 0, -0.10);
+                exhaustGroup.add(tipL, tipR);
+            } else if (part.templateId === 'exhaust-titanium') {
+                // Akrapovic Titanium: dual large burnt-blue titanium tips with carbon mufflers
+                exhaustTipMat = burntTitaniumMaterial;
+                tipRadius = 0.085;
+                const tip1 = new THREE.Mesh(new THREE.CylinderGeometry(tipRadius, tipRadius, 0.5, 16), burntTitaniumMaterial);
+                tip1.rotation.z = Math.PI / 2;
+                tip1.position.set(0, 0, 0.11);
+                const tip2 = new THREE.Mesh(new THREE.CylinderGeometry(tipRadius, tipRadius, 0.5, 16), burntTitaniumMaterial);
+                tip2.rotation.z = Math.PI / 2;
+                tip2.position.set(0, 0, -0.11);
+                const can = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.22, 0.5), carbonMaterial);
+                can.position.set(0.2, 0, 0);
+                exhaustGroup.add(tip1, tip2, can);
+            } else {
+                // Standard OEM muffler & small chrome tip
+                const tip = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 0.42, 16), chromeMaterial);
+                tip.rotation.z = Math.PI / 2;
+                exhaustGroup.add(tip);
+            }
+
+            partMeshGroup.add(exhaustGroup);
+            partMeshGroup.position.set(-2.18, 0.22 + yOffset, exhaustZ);
 
             // Exhaust Smoke Particle System (Local Emitter)
             if (smokeParticlesArrayRef && smokeGroup) {
@@ -1302,8 +1421,8 @@ function create3DCarGroup(chassisType, colorHex, parts, wheelsArrayRef, smokePar
                     const smokeGeo = new THREE.SphereGeometry(0.02 + Math.random() * 0.04, 8, 8);
                     const smokeMat = new THREE.MeshBasicMaterial({ color: 0xcccccc, transparent: true, opacity: 0.0 });
                     const sMesh = new THREE.Mesh(smokeGeo, smokeMat);
-                    // Spawn behind exhaust
-                    sMesh.position.set(-2.3 - Math.random() * 0.2, 0.22 + yOffset, 0.55);
+                    // Spawn behind exhaust tip
+                    sMesh.position.set(-2.3 - Math.random() * 0.2, 0.22 + yOffset, exhaustZ);
                     
                     // Custom state
                     sMesh.userData = {
@@ -1314,7 +1433,7 @@ function create3DCarGroup(chassisType, colorHex, parts, wheelsArrayRef, smokePar
                         speedZ: (Math.random() - 0.5) * 0.2,
                         exhaustX: -2.3,
                         exhaustY: 0.22 + yOffset,
-                        exhaustZ: 0.55
+                        exhaustZ: exhaustZ
                     };
                     
                     smokeParticlesArrayRef.push(sMesh);
@@ -4368,11 +4487,16 @@ const PART_PRO_CON = {
     'engine-electric':       { pro: 'Eco +45, torsi instan',          con: 'Mahal, tidak bersuara' },
     'engine-hydrogen':       { pro: 'Eco +80, zero karbon',           con: 'Speed moderat, mahal' },
     'engine-w16':            { pro: 'Speed +320, 1500HP',             con: 'Eco -50, sangat mahal' },
+    'exhaust-standard':      { pro: 'Standar pabrik OEM, hening',     con: 'Performa netral' },
     'exhaust-straight':      { pro: 'Speed +18, suara keras',         con: 'Eco -10, berisik' },
+    'exhaust-dual-sport':    { pro: 'Speed +12, gas buang lancar',    con: 'Eco -1' },
     'exhaust-titanium':      { pro: 'Speed +25, Flex +30',            con: 'Mahal' },
     'neon-blue':             { pro: 'Flex +25, tampilan keren',       con: 'Eco sedikit turun' },
     'neon-pink':             { pro: 'Flex +25, mencolok',             con: 'Eco sedikit turun' },
+    'suspension-normal':     { pro: 'Kenyamanan standar pabrik',      con: 'Handling biasa' },
     'suspension-ceper':      { pro: 'Speed +25, Flex +35, JDM',      con: 'Defense -10, keras' },
+    'suspension-air':        { pro: 'Flex +50, bisa rebah lantai',    con: 'Biaya instalasi' },
+    'suspension-liftkit':    { pro: 'Defense +40, offroad tinggi',    con: 'Speed -15, aerodinamika turun' },
     'roof-solar':            { pro: 'Eco +50, ramah lingkungan',      con: 'Speed -5, mahal' },
     'front-ram':             { pro: 'Defense +90, intimidasi',        con: 'Speed -10, berat' },
     'tabung-nos':            { pro: 'Speed +120, akselerasi ekstrem', con: 'Eco -25, berbahaya' },
@@ -5527,7 +5651,7 @@ function spawnTestDriveCar() {
 
     // Set initial position at track start
     testDrive3D.carGroup.position.set(0, 0, 0);
-    testDrive3D.carGroup.rotation.set(0, Math.PI, 0); // Face forward towards -Z (barrier at -450)
+    testDrive3D.carGroup.rotation.set(0, Math.PI / 2, 0); // Face forward towards -Z (since car front is +X)
     testDrive3D.scene.add(testDrive3D.carGroup);
 }
 
@@ -5634,7 +5758,7 @@ function resetTestDriveRun() {
     // Reset 3D Car position
     if (testDrive3D.carGroup) {
         testDrive3D.carGroup.position.set(0, 0, 0);
-        testDrive3D.carGroup.rotation.set(0, Math.PI, 0);
+        testDrive3D.carGroup.rotation.set(0, Math.PI / 2, 0);
         testDrive3D.carGroup.scale.set(1, 1, 1);
     }
 }
@@ -5672,9 +5796,9 @@ function triggerCrashImpact(impactSpeed) {
 
     // Visual camera shake and car crumple effect in simulation
     if (testDrive3D.carGroup) {
-        // Squish front along Z-axis slightly based on impact
+        // Squish front along car's local length (+X axis) based on impact
         const crumpleRatio = Math.max(0.65, 1.0 - (impactSpeed / 700) * (1.1 - defense / 100));
-        testDrive3D.carGroup.scale.z = crumpleRatio;
+        testDrive3D.carGroup.scale.x = crumpleRatio;
         testDrive3D.carGroup.position.y = 0.25;
         testDrive3D.carGroup.rotation.z = (Math.random() - 0.5) * 0.15;
     }
@@ -5807,17 +5931,28 @@ function updateTestDrivePhysics(dt) {
         triggerCrashImpact(testDriveState.speed);
     }
 
-    // Update 3D mesh position
+    // Update 3D mesh position & realistic dynamic physics
     if (testDrive3D.carGroup) {
         testDrive3D.carGroup.position.x = testDriveState.carX;
         testDrive3D.carGroup.position.z = testDriveState.carZ;
-        testDrive3D.carGroup.rotation.y = Math.PI - testDriveState.carSteer;
 
-        // Spin wheels based on distance traveled
+        // Realistic heading: car front (+X) aligned with -Z track heading with steering angle
+        testDrive3D.carGroup.rotation.y = (Math.PI / 2) - testDriveState.carSteer;
+
+        // Dynamic body roll when steering (leaning into corner)
+        testDrive3D.carGroup.rotation.z = -testDriveState.carSteer * 0.35;
+
+        // Pitch squat / dive (acceleration squat back, heavy braking dive forward)
+        let pitchAngle = 0;
+        if (testDriveState.inputs.gas) pitchAngle = 0.025;
+        else if (testDriveState.inputs.brake) pitchAngle = -0.04;
+        testDrive3D.carGroup.rotation.x = pitchAngle;
+
+        // Spin wheels based on distance traveled (rolling around local Z axle)
         if (testDrive3D.wheels && testDrive3D.wheels.length > 0) {
-            const wheelRot = (forwardMps * dt) / 0.35;
+            const wheelRot = (forwardMps * dt) / 0.44;
             testDrive3D.wheels.forEach(w => {
-                if (w) w.rotation.x -= wheelRot;
+                if (w) w.rotation.z -= wheelRot;
             });
         }
     }
